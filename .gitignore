@@ -1,2 +1,23 @@
+# VSCode
 .vscode/*
 
+# Build and Distribution
+dist/
+build/
+*.egg-info/
+
+# Python Bytecode and Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.venv/
+env/
+venv/
+
+# Documentation builds (if using MkDocs)
+site/
+
+# JAX/XLA Compilation Cache (optional but recommended)
+.jax_cache/

@@ -34,9 +34,15 @@ plugins:
         python:
           paths: [.] # Allow mkdocstrings to find the neojax package
           options:
+            docstring_style: google
             show_source: true
             show_root_heading: true
-            show_category_heading: true
+            show_type_annotations: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
 
 nav:
   - Home: index.md

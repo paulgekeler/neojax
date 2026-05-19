@@ -32,6 +32,15 @@ dependencies = [
   "equinox",
 ]
 
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "ruff",
+    "mypy",
+    "torch>=2.0.0", # only devs/CI
+    "neuraloperator"
+]
+
 [project.optional-dependencies]
 docs = [
   "mkdocs",
@@ -44,3 +53,31 @@ packages = ["neojax"]
 
 [project.urls]
 Homepage = "https://github.com/paulgekeler/neojax"
+
+# Ruff config
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+# E/W = pycodestyle, F = Pyflakes (logic), I = isort (imports), UP = pyupgrade
+select = ["E", "W", "F", "I", "UP", "B", "D"]
+ignore = ["E501", "E741"]
+extend-select = ["W505"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.pycodestyle]
+max-doc-length = 72
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+# mypy config
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_return_any = true
+warn_unused_configs = true

@@ -16,8 +16,8 @@ __pycache__/
 env/
 venv/
 
-# Documentation builds (if using MkDocs)
+# Documentation builds
 site/
 
-# JAX/XLA Compilation Cache (optional but recommended)
+# JAX/XLA Compilation Cache
 .jax_cache/

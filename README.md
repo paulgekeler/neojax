@@ -3,7 +3,9 @@
 > [!WARNING]
 > **Work in Progress:** This project is in its early stages of development and is currently **not functional**. It is being shared for development and architectural purposes only.
 
-This is neojax (**Ne**ural **O**perators in **jax**), a port of the popular [neural operators](https://github.com/neuraloperator/neuraloperator) pytorch library to jax. It is built on top of [jax](https://github.com/jax-ml/jax) and [equinox](https://github.com/patrick-kidger/equinox) and provides the same API as the original pytorch library.
+This is neojax (**Ne**ural **O**perators in **jax**), an implementation of Neural Operators in Jax. It is heavily based on and structured like the [neuraloperator](https://github.com/neuraloperator/neuraloperator) Pytorch library. It is built on top of [jax](https://github.com/jax-ml/jax) and [equinox](https://github.com/patrick-kidger/equinox) and provides a similar API as the original Pytorch library.
+
+It is designed to be fully compatible with all Jax features.
 
 #### Installation
 Install the python package via pypi
@@ -12,11 +14,43 @@ pip3 install neojax-operators
 ```
 
 #### Quickstart
-neojax exposes the same API as neuraloperators and can therefore be used as a drop-in replacement:
+neojax exposes a similar API to neuraloperators and equinox and should therefore be familiar to use:
 ```python
 from neojax.models import FNO
-operator = FNO(n_modes=(64, 64),
-               hidden_channels=64,
-               in_channels=2,
-               out_channels=1)
+fno = FNO(n_modes=(64, 64),
+        hidden_channels=64,
+        in_channels=2,
+        out_channels=1
+    )
+```
+
+For an introduction to model training in equinox, please refer to the respective [introductory guide](https://docs.kidger.site/equinox/examples/mnist/).
+
+Example notebooks will follow soon.
+
+#### Benchmarks
+Coming soon (Please refer to `BENCHMARKS.md` for a performance comparison of `neojax` and `neuraloperator`.)
+
+#### Motivation
+Jax has become ubiquitous in Scientific Machine Learning (SciML) and Scientific Computing. This is largely due to its core design, which embraces mathematical and functional transformations (like `jit`, `vmap`, and `grad`) and seamlessly integrates with NumPy-like paradigms. However, despite Neural Operators fundamentally shaping the SciML landscape and being frequently used for solving PDEs, a comprehensive, native Jax implementation has been notably missing. `neojax` was created to bridge this gap, bringing the performance, predictability, and ecosystem of Jax to the Neural Operator community.
+
+#### Design Choices
+Although originally conceived as a direct port of the PyTorch `neuraloperator` library, `neojax` evolved into a ground-up, Jax-native re-implementation. This approach avoids the pitfalls of forcing PyTorch idioms into a functional framework and significantly reduces internal complexity. By building directly on `equinox`, `neojax` aligns perfectly with Jax's pure-functional design principles while maintaining a clean, accessible, and class-based API.
+
+#### Roadplan
+The first and currently only supported Neural Operator is a simple Fourier Neural Operator (FNO). In upcoming releases more models and components will be added.
+
+#### Contributions
+If you'd like to contribute any features, models, or fix implementation errors, please do so. Any contributions are appreciated. Have a look at the `CONTRIBUTING.md` guide for details on how to do so.
+
+#### Citation
+If you use `neojax` in your research, please cite it using the following BibTeX entry:
+
+```bibtex
+@software{neojax,
+  author = {Paul Gekeler},
+  title = {neojax: Neural Operators in Jax},
+  year = {2026},
+  url = {https://github.com/paulgekeler/neojax}
+}
 ```

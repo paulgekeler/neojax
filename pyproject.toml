@@ -32,20 +32,22 @@ dependencies = [
   "equinox",
 ]
 
-[dependency-groups]
+[project.optional-dependencies]
 dev = [
     "pytest>=8.0.0",
     "ruff",
     "mypy",
-    "torch>=2.0.0", # only devs/CI
+    "torch>=2.0.0",
     "neuraloperator"
 ]
-
-[project.optional-dependencies]
 docs = [
   "mkdocs",
   "mkdocs-material",
   "mkdocstrings[python]",
+]
+ex = [
+  "optax",
+  "diffrax"
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -64,6 +66,9 @@ target-version = "py310"
 select = ["E", "W", "F", "I", "UP", "B", "D"]
 ignore = ["E501", "E741", "F722", "F821", "D107", "D417"]
 extend-select = ["W505"]
+
+[tool.ruff.lint.per-file-ignores]
+"neojax/tests/**/*" = ["D1"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

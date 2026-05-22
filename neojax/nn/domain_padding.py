@@ -31,10 +31,6 @@ class DomainPadding(eqx.Module):
 
     Attributes:
         padding: The stored padding ratios for each dimension.
-        padding_margins: Exact integer margins to pad per dimension.
-            Inferred from `padding`.
-            Must be known at compile time and immutable
-            to make pad/unpad jittable.
         mode: The padding mode.
 
     Note: Currently doesn't support resolution scaling.
@@ -53,7 +49,7 @@ class DomainPadding(eqx.Module):
         if mode not in ("constant", "edge", "wrap", "maximum", "minimum"):
             raise ValueError(
                 "Padding mode unavailable."
-                " See jax.numpy.pad for padding modes without kwargs"
+                " See jax.numpy.pad for padding modes without kwargs."
             )
         self.mode = mode
 
@@ -81,10 +77,10 @@ class DomainPadding(eqx.Module):
             )
         else:
             paddings = self.padding
-        pad_widths = []
+        pad_widths = [(0, 0)]
         for p, dim in zip(paddings, dim_shape, strict=True):
             pw = round((p / 2) * dim)
-        pad_widths.append((pw, pw))
+            pad_widths.append((pw, pw))
         return tuple(pad_widths)
 
     def pad(self, x: Float[Array, "c ..."]) -> Float[Array, "c ..."]:
@@ -116,11 +112,14 @@ class DomainPadding(eqx.Module):
             The cropped array of original resolution.
         """
         pad_widths = self._get_pad_widths(original_shape)
-        # loose channel dim
-        padded_shape = x.shape[1:]
         slice_indices = [slice(None)]
-        for i, (pw, _) in enumerate(pad_widths):
-            slice_indices.append(slice(pw, padded_shape[i] - pw))
+        # pad_widths has length ndim + 1
+        # (including channel dim at index 0)
+        # skip the first element of pad_widths
+        # since we already handle channels with slice(None)
+        for i, (pw, _) in enumerate(pad_widths[1:]):
+            sl = slice(pw, original_shape[i + 1] + pw)
+            slice_indices.append(sl)
         return x[tuple(slice_indices)]
 
     def __call__(self, x: Float[Array, "c ..."]) -> Float[Array, "c ..."]:

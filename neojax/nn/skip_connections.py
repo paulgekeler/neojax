@@ -2,7 +2,7 @@
 
 import equinox as eqx
 import jax.numpy as jnp
-from jaxtyping import Array, Float
+from jaxtyping import Array, Float, PRNGKeyArray
 
 
 class SoftGating(eqx.Module):
@@ -39,9 +39,9 @@ class SoftGating(eqx.Module):
                 "Mismatch of in_channels and out_channels. Both must match. "
                 f"Got {in_channels} in_channels and {out_channels} out_channels."
             )
-        self.weight = jnp.ones((1, in_channels) + (1,) * ndim)
+        self.weight = jnp.ones((in_channels,) + (1,) * ndim)
         if use_bias:
-            self.bias = jnp.ones((1, in_channels) + (1,) * ndim)
+            self.bias = jnp.ones((in_channels,) + (1,) * ndim)
 
     def __call__(self, x: Float[Array, "c ..."]) -> Float[Array, "c ..."]:
         """Applies soft-gating to input activations.
@@ -81,6 +81,7 @@ class Flattened1dConv(eqx.Module):
 
     def __init__(
         self,
+        key: PRNGKeyArray,
         in_channels: int,
         out_channels: int,
         kernel_size: int,
@@ -91,6 +92,7 @@ class Flattened1dConv(eqx.Module):
             out_channels=out_channels,
             kernel_size=kernel_size,
             use_bias=use_bias,
+            key=key,
         )
         self.out_channels = out_channels
 
@@ -106,4 +108,4 @@ class Flattened1dConv(eqx.Module):
         shape = x.shape
         x = x.reshape(shape[0], -1)
         x = self.conv(x)
-        return x.reshape(shape[0], self.out_channels, *shape[2:])
+        return x.reshape(self.out_channels, *shape[1:])

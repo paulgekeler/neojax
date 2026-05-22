@@ -19,17 +19,21 @@ pip3 install neojax-operators
 #### Quickstart
 neojax exposes a similar API to neuraloperators and equinox and should therefore be familiar to use:
 ```python
+import jax.numpy as jnp
 from neojax.models import FNO
+
 fno = FNO(n_modes=(64, 64),
         hidden_channels=64,
         in_channels=2,
         out_channels=1
     )
+
+x = jnp.ones((2, 64, 64))
+
+pred = fno(x)
 ```
 
-For an introduction to model training in equinox, please refer to the respective [introductory guide](https://docs.kidger.site/equinox/examples/mnist/).
-
-Example notebooks will follow soon.
+For a more in detail introduction refer to the examples in the documentation.
 
 #### Benchmarks
 Coming soon (Please refer to `BENCHMARKS.md` for a performance comparison of `neojax` and `neuraloperator`.)

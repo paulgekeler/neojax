@@ -30,6 +30,7 @@ class PointwiseMLP(eqx.Module):
 
     Example:
         ```python
+        import jax.numpy as jnp
         import jax.random as jr
         from neojax.nn import PointwiseMLP
 
@@ -38,6 +39,8 @@ class PointwiseMLP(eqx.Module):
         mlp = PointwiseMLP(
             key, [64, 128, 128], [jax.nn.gelu, jax.nn.gelu]
         )
+        x = jnp.ones((64, 32, 32))
+        out = mlp(x)
         ```
     """
 

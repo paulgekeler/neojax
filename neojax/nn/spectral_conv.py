@@ -1,5 +1,7 @@
 """Implementation of a general n-dimensional spectral convolution."""
 
+from collections.abc import Sequence
+
 import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
@@ -33,19 +35,26 @@ class SpectralConvNd(eqx.Module):
 
     Example:
         ```python
+        import jax.numpy as jnp
         import jax.random as jr
         from neojax.nn import SpectralConvNd
 
         key = jr.PRNGKey(0)
 
         # 1D Spectral Convolution
-        conv1d = SpectralConvNd(3, 16, modes=(16,), key=key)
+        conv1d = SpectralConvNd(key, 3, 16, modes=16)
+        # or
+        conv1d = SpectralConvNd(key, 3, 16, modes=(16,))
 
         # 2D Spectral Convolution
-        conv2d = SpectralConvNd(3, 16, modes=(16, 16), key=key)
+        conv2d = SpectralConvNd(key, 3, 16, modes=(16, 16))
 
         # 3D Spectral Convolution
-        conv3d = SpectralConvNd(3, 16, modes=(16, 16, 16), key=key)
+        conv3d = SpectralConvNd(key, 3, 16, modes=(16, 16, 16))
+
+        # Input shape: (channels, d1, ..., dN)
+        x = jnp.ones((3, 32, 32))
+        out = conv2d(x)
         ```
 
     Notes:
@@ -67,11 +76,14 @@ class SpectralConvNd(eqx.Module):
         key: PRNGKeyArray,
         in_channels: int,
         out_channels: int,
-        modes: tuple[int, ...],
+        modes: int | Sequence[int],
     ):
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.modes = modes
+        if isinstance(modes, int):
+            self.modes = (modes,)
+        else:
+            self.modes = tuple(modes)
 
         num_corners = 2 ** (len(modes) - 1)
         scale = 1.0 / (in_channels * out_channels)
@@ -99,7 +111,7 @@ class SpectralConvNd(eqx.Module):
         spatial_shape = x.shape[1:]
         ndim = len(self.modes)
         # truncate last dim to spatial_shape[-1] // 2 + 1
-        x_ft = jnp.fft.rfftn(x, axes=tuple(range(1, ndim + 1)))
+        x_ft = jnp.fft.rfftn(x, axes=tuple(range(1, ndim + 1)), norm="ortho")
 
         out_ft_shape = (self.out_channels,) + x_ft.shape[1:]
         out_ft = jnp.zeros(out_ft_shape, dtype=jnp.complex64)
@@ -126,4 +138,6 @@ class SpectralConvNd(eqx.Module):
                 jnp.einsum("oi...,i...->o...", weight_tensor, x_ft[grid_slice])
             )
 
-        return jnp.fft.irfftn(out_ft, s=spatial_shape, axes=tuple(range(1, ndim + 1)))
+        return jnp.fft.irfftn(
+            out_ft, s=spatial_shape, axes=tuple(range(1, ndim + 1)), norm="ortho"
+        )

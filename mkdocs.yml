@@ -38,11 +38,16 @@ plugins:
             show_source: true
             show_root_heading: true
             show_type_annotations: true
+  - mkdocs-jupyter:
+      include: ["docs/examples/*.ipynb"]
+      execute: false
 
 markdown_extensions:
   - admonition
   - pymdownx.details
   - pymdownx.superfences
+  - pymdownx.snippets:
+      base_path: ["."]
 
 nav:
   - Home: index.md

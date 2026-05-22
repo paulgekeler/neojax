@@ -53,6 +53,12 @@ ex = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["neojax"]
+exclude = [
+  "/neojax/tests",
+]
+exclude = [
+  "/neojax/tests",
+]
 
 [project.urls]
 Homepage = "https://github.com/paulgekeler/neojax"

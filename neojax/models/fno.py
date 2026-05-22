@@ -8,6 +8,7 @@ import jax
 import jax.random as jr
 from jaxtyping import Array, Float, PRNGKeyArray
 
+from neojax.nn.domain_padding import DomainPadding
 from neojax.nn.fno_blocks import FNOBlocks
 from neojax.nn.pointwise_mlp import PointwiseMLP
 from neojax.nn.positional_embedding import GridEmbeddingNd
@@ -64,7 +65,7 @@ class FNO(eqx.Module):
             (e.g. default 2 * hidden_channels).
         positional_embedding: Positional embedding to apply
             to last channels of raw input before passing through FNO.
-            Defaults to a regular GridEmbeddingNd on a ((0, 1), ...) grid.
+            Defaults to regular GridEmbeddingNd on a ((0, 1), ...) grid.
         domain_padding: Percentage of padding to use.
             If single float, this padding is used for all dims.
             Sequence of floats indicates padding percentage per dim.
@@ -92,10 +93,11 @@ class FNO(eqx.Module):
             JMLR 2023, https://www.jmlr.org/papers/volume24/21-1524/21-1524.pdf.
     """
 
-    positional_embedding: GridEmbeddingNd
+    positional_embedding: GridEmbeddingNd | None
     lifting: PointwiseMLP
     fno_blocks: FNOBlocks
     projection: PointwiseMLP
+    padding: DomainPadding | None
 
     def __init__(
         self,
@@ -111,6 +113,7 @@ class FNO(eqx.Module):
         channel_mlp_skip: Literal["linear", "soft-gating", "identity"]
         | None = "soft-gating",
         channel_mlp_expansion: float | None = 0.5,
+        preactivation: bool = False,
         n_lift_layers: int = 2,
         n_proj_layers: int = 2,
         lift_channel_ratio: float = 2.0,
@@ -118,8 +121,38 @@ class FNO(eqx.Module):
         positional_embedding: GridEmbeddingNd | None = None,
         domain_padding: float | Sequence[float] | None = None,
     ) -> None:
-        lkey, pkey, fno_keys = jr.split(key, n_layers + 2)
-        self.lifting = PointwiseMLP()
+        lkey, pkey, fno_key = jr.split(key, 3)
+
+        self.positional_embedding = positional_embedding
+        if domain_padding is not None:
+            self.padding = DomainPadding(domain_padding)
+        else:
+            self.padding = None
+
+        lift_hidden_channels = int(hidden_channels * lift_channel_ratio)
+        self.lifting = PointwiseMLP(
+            key=lkey,
+            layers=(in_channels, lift_hidden_channels, hidden_channels),
+            activations=activation,
+        )
+        proj_hidden_channels = int(hidden_channels * proj_channel_ratio)
+        self.projection = PointwiseMLP(
+            key=pkey,
+            layers=(hidden_channels, proj_hidden_channels, out_channels),
+            activations=activation,
+        )
+        self.fno_blocks = FNOBlocks(
+            key=fno_key,
+            n_layers=n_layers,
+            in_channels=hidden_channels,
+            out_channels=hidden_channels,
+            modes=modes,
+            use_channel_mlp=use_channel_mlp,
+            preactivation=preactivation,
+            fno_skip=fno_skip,
+            channel_mlp_skip=channel_mlp_skip,
+            channel_mlp_expansion=channel_mlp_expansion,
+        )
 
     def __call__(self, x: Float[Array, "in_c ..."]) -> Float[Array, "out_c ..."]:
         """Forward pass of the FNO model.
@@ -131,4 +164,18 @@ class FNO(eqx.Module):
         Returns:
             The predicted field of shape `(out_channels, d1, ..., dn)`.
         """
-        pass
+        if self.positional_embedding is not None:
+            x = self.positional_embedding(x)
+
+        original_shape = x.shape
+        if self.padding is not None:
+            x = self.padding.pad(x)
+
+        x = self.lifting(x)
+        x = self.fno_blocks(x)
+        x = self.projection(x)
+
+        if self.padding is not None:
+            x = self.padding.unpad(x, original_shape)
+
+        return x

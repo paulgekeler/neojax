@@ -58,6 +58,7 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Benchmarks: benchmarks.md
   - API Reference:
       - Models: api/models.md
       - Components: api/nn.md

@@ -39,7 +39,7 @@ pred = fno(x)
 For a more in detail introduction refer to the examples in the documentation.
 
 #### Benchmarks
-Coming soon (Please refer to `BENCHMARKS.md` for a performance comparison of `neojax` and `neuraloperator`.)
+Coming soon (Please refer to [benchmarks/BENCHMARKS.md](benchmarks/BENCHMARKS.md) for a performance comparison of `neojax` and `neuraloperator`.)
 
 #### Motivation
 Jax has become ubiquitous in Scientific Machine Learning (SciML) and Scientific Computing. This is largely due to its core design, which embraces mathematical and functional transformations (like `jit`, `vmap`, and `grad`) and seamlessly integrates with NumPy-like paradigms. However, despite Neural Operators fundamentally shaping the SciML landscape and being frequently used for solving PDEs, a comprehensive, native Jax implementation has been notably missing. `neojax` was created to bridge this gap, bringing the performance, predictability, and ecosystem of Jax to the Neural Operator community.

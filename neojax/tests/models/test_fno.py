@@ -42,6 +42,24 @@ class TestFNO:
         )
         assert model_3d(jnp.ones((1, 8, 8, 8))).shape == (1, 8, 8, 8)
 
+    def test_mlp_layers_incorporation(self):
+        key = jr.PRNGKey(0)
+        n_lift = 3
+        n_proj = 4
+        model = FNO(
+            key=jr.PRNGKey(0),
+            in_channels=1,
+            out_channels=1,
+            hidden_channels=8,
+            n_layers=1,
+            modes=(4,),
+            n_lift_layers=n_lift,
+            n_proj_layers=n_proj,
+        )
+        # PointwiseMLP weight tuples should have n_layers elements
+        assert len(model.lifting.weights) == n_lift
+        assert len(model.projection.weights) == n_proj
+
         # 4D
         model_4d = FNO(
             key=key,

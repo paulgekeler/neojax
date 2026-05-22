@@ -43,12 +43,23 @@ class FNO(eqx.Module):
             Defaults to `jax.nn.gelu`.
         use_channel_mlp: Whether to apply a pointwise channel MLP
             after each FNO block. Defaults to `True`.
-        fno_skip: Type of skip connection inside FNO blocks.
+        local_operator: Type of skip connection inside FNO blocks.
             Can be `"linear"`, `"soft-gating"`, `"identity"`, or None.
             Defaults to `"linear"`.
-        channel_mlp_skip: Type of skip connection around channel MLPs.
+        channel_mlp_residual: Type of skip connection around channel MLPs.
             Can be `"linear"`, `"soft-gating"`, `"identity"`, or None.
             Defaults to `"soft-gating"`.
+        channel_mlp_expansion: Expansion factor for hidden dimension
+            in the channel MLPs. Defaults to 0.5.
+        normalization: Type of normalization to use in FNO blocks.
+            Can be `"layer"`, `"instance"`, `"group"` or None.
+            Default is `"layer"`.
+        norm_groups: Number of groups for group normalization.
+            Default is 1.
+        use_fno_residual: Whether to use residual connection
+            around FNO blocks. Default is True.
+        preactivation: Whether to use pre-activation style blocks.
+            Default is False.
         n_lift_layers: Number of layers in the lifting MLP.
             Defaults to 2.
         n_proj_layers: Number of layers in the projection MLP.
@@ -111,10 +122,13 @@ class FNO(eqx.Module):
         modes: int | Sequence[int],
         activation: Callable = jax.nn.gelu,
         use_channel_mlp: bool = True,
-        fno_skip: Literal["linear", "soft-gating", "identity"] | None = "linear",
-        channel_mlp_skip: Literal["linear", "soft-gating", "identity"]
+        local_operator: Literal["linear", "soft-gating", "identity"] | None = "linear",
+        channel_mlp_residual: Literal["linear", "soft-gating", "identity"]
         | None = "soft-gating",
         channel_mlp_expansion: float | None = 0.5,
+        normalization: Literal["layer", "instance", "group"] | None = "layer",
+        norm_groups: int = 1,
+        use_fno_residual: bool = True,
         preactivation: bool = False,
         n_lift_layers: int = 2,
         n_proj_layers: int = 2,
@@ -132,15 +146,25 @@ class FNO(eqx.Module):
             self.padding = None
 
         lift_hidden_channels = int(hidden_channels * lift_channel_ratio)
+        lifting_layers = (
+            [in_channels]
+            + [lift_hidden_channels] * (n_lift_layers - 1)
+            + [hidden_channels]
+        )
         self.lifting = PointwiseMLP(
             key=lkey,
-            layers=(in_channels, lift_hidden_channels, hidden_channels),
+            layers=tuple(lifting_layers),
             activations=activation,
         )
         proj_hidden_channels = int(hidden_channels * proj_channel_ratio)
+        projection_layers = (
+            [hidden_channels]
+            + [proj_hidden_channels] * (n_proj_layers - 1)
+            + [out_channels]
+        )
         self.projection = PointwiseMLP(
             key=pkey,
-            layers=(hidden_channels, proj_hidden_channels, out_channels),
+            layers=tuple(projection_layers),
             activations=activation,
         )
         self.fno_blocks = FNOBlocks(
@@ -149,10 +173,14 @@ class FNO(eqx.Module):
             in_channels=hidden_channels,
             out_channels=hidden_channels,
             modes=modes,
+            activation=activation,
             use_channel_mlp=use_channel_mlp,
             preactivation=preactivation,
-            fno_skip=fno_skip,
-            channel_mlp_skip=channel_mlp_skip,
+            normalization=normalization,
+            norm_groups=norm_groups,
+            use_fno_residual=use_fno_residual,
+            local_operator=local_operator,
+            channel_mlp_residual=channel_mlp_residual,
             channel_mlp_expansion=channel_mlp_expansion,
         )
 

@@ -44,6 +44,7 @@ docs = [
   "mkdocs",
   "mkdocs-material",
   "mkdocstrings[python]",
+  "mkdocs-jupyter"
 ]
 ex = [
   "optax",

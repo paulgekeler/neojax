@@ -2,4 +2,4 @@
 
 This page contains the API reference for all models in `neojax`.
 
-::: neojax.models
+::: neojax.models.fno.FNO

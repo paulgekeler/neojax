@@ -31,7 +31,7 @@ class GridEmbeddingNd(eqx.Module):
     ) -> None:
         self.in_channels = in_channels
         if grid_boundaries is None:
-            self.grid_boundaries = tuple((0, 1) * ndim)
+            self.grid_boundaries = tuple([(0, 1)] * ndim)
         else:
             self.grid_boundaries = grid_boundaries
 
@@ -52,9 +52,9 @@ class GridEmbeddingNd(eqx.Module):
             )
         grid_points_1d = []
         for res, (start, end) in zip(resolutions, self.grid_boundaries, strict=True):
-            # TODO: check me for consistency
             grid_points_1d.append(jnp.linspace(start, end, res))
-        grid = jnp.meshgrid(*grid_points_1d, indexing="ij")
+
+        grid = jnp.stack(jnp.meshgrid(*grid_points_1d, indexing="ij"), axis=0)
         return jnp.repeat(grid, self.in_channels, 0)
 
     def __call__(self, x: Float[Array, "c ..."]) -> Float[Array, "c ..."]:

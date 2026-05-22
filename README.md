@@ -1,11 +1,14 @@
 # neojax
 
-> [!WARNING]
-> **Work in Progress:** This project is in its early stages of development and is currently **not functional**. It is being shared for development and architectural purposes only.
+**neojax** (**Ne**ural **O**perators in JAX) is an implementation of Neural Operators built on top of [JAX](https://github.com/jax-ml/jax) and [Equinox](https://github.com/patrick-kidger/equinox). It provides a clean, modular API inspired by the original [neuraloperator](https://github.com/neuraloperator/neuraloperator) library.
 
-This is neojax (**Ne**ural **O**perators in **jax**), an implementation of Neural Operators in Jax. It is heavily based on and structured like the [neuraloperator](https://github.com/neuraloperator/neuraloperator) Pytorch library. It is built on top of [jax](https://github.com/jax-ml/jax) and [equinox](https://github.com/patrick-kidger/equinox) and provides a similar API as the original Pytorch library.
+Currently, **neojax** is in its early stages. Only the **Fourier Neural Operator (FNO)** is available, with support for:
+- 1D, 2D, 3D, 4D, and 5D coordinate-based inputs.
+- Domain Padding.
+- Channel-MLP (Pointwise MLP) expansions.
+- Various skip connections (Soft-Gating, Linear, Identity).
 
-It is designed to be fully compatible with all Jax features.
+It is designed to be fully compatible with all JAX features such as `vmap`, `jit`, and `grad`.
 
 #### Installation
 Install the python package via pypi

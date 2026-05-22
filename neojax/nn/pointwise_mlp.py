@@ -68,12 +68,13 @@ class PointwiseMLP(eqx.Module):
         for i in range(len(layers) - 1):
             wkey, key = jr.split(key, 2)
             scale = 1.0 / jnp.sqrt(layers[i])
-            weights.append(jr.normal(wkey, shape=(layers[i], layers[i + 1])) * scale)
+            weights.append(jr.normal(wkey, shape=(layers[i + 1], layers[i])) * scale)
             biases.append(jnp.zeros((layers[i + 1],)))
+
         self.weights = tuple(weights)
         self.biases = tuple(biases)
 
-    def __call__(self, x: Float[Array, "... in_c"]) -> Float[Array, "out_c ..."]:
+    def __call__(self, x: Float[Array, "in_c ..."]) -> Float[Array, "out_c ..."]:
         """MLP forward pass.
 
         Args:
@@ -83,7 +84,9 @@ class PointwiseMLP(eqx.Module):
             Output array.
         """
         for w, b, a in zip(self.weights, self.biases, self.activations, strict=False):
-            x = jnp.einsum("...i,ji->...j", x, w) + b
+            x = jnp.einsum("i...,ji->j...", x, w)
+
+            x = x + b.reshape(-1, *([1] * (x.ndim - 1)))
             if a:
                 x = a(x)
         return x

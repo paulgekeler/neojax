@@ -82,8 +82,10 @@ class FNOBlock(eqx.Module):
         preactivation: bool = False,
     ) -> None:
         ndim = len(modes)
+        fno_key, skip_key = jr.split(key, 2)
         if fno_skip == "linear":
             self.skip = Flattened1dConv(
+                key=skip_key,
                 in_channels=in_channels,
                 out_channels=out_channels,
                 kernel_size=1,
@@ -91,16 +93,24 @@ class FNOBlock(eqx.Module):
             )
         elif fno_skip == "soft-gating":
             self.skip = SoftGating(
-                ndim=ndim, in_channels=in_channels, use_bias=use_skip_bias
+                ndim=ndim,
+                in_channels=in_channels,
+                out_channels=out_channels,
+                use_bias=use_skip_bias,
             )
         elif fno_skip == "identity":
-            self.skip = eqx.nn.Identity
+            if in_channels != out_channels:
+                raise ValueError(
+                    "Identity skip connection requires in_channels == out_channels. "
+                    f"Got {in_channels} and {out_channels}."
+                )
+            self.skip = eqx.nn.Identity()
         elif fno_skip is None:
             self.skip = None
         else:
             raise ValueError(f"'{fno_skip}' is not a valid skip connection.")
         self.spectral_conv = SpectralConvNd(
-            key=key, in_channels=in_channels, out_channels=out_channels, modes=modes
+            key=fno_key, in_channels=in_channels, out_channels=out_channels, modes=modes
         )
         self.activation = activation
         self.preactivation = preactivation
@@ -210,7 +220,7 @@ class FNOBlocks(eqx.Module):
 
     fno_layers: tuple[FNOBlock, ...]
     channel_mlps: tuple[PointwiseMLP, ...] | None
-    channel_mlp_skip: Flattened1dConv | SoftGating | eqx.nn.Identity | None = SoftGating
+    channel_mlp_skip: tuple | None = None
 
     def __init__(
         self,
@@ -264,18 +274,36 @@ class FNOBlocks(eqx.Module):
                 hidden_channel = round(channel_mlp_expansion * out_channels)
             else:
                 hidden_channel = out_channels
-            if channel_mlp_skip == "linear":
-                self.channel_mlp_skip = Flattened1dConv
-            elif channel_mlp_skip == "soft-gating":
-                self.channel_mlp_skip = SoftGating
-            elif channel_mlp_skip == "identity":
-                self.channel_mlp_skip = eqx.nn.Identity
-            elif channel_mlp_skip is None:
-                self.channel_mlp_skip = None
-            else:
-                raise ValueError(
-                    f"'{channel_mlp_skip}' is not a valid skip connection."
-                )
+            channel_mlp_skips = []
+            for _ in range(n_layers):
+                skip_key, key = jr.split(key, 2)
+                if channel_mlp_skip == "linear":
+                    channel_mlp_skips.append(
+                        Flattened1dConv(
+                            in_channels=out_channels,
+                            out_channels=out_channels,
+                            kernel_size=1,
+                            key=skip_key,
+                        )
+                    )
+                elif channel_mlp_skip == "soft-gating":
+                    channel_mlp_skips.append(
+                        SoftGating(
+                            ndim=len((modes,) if isinstance(modes, int) else modes),
+                            in_channels=out_channels,
+                        )
+                    )
+                elif channel_mlp_skip == "identity":
+                    channel_mlp_skips.append(eqx.nn.Identity())
+                elif channel_mlp_skip is None:
+                    channel_mlp_skips.append(None)
+                else:
+                    raise ValueError(
+                        f"'{channel_mlp_skip}' is not a valid skip connection."
+                    )
+            self.channel_mlp_skip = (
+                tuple(channel_mlp_skips) if channel_mlp_skip is not None else None
+            )
             channel_mlps = [
                 PointwiseMLP(
                     key=mlp_keys[i],
@@ -288,7 +316,7 @@ class FNOBlocks(eqx.Module):
         else:
             self.channel_mlps = None
 
-    def __call__(self, x: Float[Array, "... in_c"]) -> Float[Array, "out_c ..."]:
+    def __call__(self, x: Float[Array, "c ..."]) -> Float[Array, "c ..."]:
         """Forward pass through n_layers of FNO Blocks.
 
         Args:
@@ -298,12 +326,17 @@ class FNOBlocks(eqx.Module):
             Output array.
         """
         if self.channel_mlps is not None:
-            for fno_layer, mlp_layer in zip(
-                self.fno_layers, self.channel_mlps, strict=True
+            skips = (
+                self.channel_mlp_skip
+                if self.channel_mlp_skip is not None
+                else [None] * len(self.channel_mlps)
+            )
+            for fno_layer, mlp_layer, skip_layer in zip(
+                self.fno_layers, self.channel_mlps, skips, strict=True
             ):
                 x = fno_layer(x)
-                if self.channel_mlp_skip is not None:
-                    x = mlp_layer(x) + self.channel_mlp_skip(x)
+                if skip_layer is not None:
+                    x = mlp_layer(x) + skip_layer(x)
                 else:
                     x = mlp_layer(x)
             return x

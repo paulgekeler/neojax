@@ -1,7 +1,6 @@
 """Implementation of a general n-dimensional spectral convolution."""
 
 import equinox as eqx
-import jax
 import jax.numpy as jnp
 import jax.random as jr
 from jaxtyping import Array, Complex, Float, PRNGKeyArray
@@ -87,44 +86,43 @@ class SpectralConvNd(eqx.Module):
 
         self.weights = tuple(weights_list)
 
+    def __call__(self, x: Float[Array, "in_c ..."]) -> Float[Array, "out_c ..."]:
+        """Perform n-dimensional spectral convolution.
 
-def __call__(self, x: Float[Array, "in_c ..."]) -> Float[Array, "out_c ..."]:
-    """Perform n-dimensional spectral convolution.
+        Args:
+            x: Input signal.
 
-    Args:
-        x: Input signal.
+        Returns:
+            Output signal.
+        """
+        spatial_shape = x.shape[1:]
+        ndim = len(self.modes)
+        # truncate last dim to spatial_shape[-1] // 2 + 1
+        x_ft = jnp.fft.rfftn(x, axes=tuple(range(1, ndim + 1)))
 
-    Returns:
-        Output signal.
-    """
-    spatial_shape = x.shape[1:]
-    ndim = len(self.modes)
-    # truncate last dim to spatial_shape[-1] // 2 + 1
-    x_ft = jax.fft.rfftn(x, axes=tuple(range(1, ndim + 1)))
+        out_ft_shape = (self.out_channels,) + x_ft.shape[1:]
+        out_ft = jnp.zeros(out_ft_shape, dtype=jnp.complex64)
 
-    out_ft_shape = (self.out_channels,) + x_ft.shape[1:]
-    out_ft = jnp.zeros(out_ft_shape, dtype=jnp.complex64)
+        # iterate through the corners using binary representation
+        for corner_idx, weight_tensor in enumerate(self.weights):
+            slices = [slice(None)]
 
-    # iterate through the corners using binary representation
-    for corner_idx, weight_tensor in enumerate(self.weights):
-        slices = [slice(None)]
-
-        for d in range(ndim):
-            if d == ndim - 1:
-                # truncate last dim from 0 to modes[-1]
-                slices.append(slice(0, self.modes[d]))
-            else:
-                # other dims use the positive or negative freq edge
-                is_negative_edge = (corner_idx >> d) & 1
-                if is_negative_edge:
-                    slices.append(slice(-self.modes[d], None))
-                else:
+            for d in range(ndim):
+                if d == ndim - 1:
+                    # truncate last dim from 0 to modes[-1]
                     slices.append(slice(0, self.modes[d]))
+                else:
+                    # other dims use the positive or negative freq edge
+                    is_negative_edge = (corner_idx >> d) & 1
+                    if is_negative_edge:
+                        slices.append(slice(-self.modes[d], None))
+                    else:
+                        slices.append(slice(0, self.modes[d]))
 
-        # channel-wise matrix multiplication using einsum
-        grid_slice = tuple(slices)
-        out_ft = out_ft.at[grid_slice].set(
-            jnp.einsum("oi...,i...->o...", weight_tensor, x_ft[grid_slice])
-        )
+            # channel-wise matrix multiplication using einsum
+            grid_slice = tuple(slices)
+            out_ft = out_ft.at[grid_slice].set(
+                jnp.einsum("oi...,i...->o...", weight_tensor, x_ft[grid_slice])
+            )
 
-    return jax.fft.irfftn(out_ft, s=spatial_shape, axes=tuple(range(1, ndim + 1)))
+        return jnp.fft.irfftn(out_ft, s=spatial_shape, axes=tuple(range(1, ndim + 1)))

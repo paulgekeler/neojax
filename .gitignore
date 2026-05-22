@@ -21,3 +21,9 @@ site/
 
 # JAX/XLA Compilation Cache
 .jax_cache/
+
+# Tool Caches
+.cache/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/

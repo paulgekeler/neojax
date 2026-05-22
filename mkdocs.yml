@@ -48,5 +48,8 @@ nav:
   - Home: index.md
   - API Reference:
       - Models: api/models.md
-      - Layers: api/layers.md
+      - Components: api/nn.md
       - Utils: api/utils.md
+  - Examples:
+    - Basic Usage: examples/01_basics.ipynb
+    - Training FNO: examples/02_fno_burgers.ipynb

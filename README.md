@@ -3,10 +3,13 @@
 **neojax** (**Ne**ural **O**perators in JAX) is an implementation of Neural Operators built on top of [JAX](https://github.com/jax-ml/jax) and [Equinox](https://github.com/patrick-kidger/equinox). It provides a clean, modular API inspired by the original [neuraloperator](https://github.com/neuraloperator/neuraloperator) library.
 
 Currently, **neojax** is in its early stages. Only the **Fourier Neural Operator (FNO)** is available, with support for:
-- 1D, 2D, 3D, 4D, and 5D coordinate-based inputs.
-- Domain Padding.
-- Channel-MLP (Pointwise MLP) expansions.
-- Various skip connections (Soft-Gating, Linear, Identity).
+
+- 1D, 2D, 3D, 4D, and 5D coordinate-based operator learning.
+- Grid-based positional embeddings (`GridEmbeddingNd`).
+- Symmetrical domain padding (`DomainPadding`).
+- Pointwise MLP (Channel-MLP) expansions for improved expressivity.
+- Various skip connections (Linear, Soft-Gating, Identity).
+- Seamless integration with JAX's `vmap`, `jit`, and `grad`.
 
 It is designed to be fully compatible with all JAX features such as `vmap`, `jit`, and `grad`.
 

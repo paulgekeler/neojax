@@ -33,7 +33,8 @@ class DomainPadding(eqx.Module):
         padding: The stored padding ratios for each dimension.
         mode: The padding mode.
 
-    Note: Currently doesn't support resolution scaling.
+    Note:
+        Currently doesn't support resolution scaling.
     """
 
     padding: float | Sequence[float] = eqx.field(static=True)  # static -> jittable

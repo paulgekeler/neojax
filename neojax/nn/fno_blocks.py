@@ -141,7 +141,7 @@ class FNOBlock(eqx.Module):
 class FNOBlocks(eqx.Module):
     """General FNO Blocks with variable layer number.
 
-    Implemented as in [^1] and [^2].
+    Implemented as in [[1]](#ref1) and [[2]](#ref2).
     Each block is an instance of FNOBlock with an
     optional channelwise MLP.
 
@@ -206,14 +206,16 @@ class FNOBlocks(eqx.Module):
         ```
 
     References:
-        [^1]: Li, Z. et al. "Fourier Neural Operator for Parametric
+        1. <a name="ref1"></a> Li, Z. et al. "Fourier Neural Operator for Parametric
             Partial Differential Equations" (2021).
             ICLR 2021, https://arxiv.org/pdf/2010.08895.
-        [^2]: Kovachki, N. et al. "Neural Operator: Learning Maps
+
+        2. <a name="ref2"></a> Kovachki, N. et al. "Neural Operator: Learning Maps
             Between Function Spaces With Applications to PDEs"
             JMLR 2023, https://www.jmlr.org/papers/volume24/21-1524/21-1524.pdf.
 
-    Notes: The current implementation doesn't support dropout
+    Notes:
+        The current implementation doesn't support dropout
         for the channel-wise MLP or normalization layers.
         Both will be added in future releases.
     """

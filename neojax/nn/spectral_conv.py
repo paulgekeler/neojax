@@ -48,7 +48,8 @@ class SpectralConvNd(eqx.Module):
         conv3d = SpectralConvNd(3, 16, modes=(16, 16, 16), key=key)
         ```
 
-    Notes: The current implementation doesn't support the following
+    Notes:
+        The current implementation doesn't support the following
         features yet:
             - Tucker factorization
             - Complex inputs (always truncates final dim currently)

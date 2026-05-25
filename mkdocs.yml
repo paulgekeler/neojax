@@ -62,6 +62,7 @@ nav:
   - API Reference:
       - Models: api/models.md
       - Components: api/nn.md
+      - Losses: api/losses.md
   - Examples:
     - Basic Usage: examples/01_basics.ipynb
     - Training FNO: examples/02_fno_burgers.ipynb

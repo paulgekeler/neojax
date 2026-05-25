@@ -9,6 +9,8 @@ Currently, **neojax** is in its early stages. Only the **Fourier Neural Operator
 - Symmetrical domain padding (`DomainPadding`).
 - Pointwise MLP (Channel-MLP) expansions for improved expressivity.
 - Various skip connections (Linear, Soft-Gating, Identity).
+- Normalization in FNO blocks.
+- $L^{p}$-loss functions and loss compositions.
 - Seamless integration with JAX's `vmap`, `jit`, and `grad`.
 
 It is designed to be fully compatible with all JAX features such as `vmap`, `jit`, and `grad`.
@@ -36,7 +38,7 @@ x = jnp.ones((2, 64, 64))
 pred = fno(x)
 ```
 
-For a more in detail introduction refer to the examples in the documentation.
+For a more detailed introduction refer to the examples in the documentation.
 
 #### Benchmarks
 Coming soon (Please refer to [benchmarks/BENCHMARKS.md](benchmarks/BENCHMARKS.md) for a performance comparison of `neojax` and `neuraloperator`.)
@@ -48,10 +50,24 @@ Jax has become ubiquitous in Scientific Machine Learning (SciML) and Scientific 
 Although originally conceived as a direct port of the PyTorch `neuraloperator` library, `neojax` evolved into a ground-up, Jax-native re-implementation. This approach avoids the pitfalls of forcing PyTorch idioms into a functional framework and significantly reduces internal complexity. By building directly on `equinox`, `neojax` aligns perfectly with Jax's pure-functional design principles while maintaining a clean, accessible, and class-based API.
 
 #### Roadplan
-The first and currently only supported Neural Operator is a simple Fourier Neural Operator (FNO). In upcoming releases more models and components will be added.
+The first and currently only supported Neural Operator is a simple Fourier Neural Operator (FNO). In upcoming releases more models and components will be added in roughly the following order:
+
+1. Resampling of outputs to arbitrary domain sizes
+2. DeepONet
+3. Sobolev losses
+   1. $H^1$-loss
+   2. Higher order $W^{k,p}$ (thinking `jax.jvp`/`jax.vjp`, `jax.experimental.jet` and then [Stochastic Sobolev Training](https://proceedings.neurips.cc/paper_files/paper/2017/file/758a06618c69880a6cee5314ee42d52f-Paper.pdf) for high order)
+4. Domain class to wrap regular grid and irregular mesh domains
+5. Irregular mesh domains (probably meshio integration)
+6. Domain utilities
+   1. Dataset conversion to and from Domain instances
+   2. Pre-computation of derivatives on meshes/grids (needed for Sobolev losses)
+7. Graph Neural Operators (need mesh support first)
+
+and so on...
 
 #### Contributions
-If you'd like to contribute any features, models, or fix implementation errors, please do so. Any contributions are appreciated. Have a look at the `CONTRIBUTING.md` guide for details on how to do so.
+If you'd like to contribute any features, models, or fix implementation errors, please do so. Any contributions are appreciated. Have a look at the `CONTRIBUTING.md` guide for details on how to do so. I am also open to advice on restructuring and any other design choices that could be improved.
 
 #### Citation
 If you use `neojax` in your research, please cite it using the following BibTeX entry:

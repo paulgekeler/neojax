@@ -32,13 +32,12 @@ def assert_jittable(func: Callable[..., Any], *args: Any, **kwargs: Any) -> None
         )
     jax.tree_util.tree_map(
         lambda e, j1, j2: (
-            np.testing.assert_allclose(
-                jit_fun_out1, expected_output, rtol=1e-5, atol=1e-5
-            ),
-            np.testing.assert_allclose(
-                jit_fun_out2, expected_output, rtol=1e-5, atol=1e-5
-            ),
-        )
+            np.testing.assert_allclose(j1, e, rtol=1e-5, atol=1e-5),
+            np.testing.assert_allclose(j2, e, rtol=1e-5, atol=1e-5),
+        ),
+        expected_output,
+        jit_fun_out1,
+        jit_fun_out2,
     )
 
 
@@ -72,11 +71,10 @@ def assert_jittable_w_static(
         )
     jax.tree_util.tree_map(
         lambda e, j1, j2: (
-            np.testing.assert_allclose(
-                jit_fun_out1, expected_output, rtol=1e-5, atol=1e-5
-            ),
-            np.testing.assert_allclose(
-                jit_fun_out2, expected_output, rtol=1e-5, atol=1e-5
-            ),
-        )
+            np.testing.assert_allclose(j1, e, rtol=1e-5, atol=1e-5),
+            np.testing.assert_allclose(j2, e, rtol=1e-5, atol=1e-5),
+        ),
+        expected_output,
+        jit_fun_out1,
+        jit_fun_out2,
     )

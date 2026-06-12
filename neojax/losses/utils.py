@@ -1,11 +1,13 @@
-"""Implementations of loss utilities."""
+"""Loss utility functions."""
 
+import equinox as eqx
 import jax
+from jaxtyping import PyTree
 
 from neojax.losses.base_loss import BaseLoss
 
 
-def is_learnable_loss_weight(model):
+def is_learnable_loss_weight(model: PyTree) -> PyTree:
     """Creates a filter spec to correctly handle learnable weights.
 
     Produces a boolean PyTree that can be used directly with
@@ -30,7 +32,6 @@ def is_learnable_loss_weight(model):
         grads = eqx.filter_grad(loss_fn, filter=filter_spec)(model, ...)
         ```
     """
-    import equinox as eqx
 
     def _get_mask(node):
         if isinstance(node, BaseLoss):
@@ -47,3 +48,6 @@ def is_learnable_loss_weight(model):
         model,
         is_leaf=lambda x: isinstance(x, BaseLoss) or eqx.is_inexact_array(x),
     )
+
+
+__all__ = ["is_learnable_loss_weight"]

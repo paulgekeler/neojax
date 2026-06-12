@@ -37,8 +37,6 @@ dev = [
     "pytest>=8.0.0",
     "ruff",
     "mypy",
-    "torch>=2.0.0",
-    "neuraloperator",
     "jaxtyping",
     "beartype"
 ]

@@ -14,20 +14,37 @@ class BaseLoss(eqx.Module):
     its child class must be final,
     following the "Abstract or Final" pattern.
 
-    Attributes:
-        weight: Weight for weighted losses
-            e.g. in compositions.
-            Optionally learnable if specified
-            in child classes.
+    !!! info "Internal Attributes"
+        These fields store the internal state of the loss.
+
+        * **weight** (`Float[Array, ""]`): Weight for weighted losses e.g. in compositions. Optionally learnable if specified in child classes.
+        * **learnable_weight** (`bool`): Flag indicating whether `weight` is learnable.
     """
 
-    weight: Float[Array, "1"]
+    weight: Float[Array, ""]
+    learnable_weight: bool = eqx.field(static=True)
 
     @abc.abstractmethod
     def __call__(
         self,
         model: eqx.Module | None = None,
         *,
-        pred: Float[Array, "c ..."],
-        target: Float[Array, "c ..."],
-    ) -> Float[Array, "1"]: ...
+        target: Float[Array, "b c ..."],
+        x: Float[Array, "b in_c ..."] | None = None,
+        pred: Float[Array, "b c ..."] | None = None,
+        **kwargs,
+    ) -> Float[Array, ""]:
+        """Computes loss.
+
+        Args:
+            model: The model being trained. Default `None`.
+            target: Ground truth array shaped (batch, c, d1, ..., dN).
+            x: Model input array shaped (batch, in_c, d1, ..., dN).
+                Required for operator losses (e.g. Sobolev).
+            pred: Optional pre-computed model prediction array.
+            **kwargs: Additional arguments for specific losses.
+
+        Returns:
+            Scalar loss.
+        """
+        ...

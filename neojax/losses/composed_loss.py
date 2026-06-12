@@ -1,6 +1,6 @@
 """Implementation of loss composition class."""
 
-from collections.abc import Sequence
+from typing import final
 
 import equinox as eqx
 import jax.numpy as jnp
@@ -9,6 +9,7 @@ from jaxtyping import Array, Float
 from neojax.losses.base_loss import BaseLoss
 
 
+@final
 class ComposedLoss(BaseLoss):
     """Wraps loss compositions.
 
@@ -20,12 +21,13 @@ class ComposedLoss(BaseLoss):
         weight: Optional weighting for ComposedLoss.
             Default is 1.0, i.e., no weighting.
 
-    Attributes:
-        weight: Learnable loss weight. Filter during training
-            to prevent updates.
-        losses: Composed loss functions. The composition is the sum.
+    !!! info "Internal Attributes"
+        These fields store the internal state of the loss.
 
-    Note:
+        * **weight** (`Float[Array, ""]`): Learnable loss weight. Filter during training to prevent updates.
+        * **losses** (`tuple[BaseLoss, ...]`): Composed loss functions. The composition is the sum.
+
+    !!! info
         This loss may be called without a `model` by using keywords:
         `loss_fn(pred=y_hat, target=y)`. The `model` parameter is kept
         for clean compatibility with JAX transformations and
@@ -50,32 +52,41 @@ class ComposedLoss(BaseLoss):
 
     losses: tuple[BaseLoss, ...]
 
-    def __init__(self, *losses: Sequence[BaseLoss], weight: float = 1.0) -> None:
+    def __init__(
+        self,
+        *losses: BaseLoss,
+        weight: float = 1.0,
+        learnable_weight: bool = False,
+    ) -> None:
         self.losses = tuple(losses)
         self.weight = jnp.array(weight)
+        self.learnable_weight = learnable_weight
 
     def __call__(
         self,
         model: eqx.Module | None = None,
         *,
-        pred: Float[Array, "c ..."],
-        target: Float[Array, "c ..."],
-    ) -> Float[Array, "1"]:
+        target: Float[Array, "b c ..."],
+        x: Float[Array, "b in_c ..."] | None = None,
+        pred: Float[Array, "b c ..."] | None = None,
+        **kwargs,
+    ) -> Float[Array, ""]:
         """Computes the composed loss.
 
         Args:
-            model: The model being trained. Default `None` in
-                data-fitting tasks where only `pred` and
-                `target` are required. Kept for compatibility with
-                Jax and Equinox.
-            pred: Model prediction array shaped (c, d1, ..., dN).
-            target: Ground truth array shaped (c, d1, ..., dN).
+            model: The model being trained.
+            target: Ground truth array.
+            x: Model input array.
+            pred: Model prediction array.
 
         Returns:
             Scalar loss.
         """
         return self.weight * jnp.sum(
             jnp.array(
-                [loss(model=model, pred=pred, target=target) for loss in self.losses]
+                [
+                    loss(model=model, target=target, x=x, pred=pred, **kwargs)
+                    for loss in self.losses
+                ]
             )
         )

@@ -4,10 +4,10 @@ build-backend = "hatchling.build"
 
 [project]
 name = "neojax-operators"
-version = "0.0.7"
+version = "0.1.0"
 description = "Neural Operators in JAX"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [
   { name = "Paul Gekeler", email = "pgekeler@gmail.com" },
@@ -38,14 +38,19 @@ dev = [
     "ruff",
     "mypy",
     "torch>=2.0.0",
-    "neuraloperator"
+    "neuraloperator",
+    "jaxtyping",
+    "beartype"
 ]
+
 docs = [
   "mkdocs",
   "mkdocs-material",
   "mkdocstrings[python]",
-  "mkdocs-jupyter"
+  "mkdocs-jupyter",
+  "hippogriffe",
 ]
+
 ex = [
   "optax",
   "diffrax"
@@ -78,7 +83,7 @@ extend-select = ["W505"]
 convention = "google"
 
 [tool.ruff.lint.pycodestyle]
-max-doc-length = 72
+max-doc-length = 120
 
 [tool.ruff.format]
 quote-style = "double"
@@ -90,3 +95,9 @@ python_version = "3.10"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
+
+# Pytest
+[tool.pytest.ini_options]
+markers = [
+  "slow: marks tests as slow (deselect with '-m \"not slow\"')."
+]

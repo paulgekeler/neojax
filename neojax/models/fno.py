@@ -46,11 +46,16 @@ class FNO(eqx.Module):
         local_operator: Type of skip connection inside FNO blocks.
             Can be `"linear"`, `"soft-gating"`, `"identity"`, or None.
             Defaults to `"linear"`.
+        use_local_operator_bias: Whether to use a bias term
+            in the FNO blocks local operator. Default is `False`.
         channel_mlp_residual: Type of skip connection around channel MLPs.
             Can be `"linear"`, `"soft-gating"`, `"identity"`, or None.
             Defaults to `"soft-gating"`.
         channel_mlp_expansion: Expansion factor for hidden dimension
             in the channel MLPs. Defaults to 0.5.
+        channel_mlp_activations: Activation function or sequence
+            of activation functions used inside the channel MLPs.
+            Default is `jax.nn.gelu`.
         normalization: Type of normalization to use in FNO blocks.
             Can be `"layer"`, `"instance"`, `"group"` or None.
             Default is `"layer"`.
@@ -82,28 +87,57 @@ class FNO(eqx.Module):
             Sequence of floats indicates padding percentage per dim.
             Default is None, no padding.
 
-    Attributes:
-        lifting: The `PointwiseMLP` used to lift inputs
-            to the hidden `width`.
-        fno_blocks: The `FNOBlocks` sequence
-            containing spectral convolutions.
-        projection: The `PointwiseMLP` used to project
-            latent features to `out_channels`.
+    !!! info "Internal Attributes"
+        These fields store the internal layers state (and weights).
 
-    Notes:
-        Current implementation doesn't support Tucker factorization,
-        different FNO block precisions, resolution scaling, stabilizers,
+        * **positional_embedding** (`GridEmbeddingNd | None`): Positional embedding to apply to last channels of raw input before passing through FNO.
+        * **lifting** (`PointwiseMLP`): The `PointwiseMLP` used to lift inputs to the hidden `hidden_channels`.
+        * **fno_blocks** (`FNOBlocks`): The `FNOBlocks` sequence containing spectral convolutions.
+        * **projection** (`PointwiseMLP`): The `PointwiseMLP` used to project latent features to `out_channels`.
+        * **padding** (`DomainPadding | None`): Percentage of domain padding to use.
+
+    ??? cite
+
+        [Fourier Neural Operator for Parametric Partial Differential Equations]
+        (https://arxiv.org/abs/2010.08895)
+
+        ```bibtex
+        @inproceedings{
+            li2021fourier,
+            title={Fourier Neural Operator for
+            Parametric Partial Differential Equations},
+            author={Zongyi Li and Nikola Kovachki and
+            Kamyar Azizzadenesheli and Burigede liu and
+            Kaushik Bhattacharya and Andrew Stuart and Anima Anandkumar},
+            booktitle={International Conference on Learning Representations},
+            year={2021},
+            url={https://openreview.net/forum?id=c8P9NQVtmnO}
+        }
+        ```
+
+        [Neural Operator: Learning Maps Between Function Spaces With Applications to PDEs]
+        (https://www.jmlr.org/papers/volume24/21-1524/21-1524.pdf)
+
+        ```bibtex
+        @article{kovachki2023neural,
+            title={Neural operator: Learning maps between
+            function spaces with applications to pdes},
+            author={Kovachki, Nikola and Li, Zongyi and Liu,
+            Burigede and Azizzadenesheli, Kamyar and Bhattacharya,
+            Kaushik and Stuart, Andrew and Anandkumar, Anima},
+            journal={Journal of Machine Learning Research},
+            volume={24},
+            number={89},
+            pages={1--97},
+            year={2023}
+        }
+        ```
+
+    !!! info "Upcoming Features"
+        Current implementation doesn't support different FNO block precisions,
+        resolution scaling, stabilizers,
         separable spectral convolutions or enforcing hermitian symmetry.
         These will be added in future releases.
-
-    References:
-        1. <a name="ref1"></a> Li, Z. et al. "Fourier Neural Operator for Parametric
-            Partial Differential Equations" (2021).
-            ICLR 2021, https://arxiv.org/pdf/2010.08895.
-
-        2. <a name="ref2"></a> Kovachki, N. et al. "Neural Operator: Learning Maps
-            Between Function Spaces With Applications to PDEs"
-            JMLR 2023, https://www.jmlr.org/papers/volume24/21-1524/21-1524.pdf.
     """
 
     positional_embedding: GridEmbeddingNd | None
@@ -123,9 +157,11 @@ class FNO(eqx.Module):
         activation: Callable = jax.nn.gelu,
         use_channel_mlp: bool = True,
         local_operator: Literal["linear", "soft-gating", "identity"] | None = "linear",
+        use_local_operator_bias: bool = False,
         channel_mlp_residual: Literal["linear", "soft-gating", "identity"]
         | None = "soft-gating",
         channel_mlp_expansion: float | None = 0.5,
+        channel_mlp_activations: Callable | Sequence[Callable] = jax.nn.gelu,
         normalization: Literal["layer", "instance", "group"] | None = "layer",
         norm_groups: int = 1,
         use_fno_residual: bool = True,
@@ -180,8 +216,10 @@ class FNO(eqx.Module):
             norm_groups=norm_groups,
             use_fno_residual=use_fno_residual,
             local_operator=local_operator,
+            use_local_operator_bias=use_local_operator_bias,
             channel_mlp_residual=channel_mlp_residual,
             channel_mlp_expansion=channel_mlp_expansion,
+            channel_mlp_activations=channel_mlp_activations,
         )
 
     def __call__(self, x: Float[Array, "in_c ..."]) -> Float[Array, "out_c ..."]:

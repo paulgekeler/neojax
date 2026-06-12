@@ -6,7 +6,7 @@ from neojax.nn.spectral_conv import SpectralConvNd
 
 class TestSpectralConv:
     def test_dimensions(self):
-        key = jr.PRNGKey(0)
+        key = jr.key(0)
         in_c, out_c = 2, 4
 
         # 1D

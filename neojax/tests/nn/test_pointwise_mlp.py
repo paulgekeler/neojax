@@ -7,7 +7,7 @@ from neojax.nn.pointwise_mlp import PointwiseMLP
 
 class TestPointwiseMLP:
     def test_dimensions(self):
-        key = jr.PRNGKey(0)
+        key = jr.key(0)
         in_c, hidden, out_c = 16, 32, 8
         mlp = PointwiseMLP(
             key=key, layers=(in_c, hidden, out_c), activations=jax.nn.gelu
@@ -23,7 +23,7 @@ class TestPointwiseMLP:
         assert mlp(jnp.ones((in_c, 2, 2, 2, 2))).shape == (out_c, 2, 2, 2, 2)
 
     def test_activations(self):
-        key = jr.PRNGKey(0)
+        key = jr.key(0)
         in_c, hidden, out_c = 16, 32, 8
         # Single activation
         mlp_single = PointwiseMLP(

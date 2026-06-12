@@ -10,8 +10,8 @@ class TestLpLoss:
     @pytest.mark.parametrize("p", [1.0, 2.0, 3.0])
     def test_values(self, p):
         # Test with positive differences
-        pred = jnp.array([1.0, 2.0, 3.0])
-        target = jnp.array([2.0, 4.0, 6.0])
+        pred = jnp.array([[[1.0, 2.0, 3.0]]])
+        target = jnp.array([[[2.0, 4.0, 6.0]]])
         weight = 1.0
         loss_fn = LpLoss(p=p, weight=weight)
 
@@ -22,8 +22,8 @@ class TestLpLoss:
         assert jnp.allclose(actual_loss, expected_loss)
 
         # Test with mixed differences
-        pred = jnp.array([3.0, 1.0])
-        target = jnp.array([2.0, 2.0])
+        pred = jnp.array([[[3.0, 1.0]]])
+        target = jnp.array([[[2.0, 2.0]]])
         # target - pred = [-1.0, 1.0]
         actual_loss = loss_fn(pred=pred, target=target)
 
@@ -44,29 +44,31 @@ class TestLpLoss:
     def test_jit(self):
         p = 2.0
         loss_fn = LpLoss(p=p)
-        pred = jnp.array([1.0, 2.0])
-        target = jnp.array([2.0, 4.0])
+        pred = jnp.array([[[1.0, 2.0]]])
+        target = jnp.array([[[2.0, 4.0]]])
 
         assert_jittable(lambda p, t: loss_fn(pred=p, target=t), pred, target)
 
-    def test_vmap(self):
+    def test_batching(self):
         p = 2.0
         loss_fn = LpLoss(p=p)
-        preds = jnp.array([[1.0, 2.0], [3.0, 4.0]])
-        targets = jnp.array([[2.0, 4.0], [6.0, 8.0]])
+        preds = jnp.array([[[1.0, 2.0]], [[3.0, 4.0]]])
+        targets = jnp.array([[[2.0, 4.0]], [[6.0, 8.0]]])
 
-        vmapped_loss = jax.vmap(lambda p, t: loss_fn(pred=p, target=t), in_axes=(0, 0))
-        actual_losses = vmapped_loss(preds, targets)
+        batch_loss = loss_fn(pred=preds, target=targets)
 
-        assert actual_losses.shape == (2,)
-        assert jnp.allclose(actual_losses[0], loss_fn(pred=preds[0], target=targets[0]))
-        assert jnp.allclose(actual_losses[1], loss_fn(pred=preds[1], target=targets[1]))
+        assert batch_loss.shape == ()
+
+        loss_0 = loss_fn(pred=preds[0:1], target=targets[0:1])
+        loss_1 = loss_fn(pred=preds[1:2], target=targets[1:2])
+        expected = jnp.mean(jnp.array([loss_0, loss_1]))
+        assert jnp.allclose(batch_loss, expected)
 
     def test_grad(self):
         p = 2.0
         loss_fn = LpLoss(p=p)
-        pred = jnp.array([1.0, 2.0])
-        target = jnp.array([2.0, 4.0])
+        pred = jnp.array([[[1.0, 2.0]]])
+        target = jnp.array([[[2.0, 4.0]]])
 
         grad_fn = jax.grad(lambda p, t: loss_fn(pred=p, target=t))
         grads = grad_fn(pred, target)
@@ -77,8 +79,8 @@ class TestLpLoss:
 class TestRelativeLpLoss:
     @pytest.mark.parametrize("p", [1.0, 2.0, 3.0])
     def test_values(self, p):
-        pred = jnp.array([1.0, 2.0, 3.0])
-        target = jnp.array([2.0, 4.0, 6.0])
+        pred = jnp.array([[[1.0, 2.0, 3.0]]])
+        target = jnp.array([[[2.0, 4.0, 6.0]]])
         loss_fn = RelativeLpLoss(p=p)
 
         expected_diff = target - pred
@@ -93,8 +95,8 @@ class TestRelativeLpLoss:
         p = 2.0
         weight = 3.2
         loss_fn = RelativeLpLoss(p=p, weight=weight)
-        pred = jnp.array([1.0, 2.0])
-        target = jnp.array([2.0, 4.0])
+        pred = jnp.array([[[1.0, 2.0]]])
+        target = jnp.array([[[2.0, 4.0]]])
 
         base_loss_fn = RelativeLpLoss(p=p, weight=1.0)
         base_loss = base_loss_fn(pred=pred, target=target)
@@ -115,29 +117,31 @@ class TestRelativeLpLoss:
     def test_jit(self):
         p = 2.0
         loss_fn = RelativeLpLoss(p=p)
-        pred = jnp.array([1.0, 2.0])
-        target = jnp.array([2.0, 4.0])
+        pred = jnp.array([[[1.0, 2.0]]])
+        target = jnp.array([[[2.0, 4.0]]])
 
         assert_jittable(lambda p, t: loss_fn(pred=p, target=t), pred, target)
 
-    def test_vmap(self):
+    def test_batching(self):
         p = 2.0
         loss_fn = RelativeLpLoss(p=p)
-        preds = jnp.array([[1.0, 2.0], [3.0, 4.0]])
-        targets = jnp.array([[2.0, 4.0], [6.0, 8.0]])
+        preds = jnp.array([[[1.0, 2.0]], [[3.0, 4.0]]])
+        targets = jnp.array([[[2.0, 4.0]], [[6.0, 8.0]]])
 
-        vmapped_loss = jax.vmap(lambda p, t: loss_fn(pred=p, target=t), in_axes=(0, 0))
-        actual_losses = vmapped_loss(preds, targets)
+        batch_loss = loss_fn(pred=preds, target=targets)
 
-        assert actual_losses.shape == (2,)
-        assert jnp.allclose(actual_losses[0], loss_fn(pred=preds[0], target=targets[0]))
-        assert jnp.allclose(actual_losses[1], loss_fn(pred=preds[1], target=targets[1]))
+        assert batch_loss.shape == ()
+
+        loss_0 = loss_fn(pred=preds[0:1], target=targets[0:1])
+        loss_1 = loss_fn(pred=preds[1:2], target=targets[1:2])
+        expected = jnp.mean(jnp.array([loss_0, loss_1]))
+        assert jnp.allclose(batch_loss, expected)
 
     def test_grad(self):
         p = 2.0
         loss_fn = RelativeLpLoss(p=p)
-        pred = jnp.array([1.0, 2.0])
-        target = jnp.array([2.0, 4.0])
+        pred = jnp.array([[[1.0, 2.0]]])
+        target = jnp.array([[[2.0, 4.0]]])
 
         grad_fn = jax.grad(lambda p, t: loss_fn(pred=p, target=t))
         grads = grad_fn(pred, target)

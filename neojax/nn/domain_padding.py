@@ -29,11 +29,13 @@ class DomainPadding(eqx.Module):
             See https://docs.jax.dev/en/latest/_autosummary/jax.numpy.pad.html#jax.numpy.pad
             for all padding modes.
 
-    Attributes:
-        padding: The stored padding ratios for each dimension.
-        mode: The padding mode.
+    !!! info "Internal Attributes"
+        These fields store the internal layers state (and weights).
 
-    Note:
+        * **padding** (`float | Sequence[float]`): The stored padding ratios for each dimension.
+        * **mode** (`str`): The padding mode.
+
+    !!! info
         Currently doesn't support resolution scaling.
     """
 
@@ -65,7 +67,7 @@ class DomainPadding(eqx.Module):
             as expected by `jax.numpy.pad`.
 
         Raises:
-            ValueError if padding length doesn't match array ndims.
+            ValueError: If padding length doesn't match array ndims.
         """
         # loose channel dim
         dim_shape = in_shape[1:]

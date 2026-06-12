@@ -23,10 +23,12 @@ class PointwiseMLP(eqx.Module):
             after the last layer can be passed.
             Default is GeLu activation for all layers.
 
-    Attributes:
-        weights: Learnable weights.
-        biases: Learnable biases.
-        activations: Activation functions between layers.
+    !!! info "Internal Attributes"
+        These fields store the internal layers state (and weights).
+
+        * **weights** (`tuple[Float[Array, ...], ...]`): Learnable weights.
+        * **biases** (`tuple[Float[Array, ...], ...]`): Learnable biases.
+        * **activations** (`tuple[Callable, ...]`): Activation functions between layers.
 
     Example:
         ```python
@@ -34,7 +36,7 @@ class PointwiseMLP(eqx.Module):
         import jax.random as jr
         from neojax.nn import PointwiseMLP
 
-        key = jr.PRNGKey(0)
+        key = jr.key(0)
 
         mlp = PointwiseMLP(
             key, [64, 128, 128], [jax.nn.gelu, jax.nn.gelu]

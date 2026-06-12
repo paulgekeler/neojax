@@ -51,12 +51,15 @@ class FNOBlock(eqx.Module):
             Defaults to `False`. This is an exclusive flag.
             If activation is applied before, it isn't applied after.
 
-    Attributes:
-        spectral_conv: The `SpectralConvNd` layer
-            performing the operator integral.
-        local_operator: The initialized local operator layer or `None`.
-        activation: The activation function.
-        preactivation: Boolean flag indicating if preactivation is used.
+    !!! info "Internal Attributes"
+        These fields store the internal layers state (and weights).
+
+        * **spectral_conv** (`SpectralConvNd`): The `SpectralConvNd` layer performing the operator integral.
+        * **local_operator** (`Flattened1dConv | SoftGating | eqx.nn.Identity | None`): The initialized local operator layer or `None`.
+        * **normalization** (`InstanceNorm | eqx.nn.GroupNorm | None`): Type of normalization to use. Applied after the spectral_op + local_op sum, before activation.
+        * **activation** (`Callable`): The activation function.
+        * **preactivation** (`bool`): Boolean flag indicating if preactivation is used.
+        * **use_fno_residual** (`bool`): Whether to use a Resnet-style residual connection around each FNO block. Improves stability.
 
     Examples:
         ```python
@@ -64,7 +67,7 @@ class FNOBlock(eqx.Module):
         from neojax.nn.fno_blocks import FNOBlock
         import jax.numpy as jnp
 
-        key = jr.PRNGKey(0)
+        key = jr.key(0)
         # Initialize a 2D FNO Block
         fno_block = FNOBlock(
             key=key,
@@ -149,7 +152,7 @@ class FNOBlock(eqx.Module):
         self.preactivation = preactivation
         self.use_fno_residual = use_fno_residual
 
-    def __call__(self, x: Float[Array, "c ..."]) -> Float[Array, "c ..."]:
+    def __call__(self, x: Float[Array, "in_c ..."]) -> Float[Array, "out_c ..."]:
         """Forward pass of FNO block.
 
         Args:
@@ -199,7 +202,7 @@ class FNOBlocks(eqx.Module):
             activation functions used inside the FNO blocks.
             Default is `jax.nn.gelu`.
         use_channel_mlp: Whether to apply a pointwise channel MLP
-            wiwth 2 layers after each FNO block. Default is True.
+            with 2 layers after each FNO block. Default is True.
         preactivation: Whether to apply the activation function before
             the spectral convolution and skip connections.
             Default is False. This is an exclusive flag.
@@ -229,11 +232,12 @@ class FNOBlocks(eqx.Module):
             of activation functions used inside the channel MLPs.
             Default is `jax.nn.gelu`.
 
-    Attributes:
-        fno_layers: The initialized `FNOBlock` layers.
-        channel_mlps: The initialized `PointwiseMLP` layers,
-            or None if `use_channel_mlp` is `False`.
-        channel_mlp_residuals: The residual connection instances or None.
+    !!! info "Internal Attributes"
+        These fields store the internal layers state (and weights).
+
+        * **fno_layers** (`tuple[FNOBlock, ...]`): The initialized `FNOBlock` layers.
+        * **channel_mlps** (`tuple[PointwiseMLP, ...] | None`): The initialized `PointwiseMLP` layers, or None if `use_channel_mlp` is `False`.
+        * **channel_mlp_residuals** (`tuple | None`): The residual connection instances or None.
 
     Examples:
         ```python
@@ -241,7 +245,7 @@ class FNOBlocks(eqx.Module):
         import jax.numpy as jnp
         from neojax.nn.fno_blocks import FNOBlocks
 
-        key = jr.PRNGKey(0)
+        key = jr.key(0)
 
         # Initialize a sequence of 4 FNO Blocks
         fno_blocks = FNOBlocks(
@@ -257,16 +261,42 @@ class FNOBlocks(eqx.Module):
         out = fno_blocks(x)
         ```
 
-    References:
-        1. <a name="ref1"></a> Li, Z. et al. "Fourier Neural Operator for Parametric
-            Partial Differential Equations" (2021).
-            ICLR 2021, https://arxiv.org/pdf/2010.08895.
+    ??? cite
 
-        2. <a name="ref2"></a> Kovachki, N. et al. "Neural Operator: Learning Maps
-            Between Function Spaces With Applications to PDEs"
-            JMLR 2023, https://www.jmlr.org/papers/volume24/21-1524/21-1524.pdf.
+        [Fourier Neural Operator for
+        Parametric Partial Differential Equations](https://arxiv.org/abs/2010.08895)
 
-    Notes:
+        ```bibtex
+        @inproceedings{
+            li2021fourier,
+            title={Fourier Neural Operator for Parametric Partial Differential Equations},
+            author={Zongyi Li and Nikola Kovachki and
+            Kamyar Azizzadenesheli and Burigede liu and
+            Kaushik Bhattacharya and Andrew Stuart and Anima Anandkumar},
+            booktitle={International Conference on Learning Representations},
+            year={2021},
+            url={https://openreview.net/forum?id=c8P9NQVtmnO}
+        }
+        ```
+
+        [Neural Operator: Learning Maps Between
+        Function Spaces With Applications to PDEs](https://www.jmlr.org/papers/volume24/21-1524/21-1524.pdf)
+
+        ```bibtex
+        @article{kovachki2023neural,
+            title={Neural operator: Learning maps between function spaces with applications to pdes},
+            author={Kovachki, Nikola and Li, Zongyi and
+            Liu, Burigede and Azizzadenesheli,
+            Kamyar and Bhattacharya, Kaushik and Stuart, Andrew and Anandkumar, Anima},
+            journal={Journal of Machine Learning Research},
+            volume={24},
+            number={89},
+            pages={1--97},
+            year={2023}
+        }
+        ```
+
+    !!! info "Upcoming Features"
         The current implementation doesn't support dropout
         for the channel-wise MLP or normalization layers.
         Both will be added in future releases.
@@ -379,7 +409,7 @@ class FNOBlocks(eqx.Module):
             self.channel_mlps = None
             self.channel_mlp_residuals = None
 
-    def __call__(self, x: Float[Array, "c ..."]) -> Float[Array, "c ..."]:
+    def __call__(self, x: Float[Array, "in_c ..."]) -> Float[Array, "out_c ..."]:
         """Forward pass through n_layers of FNO Blocks.
 
         Args:

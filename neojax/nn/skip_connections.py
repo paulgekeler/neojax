@@ -19,9 +19,11 @@ class SoftGating(eqx.Module):
             If provided, must match `in_channels`.
         use_bias: Whether to include a learnable bias.
 
-    Attributes:
-        weight: Learnable channel-wise weights.
-        bias: Optional learnable channel-wise bias.
+    !!! info "Internal Attributes"
+        These fields store the internal layers state (and weights).
+
+        * **weight** (`Float[Array, ...]`): Learnable channel-wise weights.
+        * **bias** (`Float[Array, ...] | None`): Optional learnable channel-wise bias.
     """
 
     weight: Float[Array, "c ..."]
@@ -71,9 +73,11 @@ class Flattened1dConv(eqx.Module):
         kernel_size: Size of the convolving kernel.
         use_bias: Whether to add a learnable bias to the output.
 
-    Attributes:
-        conv: The underlying 1D convolution layer.
-        out_channels: Number of output channels.
+    !!! info "Internal Attributes"
+        These fields store the internal layers state (and weights).
+
+        * **conv** (`eqx.nn.Conv1d`): The underlying 1D convolution layer.
+        * **out_channels** (`int`): Number of output channels.
     """
 
     conv: eqx.nn.Conv1d
@@ -96,7 +100,7 @@ class Flattened1dConv(eqx.Module):
         )
         self.out_channels = out_channels
 
-    def __call__(self, x: Float[Array, "c ..."]) -> Float[Array, "c ..."]:
+    def __call__(self, x: Float[Array, "in_c ..."]) -> Float[Array, "out_c ..."]:
         """Applies 1d convolution to flattened dimensions.
 
         Args:

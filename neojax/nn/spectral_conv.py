@@ -19,19 +19,19 @@ class SpectralConvNd(eqx.Module):
     using the inverse FFT.
 
     Args:
-        in_channels: Number of input channels.
-        out_channels: Number of output channels.
-        modes: Number of Fourier modes
-            to retain across each spatial dim.
         key: PRNG key for weight initialization.
-
-    Attributes:
-        weights: Learnable complex weights
-            for the retained Fourier modes.
         in_channels: Number of input channels.
         out_channels: Number of output channels.
         modes: Number of Fourier modes
             to retain across each spatial dim.
+
+    !!! info "Internal Attributes"
+        These fields store the internal layers state (and weights).
+
+        * **weights** (`tuple[Complex[Array, ...], ...]`): Learnable complex weights for the retained Fourier modes.
+        * **in_channels** (`int`): Number of input channels.
+        * **out_channels** (`int`): Number of output channels.
+        * **modes** (`tuple[int, ...]`): Number of Fourier modes to retain across each spatial dim.
 
     Example:
         ```python
@@ -39,7 +39,7 @@ class SpectralConvNd(eqx.Module):
         import jax.random as jr
         from neojax.nn import SpectralConvNd
 
-        key = jr.PRNGKey(0)
+        key = jr.key(0)
 
         # 1D Spectral Convolution
         conv1d = SpectralConvNd(key, 3, 16, modes=16)
@@ -57,13 +57,10 @@ class SpectralConvNd(eqx.Module):
         out = conv2d(x)
         ```
 
-    Notes:
-        The current implementation doesn't support the following
-        features yet:
-            - Tucker factorization
-            - Complex inputs (always truncates final dim currently)
-            - Super resolution outputs, i.e., rescaling
-        This is planned for an upcoming release.
+    !!! info "Upcoming Features"
+        The current implementation doesn't support complex inputs
+        (always truncates final dim currently).
+        The addition is planned for an upcoming release.
     """
 
     weights: tuple[Complex[Array, "out_c in_c ..."], ...]

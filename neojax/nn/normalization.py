@@ -28,11 +28,13 @@ class InstanceNorm(eqx.Module):
         use_bias: Whether to include a learnable affine bias.
             Defaults to `True`.
 
-    Attributes:
-        shape: The input shape.
-        eps: The numerical stability value.
-        weight: The learnable weights or `None`.
-        bias: The learnable bias or `None`.
+    !!! info "Internal Attributes"
+        These fields store the internal layers state (and weights).
+
+        * **shape** (`tuple[int, ...]`): The input shape.
+        * **eps** (`float`): The numerical stability value.
+        * **weight** (`Float[Array, ...] | None`): The learnable weights or `None`.
+        * **bias** (`Float[Array, ...] | None`): The learnable bias or `None`.
     """
 
     shape: tuple[int, ...] = eqx.field(static=True)

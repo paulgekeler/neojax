@@ -15,9 +15,11 @@ class GridEmbeddingNd(eqx.Module):
             ((low, high), ...) or None.
             Default is None which is a ((0, 1), ...) bounded grid.
 
-    Attributes:
-        in_channels: Number of input channels.
-        grid_boundaries: Boundaries of regular grid.
+    !!! info "Internal Attributes"
+        These fields store the internal layers state (and weights).
+
+        * **in_channels** (`int`): Number of input channels.
+        * **grid_boundaries** (`tuple[tuple[int, int], ...]`): Boundaries of regular grid.
     """
 
     in_channels: int = eqx.field(static=True)
@@ -44,6 +46,10 @@ class GridEmbeddingNd(eqx.Module):
 
         Returns:
             N-dim bounded regular grid (c, d1, ..., dN).
+
+        Raises:
+            ValueError: If the number of resolutions
+                and grid boundaries don't match.
         """
         if len(resolutions) != len(self.grid_boundaries):
             raise ValueError(
@@ -57,7 +63,7 @@ class GridEmbeddingNd(eqx.Module):
         grid = jnp.stack(jnp.meshgrid(*grid_points_1d, indexing="ij"), axis=0)
         return jnp.repeat(grid, self.in_channels, 0)
 
-    def __call__(self, x: Float[Array, "c ..."]) -> Float[Array, "c ..."]:
+    def __call__(self, x: Float[Array, "in_c ..."]) -> Float[Array, "out_c ..."]:
         """Generates n-dim regular grid and appends it to input signal.
 
         Args:

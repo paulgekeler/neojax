@@ -1,53 +1,70 @@
-site_name: neojax
-site_description: Neural Operators in JAX
+site_name: Neojax
+site_description: The documentation for the Neojax python library.
+site_author: Paul Gekeler
 site_url: https://paulgekeler.github.io/neojax/
 
 repo_name: paulgekeler/neojax
 repo_url: https://github.com/paulgekeler/neojax
+
+strict: true
 
 theme:
   name: material
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: indigo
-      accent: indigo
+      primary: white
+      accent: amber
       toggle:
-        icon: material/brightness-7
+        icon: material/weather-night
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: indigo
-      accent: indigo
+      primary: black
+      accent: amber
       toggle:
-        icon: material/brightness-4
+        icon: material/weather-sunny
         name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github  
+
   features:
     - navigation.sections
-    - navigation.expand
     - content.code.copy
+    - toc.integrate
+    - header.autohide
 
 plugins:
   - search
+  - hippogriffe
   - mkdocstrings:
       handlers:
         python:
           paths: [.] # Allow mkdocstrings to find the neojax package
           options:
             docstring_style: google
-            show_source: true
+            force_inspection: true
+            heading_level: 4
+            inherited_members: true
+            members_order: source
+            show_bases: false
+            show_if_no_docstring: true
+            show_overloads: false
             show_root_heading: true
-            show_type_annotations: true
-  - mkdocs-jupyter:
-      include: ["docs/examples/*.ipynb"]
-      execute: false
-      include_source: true
+            show_signature_annotations: true
+            show_source: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            filters:
+              - "!^_[^_]"  # Hides protected attrs/methods (e.g., _local_var)
+              - "!^__" # Blocks all dunder attrs
 
 extra_javascript:
   - https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML
 
 markdown_extensions:
   - admonition
+  - attr_list
   - footnotes
   - pymdownx.details
   - pymdownx.superfences
@@ -55,6 +72,12 @@ markdown_extensions:
       generic: true
   - pymdownx.snippets:
       base_path: ["."]
+  - toc:
+      permalink: "¤"
+      toc_depth: 4
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
 nav:
   - Home: index.md
@@ -63,6 +86,9 @@ nav:
       - Models: api/models.md
       - Components: api/nn.md
       - Losses: api/losses.md
+      - Utilities: api/utils.md
+      - Normalizers: api/normalizers.md
+      - Scales: api/scales.md
   - Examples:
-    - Basic Usage: examples/01_basics.ipynb
-    - Training FNO: examples/02_fno_burgers.ipynb
+    - Basic Usage: examples/01_basics.md
+    - Training FNO: examples/02_fno_burgers.md

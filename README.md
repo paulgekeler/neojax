@@ -33,7 +33,7 @@ neojax exposes a similar API to neuraloperators and equinox and should therefore
 import jax.numpy as jnp
 from neojax.models import FNO
 
-fno = FNO(n_modes=(64, 64),
+fno = FNO(modes=(12, 12),
         hidden_channels=64,
         in_channels=2,
         out_channels=1

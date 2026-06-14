@@ -56,15 +56,18 @@ Jax has become ubiquitous in Scientific Machine Learning (SciML) and Scientific 
 Although originally conceived as a direct port of the PyTorch `neuraloperator` library, `neojax` evolved into a ground-up, Jax-native re-implementation. This approach avoids the pitfalls of forcing PyTorch idioms into a functional framework and significantly reduces internal complexity. By building directly on `equinox`, `neojax` aligns perfectly with Jax's pure-functional design principles while maintaining a clean, accessible, and class-based API.
 
 #### Roadplan
-The first and currently only supported Neural Operator is a simple Fourier Neural Operator (FNO). In upcoming releases more models and components will be added in roughly the following order:
+The first supported Neural Operators are a Fourier Neural Operator (FNO), Tucker-factorized FNO and a DeepONet. In upcoming releases more models and components will be added in roughly the following order:
 
 1. Resampling of outputs to arbitrary domain sizes
-2. Domain class to wrap regular grid and irregular mesh domains
-3. Irregular mesh domains (probably meshio integration)
-4. Domain utilities
+2. UNO, LocalNO, SFNO, RNO, and others
+3. Dataset utilities using `grain`
+4. Graph Neural Operators (need some type of point-cloud support first)
+5. Domain class to wrap regular grid and irregular mesh domains
+6. Irregular mesh domains (probably `meshio` integration for parsing formats)
+7. Domain utilities
    1. Dataset conversion to and from Domain instances
    2. Pre-computation of derivatives on meshes/grids (needed for Sobolev losses)
-5. Graph Neural Operators (need mesh support first)
+-> mid- to long-term transitioning to a domain/operator-centric approach architecture, allowing for arbitrary domains
 
 and so on...
 

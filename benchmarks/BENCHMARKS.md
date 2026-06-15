@@ -2,19 +2,20 @@
 
 This page provides a performance comparison between the `neojax` FNO implementation and the reference implementation from the `neuraloperator` library for a 1D Burgers equation and 2D Navier-Stokes equation.
 
-> [!IMPORTANT]
-> **Environment Setup Guidelines**:
-> JAX and PyTorch can be notoriously difficult to run together in the same Python environment due to conflicting CUDA, cuDNN, and package dependency requirements.
-> 
-> For a clean, error-free run, **we highly recommend setting up two separate virtual environments (`venvs`)**:
-> 
-> * **JAX Environment** (for running JAX benchmarks and data preparation (1D data only)):
->   * Requirements: `jax`, `jaxlib`, `equinox`, `optax`, `diffrax`, `neojax` (this library)
-> * **PyTorch Environment** (for running PyTorch benchmarks and the plotting/dashboard scripts):
->   * Requirements: `torch`, `torchvision`, `neuraloperator`, `matplotlib`, `seaborn`, `pandas`, `h5py`, `netCDF4` (if using 2D data)
-> 
-> **Running Commands**:
-> If you have `uv` installed, prefix commands with `uv run` to automatically manage the virtual environment. Otherwise, standard Python virtual environments can be activated (`source venv/bin/activate`) and run with standard `python` prefixes.
+!!! important
+
+    **Environment Setup Guidelines**:
+    JAX and PyTorch can be notoriously difficult to run together in the same Python environment due to conflicting CUDA, cuDNN, and package dependency requirements.
+    
+    For a clean, error-free run, **we highly recommend setting up two separate virtual environments (`venvs`)**:
+    
+    * **JAX Environment** (for running JAX benchmarks and data preparation (1D data only)):
+    * Requirements: `jax`, `jaxlib`, `equinox`, `optax`, `diffrax`, `neojax` (this library)
+    * **PyTorch Environment** (for running PyTorch benchmarks and the plotting/dashboard scripts):
+    * Requirements: `torch`, `torchvision`, `neuraloperator`, `matplotlib`, `seaborn`, `pandas`, `h5py`, `netCDF4` (if using 2D data)
+    
+    **Running Commands**:
+    If you have `uv` installed, prefix commands with `uv run` to automatically manage the virtual environment. Otherwise, standard Python virtual environments can be activated (`source venv/bin/activate`) and run with standard `python` prefixes.
 
 ## Benchmark Setup
 
@@ -29,8 +30,6 @@ This page provides a performance comparison between the `neojax` FNO implementat
     - **Compilation Time**: Time required for the first JIT call (`eqx.filter_jit` for JAX, `torch.compile` for PyTorch).
 
 ## Performance Comparison
-
-All benchmarks were evaluated on an **NVIDIA A100 48GB GPU**.
 
 ### 1D Burgers' Equation Benchmark Results
 
@@ -59,7 +58,7 @@ All benchmarks were evaluated on an **NVIDIA A100 48GB GPU**.
 
 ---
 
-### 2D Navier-Stokes (camlab-ethz/FNS-KF) Benchmark Results
+### 2D Navier-Stokes (camlab-ethz/FNS-K) Benchmark Results
 
 #### Inference Latency (Average per Batch of size 16)
 | Grid Resolution | JAX (JIT) | PyTorch (Eager) | PyTorch (Compiled) | JAX Speedup vs Eager | JAX Speedup vs Compiled |
@@ -115,8 +114,10 @@ To generate the 1D Burgers' equation training dataset (1,200 trajectories at res
 ```bash
 uv run python benchmarks/benchmark_prep.py --dataset_file benchmarks/data/dataset.npz
 ```
-> [!WARNING]
-> Generating the dataset involves solving stiff ordinary differential equations via JAX's `diffrax` solver. This process is highly vectorized and takes only **1 minute (roughly) on a GPU**, but can take **several minutes on a CPU** due to sequential ODE solving.
+
+!!! warning
+
+    Generating the dataset involves solving stiff ordinary differential equations via JAX's `diffrax` solver. This process is highly vectorized and takes only **1 minute (roughly) on a GPU**, but can take **several minutes on a CPU** due to sequential ODE solving.
 
 #### Benchmark Execution:
 To reproduce the 1D benchmark results:
@@ -179,7 +180,9 @@ done
 cd ..
 ```
 
-*(Note: The dataset is 55.1GB on disk!)*
+!!! warning
+    
+    The dataset is 55.1GB in size.
 
 Once downloaded, navigate to the directory and run the assembly script:
 

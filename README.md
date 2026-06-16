@@ -9,8 +9,9 @@ Currently, **neojax** is in its early stages. Only the following models and feat
   - Pointwise MLP (Channel-MLP) expansions for improved expressivity.
   - Various skip connections (Linear, Soft-Gating, Identity).
   - Normalization in FNO blocks.
+- **Tucker-factorized FNO**
 - **Deep Operator Network (DeepONet)**.
-- 1D, 2D, 3D, 4D, and 5D coordinate-based operator learning.
+- N-dimensional coordinate-based operator learning.
 - Grid-based positional embeddings (`GridEmbeddingNd`).
 - (Relative) $L^{p}$-loss.
 - General $W^{k,p}$ Sobolev loss.
@@ -61,15 +62,14 @@ The first supported Neural Operators are a Fourier Neural Operator (FNO), Tucker
 1. Resampling of outputs to arbitrary domain sizes
 2. UNO, LocalNO, SFNO, RNO, and others
 3. Dataset utilities using `grain`
-4. Graph Neural Operators (need some type of point-cloud support first)
-5. Domain class to wrap regular grid and irregular mesh domains
-6. Irregular mesh domains (probably `meshio` integration for parsing formats)
-7. Domain utilities
-   1. Dataset conversion to and from Domain instances
-   2. Pre-computation of derivatives on meshes/grids (needed for Sobolev losses)
--> mid- to long-term transitioning to a domain/operator-centric approach architecture, allowing for arbitrary domains
+4. Training utilities
+5. Graph Neural Operators (need some type of point-cloud support first)
+6. Domain class to wrap regular grid and irregular mesh domains
+7. Irregular mesh domains (probably `meshio` integration for parsing formats)
+8. Domain utilities
 
-and so on...
+→ mid- to long-term transitioning to a domain/operator-centric library architecture
+
 
 #### Contributions
 If you'd like to contribute any features, models, or fix implementation errors, please do so. Any contributions are appreciated. Have a look at the `CONTRIBUTING.md` guide for details on how to do so. I am also open to advice on restructuring and any other design choices that could be improved.

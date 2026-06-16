@@ -1,0 +1,2448 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="The documentation for the Neojax python library.">
+      
+      
+        <meta name="author" content="Paul Gekeler">
+      
+      
+        <link rel="canonical" href="https://paulgekeler.github.io/neojax/api/models/">
+      
+      
+        <link rel="prev" href="../../benchmarks/">
+      
+      
+        <link rel="next" href="../nn/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Models - Neojax</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../assets/_hippogriffe.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#models-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Neojax" class="md-header__button md-logo" aria-label="Neojax" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Neojax
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Models
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/paulgekeler/neojax" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    paulgekeler/neojax
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Neojax" class="md-nav__button md-logo" aria-label="Neojax" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Neojax
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/paulgekeler/neojax" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    paulgekeler/neojax
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Models
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#improved-parameter-naming-fno-tfno" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Improved Parameter Naming (FNO &amp; TFNO)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fourier-neural-operator-fno" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fourier Neural Operator (FNO)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Fourier Neural Operator (FNO)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#neojax.models.fno.FNO" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;FNO
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tucker-factorized-fno-tfno" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tucker-factorized FNO (TFNO)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tucker-factorized FNO (TFNO)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#neojax.models.tfno.TFNO" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;TFNO
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deep-operator-networks-deeponet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deep Operator Networks (DeepONet)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deep Operator Networks (DeepONet)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#general-deeponet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        General DeepONet
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="General DeepONet">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#neojax.models.deeponet.DeepONet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;DeepONet
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mlpdeeponet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MLPDeepONet
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="MLPDeepONet">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#neojax.models.deeponet.MLPDeepONet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;MLPDeepONet
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../nn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Components
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../losses/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Losses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utilities
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../normalizers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Normalizers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scales/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scales
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/01_basics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Basic Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/02_fno_burgers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training FNO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="models-reference">Models Reference<a class="headerlink" href="#models-reference" title="Permanent link">¤</a></h1>
+<p>This page contains the API reference for all pre-built models in <code>neojax</code>. Currently, the library supports the Fourier Neural Operator (FNO), Tucker-factorized FNO (TFNO), and Deep Operator Networks (DeepONet).</p>
+<h2 id="improved-parameter-naming-fno-tfno">Improved Parameter Naming (FNO &amp; TFNO)<a class="headerlink" href="#improved-parameter-naming-fno-tfno" title="Permanent link">¤</a></h2>
+<p>If you are migrating from the original PyTorch <code>neuraloperator</code> library, you will notice that <code>neojax</code> introduces different parameter naming convention for residual connections and skip connections. The original library relies on ambiguous parameter names (like <code>fno_skip</code>). </p>
+<p>To provide a clean, modern API, <code>neojax</code> enforces the following standard across all FNO and TFNO architectures:</p>
+<ul>
+<li>Any parameters containing the word <code>...local_operator...</code> refer to the local operator.</li>
+<li>Any parameters containing the word <code>...residual...</code> refer to Resnet-style residual connections around components.</li>
+</ul>
+<h2 id="fourier-neural-operator-fno">Fourier Neural Operator (FNO)<a class="headerlink" href="#fourier-neural-operator-fno" title="Permanent link">¤</a></h2>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="neojax.models.fno.FNO" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <code>neojax.models.fno.FNO</code>
+
+
+<a href="#neojax.models.fno.FNO" class="headerlink" title="Permanent link">¤</a></h4>
+
+
+    <div class="doc doc-contents first">
+
+
+
+        <p>General n-dimensional Fourier Neural Operator (FNO).</p>
+<p>The model consists of a lifting layer that maps
+the input to a higher-dimensional latent space,
+a sequence of FNO blocks (spectral convolutions + skip connections)
+optionally interleaved with pointwise MLPs,
+and a final projection layer.</p>
+<p>The implementation is in accordance with <a href="#neojax.models.fno.FNO--ref1">[1]</a> and <a href="#neojax.models.fno.FNO--ref2">[2]</a>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>key</code>
+            </td>
+            <td>
+                  <code><span title="builtins.PRNGKeyArray">PRNGKeyArray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>PRNG key for parameter initialization.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>in_channels</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of input channels
+(e.g., coordinates + initial conditions).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>out_channels</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of output channels (e.g., solution field).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>hidden_channels</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Hidden channel dimension (latent width)
+used throughout the FNO blocks. This significantly affects
+the number of parameters. Good starting point is 64 and
+increase if needed. Update <code>lift_channel_ratio</code> and
+<code>proj_channel_ratio</code> accordingly.
+They scale proportional to hidden_channels.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>n_layers</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of consecutive FNO blocks.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>modes</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span> | <span title="collections.abc.Sequence">Sequence</span>[<span title="int">int</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of Fourier modes to retain
+across each spatial dimension.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>activation</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Callable">Callable</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Activation function used within the layers.
+Defaults to <code>jax.nn.gelu</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>gelu</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>use_channel_mlp</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Whether to apply a pointwise channel MLP
+after each FNO block. Defaults to <code>True</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>local_operator</code>
+            </td>
+            <td>
+                  <code><span title="typing.Literal">Literal</span>[&#39;linear&#39;, &#39;soft-gating&#39;, &#39;identity&#39;] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Type of skip connection inside FNO blocks.
+Can be <code>"linear"</code>, <code>"soft-gating"</code>, <code>"identity"</code>, or None.
+Defaults to <code>"linear"</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;linear&#39;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>use_local_operator_bias</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Whether to use a bias term
+in the FNO blocks local operator. Default is <code>False</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>channel_mlp_residual</code>
+            </td>
+            <td>
+                  <code><span title="typing.Literal">Literal</span>[&#39;linear&#39;, &#39;soft-gating&#39;, &#39;identity&#39;] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Type of skip connection around channel MLPs.
+Can be <code>"linear"</code>, <code>"soft-gating"</code>, <code>"identity"</code>, or None.
+Defaults to <code>"soft-gating"</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;soft-gating&#39;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>channel_mlp_expansion</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Expansion factor for hidden dimension
+in the channel MLPs. Defaults to 0.5.</p>
+              </div>
+            </td>
+            <td>
+                  <code>0.5</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>channel_mlp_activations</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Callable">Callable</span> | <span title="collections.abc.Sequence">Sequence</span>[<span title="collections.abc.Callable">Callable</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Activation function or sequence
+of activation functions used inside the channel MLPs.
+Default is <code>jax.nn.gelu</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>gelu</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>normalization</code>
+            </td>
+            <td>
+                  <code><span title="typing.Literal">Literal</span>[&#39;layer&#39;, &#39;instance&#39;, &#39;group&#39;] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Type of normalization to use in FNO blocks.
+Can be <code>"layer"</code>, <code>"instance"</code>, <code>"group"</code> or None.
+Default is <code>"layer"</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;layer&#39;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>norm_groups</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of groups for group normalization.
+Default is 1.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>use_fno_residual</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Whether to use residual connection
+around FNO blocks. Default is True.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>preactivation</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Whether to use pre-activation style blocks.
+Default is False.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>n_lift_layers</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of layers in the lifting MLP.
+Defaults to 2.</p>
+              </div>
+            </td>
+            <td>
+                  <code>2</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>n_proj_layers</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of layers in the projection MLP.
+Defaults to 2.</p>
+              </div>
+            </td>
+            <td>
+                  <code>2</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>lift_channel_ratio</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Ratio of lifting channels
+to hidden_channels.
+The number of lifting channels in the lifting block
+of the FNO is lifting_channel_ratio * hidden_channels
+(e.g. default 2 * hidden_channels).</p>
+              </div>
+            </td>
+            <td>
+                  <code>2.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>proj_channel_ratio</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Ratio of projection channels
+to hidden_channels.
+The number of projection channels in the projection block
+of the FNO is projection_channel_ratio * hidden_channels
+(e.g. default 2 * hidden_channels).</p>
+              </div>
+            </td>
+            <td>
+                  <code>2.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>positional_embedding</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="            neojax.nn.positional_embedding.GridEmbeddingNd" href="../nn/#neojax.nn.positional_embedding.GridEmbeddingNd">GridEmbeddingNd</a> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Positional embedding to apply
+to last channels of raw input before passing through FNO.
+Defaults to regular GridEmbeddingNd on a ((0, 1), ...) grid.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>domain_padding</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span> | <span title="collections.abc.Sequence">Sequence</span>[<span title="float">float</span>] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Percentage of padding to use.
+If single float, this padding is used for all dims.
+Sequence of floats indicates padding percentage per dim.
+Default is None, no padding.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+        <div class="admonition info">
+<p class="admonition-title">Internal Attributes</p>
+<p>These fields store the internal layers state (and weights).</p>
+<ul>
+<li><strong>positional_embedding</strong> (<code>GridEmbeddingNd | None</code>): Positional embedding to apply to last channels of raw input before passing through FNO.</li>
+<li><strong>lifting</strong> (<code>PointwiseMLP</code>): The <code>PointwiseMLP</code> used to lift inputs to the hidden <code>hidden_channels</code>.</li>
+<li><strong>fno_blocks</strong> (<code>FNOBlocks</code>): The <code>FNOBlocks</code> sequence containing spectral convolutions.</li>
+<li><strong>projection</strong> (<code>PointwiseMLP</code>): The <code>PointwiseMLP</code> used to project latent features to <code>out_channels</code>.</li>
+<li><strong>padding</strong> (<code>DomainPadding | None</code>): Percentage of domain padding to use.</li>
+</ul>
+</div>
+<details class="cite">
+<summary>Cite</summary>
+<p>[Fourier Neural Operator for Parametric Partial Differential Equations]
+(https://arxiv.org/abs/2010.08895)</p>
+<div class="highlight"><pre><span></span><code><span class="nc">@inproceedings</span><span class="p">{</span>
+<span class="w">    </span><span class="nl">li2021fourier</span><span class="p">,</span>
+<span class="w">    </span><span class="na">title</span><span class="p">=</span><span class="s">{Fourier Neural Operator for</span>
+<span class="s">    Parametric Partial Differential Equations}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">author</span><span class="p">=</span><span class="s">{Zongyi Li and Nikola Kovachki and</span>
+<span class="s">    Kamyar Azizzadenesheli and Burigede liu and</span>
+<span class="s">    Kaushik Bhattacharya and Andrew Stuart and Anima Anandkumar}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">booktitle</span><span class="p">=</span><span class="s">{International Conference on Learning Representations}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">year</span><span class="p">=</span><span class="s">{2021}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">url</span><span class="p">=</span><span class="s">{https://openreview.net/forum?id=c8P9NQVtmnO}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>[Neural Operator: Learning Maps Between Function Spaces With Applications to PDEs]
+(https://www.jmlr.org/papers/volume24/21-1524/21-1524.pdf)</p>
+<div class="highlight"><pre><span></span><code><span class="nc">@article</span><span class="p">{</span><span class="nl">kovachki2023neural</span><span class="p">,</span>
+<span class="w">    </span><span class="na">title</span><span class="p">=</span><span class="s">{Neural operator: Learning maps between</span>
+<span class="s">    function spaces with applications to pdes}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">author</span><span class="p">=</span><span class="s">{Kovachki, Nikola and Li, Zongyi and Liu,</span>
+<span class="s">    Burigede and Azizzadenesheli, Kamyar and Bhattacharya,</span>
+<span class="s">    Kaushik and Stuart, Andrew and Anandkumar, Anima}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">journal</span><span class="p">=</span><span class="s">{Journal of Machine Learning Research}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">volume</span><span class="p">=</span><span class="s">{24}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">number</span><span class="p">=</span><span class="s">{89}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">pages</span><span class="p">=</span><span class="s">{1--97}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">year</span><span class="p">=</span><span class="s">{2023}</span>
+<span class="p">}</span>
+</code></pre></div>
+</details>
+<div class="admonition info">
+<p class="admonition-title">Upcoming Features</p>
+<p>Current implementation doesn't support different FNO block precisions,
+resolution scaling, stabilizers,
+separable spectral convolutions or enforcing hermitian symmetry.
+These will be added in future releases.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><h2 id="tucker-factorized-fno-tfno">Tucker-factorized FNO (TFNO)<a class="headerlink" href="#tucker-factorized-fno-tfno" title="Permanent link">¤</a></h2>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="neojax.models.tfno.TFNO" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <code>neojax.models.tfno.TFNO</code>
+
+
+<a href="#neojax.models.tfno.TFNO" class="headerlink" title="Permanent link">¤</a></h4>
+
+
+    <div class="doc doc-contents first">
+
+
+
+        <p>General n-dimensional Tucker factorized FNO.</p>
+<p>The model consists of a lifting layer that maps
+the input to a higher-dimensional latent space,
+a sequence of TFNO blocks (spectral convolutions + skip connections)
+optionally interleaved with pointwise MLPs,
+and a final projection layer.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>key</code>
+            </td>
+            <td>
+                  <code><span title="builtins.PRNGKeyArray">PRNGKeyArray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>PRNG key for parameter initialization.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>in_channels</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of input channels
+(e.g., coordinates + initial conditions).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>out_channels</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of output channels (e.g., solution field).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>hidden_channels</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Hidden channel dimension (latent width)
+used throughout the TFNO blocks. This significantly affects
+the number of parameters. Good starting point is 64 and
+increase if needed. Update <code>lift_channel_ratio</code> and
+<code>proj_channel_ratio</code> accordingly.
+They scale proportional to hidden_channels.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>n_layers</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of consecutive TFNO blocks.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>modes</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span> | <span title="collections.abc.Sequence">Sequence</span>[<span title="int">int</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of Fourier modes to retain
+across each spatial dimension.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>ranks</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span> | <span title="collections.abc.Sequence">Sequence</span>[<span title="int">int</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of ranks to contract the spectral tensors to.
+If <code>ranks</code> is an Integer, the same number is used
+for all ranks. If not,
+should be num_spatial_dims + num_channel_dims ranks,
+e.g. in 2D 4 ranks (out_channel, in_channel, 2 spatial ranks).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>share_factor_matrices</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Whether to share the factor matrices
+across the weight tensors. This further decreases the number
+of weight tensors. Only the core tensor is not shared then.
+Default is True.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>activation</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Callable">Callable</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Activation function used within the layers.
+Defaults to <code>jax.nn.gelu</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>gelu</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>use_channel_mlp</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Whether to apply a pointwise channel MLP
+after each TFNO block. Defaults to <code>True</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>local_operator</code>
+            </td>
+            <td>
+                  <code><span title="typing.Literal">Literal</span>[&#39;linear&#39;, &#39;soft-gating&#39;, &#39;identity&#39;] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Type of skip connection inside TFNO blocks.
+Can be <code>"linear"</code>, <code>"soft-gating"</code>, <code>"identity"</code>, or None.
+Defaults to <code>"linear"</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;linear&#39;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>use_local_operator_bias</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Whether to use a bias term
+in the FNO blocks local operator. Default is <code>False</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>channel_mlp_residual</code>
+            </td>
+            <td>
+                  <code><span title="typing.Literal">Literal</span>[&#39;linear&#39;, &#39;soft-gating&#39;, &#39;identity&#39;] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Type of skip connection around channel MLPs.
+Can be <code>"linear"</code>, <code>"soft-gating"</code>, <code>"identity"</code>, or None.
+Defaults to <code>"soft-gating"</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;soft-gating&#39;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>channel_mlp_expansion</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Expansion factor for hidden dimension
+in the channel MLPs. Defaults to 0.5.</p>
+              </div>
+            </td>
+            <td>
+                  <code>0.5</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>channel_mlp_activations</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Callable">Callable</span> | <span title="collections.abc.Sequence">Sequence</span>[<span title="collections.abc.Callable">Callable</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Activation function or sequence
+of activation functions used inside the channel MLPs.
+Default is <code>jax.nn.gelu</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>gelu</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>normalization</code>
+            </td>
+            <td>
+                  <code><span title="typing.Literal">Literal</span>[&#39;layer&#39;, &#39;instance&#39;, &#39;group&#39;] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Type of normalization to use in TFNO blocks.
+Can be <code>"layer"</code>, <code>"instance"</code>, <code>"group"</code> or None.
+Default is <code>"layer"</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;layer&#39;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>norm_groups</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of groups for group normalization.
+Default is 1.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>use_fno_residual</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Whether to use residual connection
+around TFNO blocks. Default is True.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>preactivation</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Whether to use pre-activation style blocks.
+Default is False.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>n_lift_layers</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of layers in the lifting MLP.
+Defaults to 2.</p>
+              </div>
+            </td>
+            <td>
+                  <code>2</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>n_proj_layers</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of layers in the projection MLP.
+Defaults to 2.</p>
+              </div>
+            </td>
+            <td>
+                  <code>2</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>lift_channel_ratio</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Ratio of lifting channels
+to hidden_channels.
+The number of lifting channels in the lifting block
+of the TFNO is lifting_channel_ratio * hidden_channels
+(e.g. default 2 * hidden_channels).</p>
+              </div>
+            </td>
+            <td>
+                  <code>2.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>proj_channel_ratio</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Ratio of projection channels
+to hidden_channels.
+The number of projection channels in the projection block
+of the TFNO is projection_channel_ratio * hidden_channels
+(e.g. default 2 * hidden_channels).</p>
+              </div>
+            </td>
+            <td>
+                  <code>2.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>positional_embedding</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="            neojax.nn.positional_embedding.GridEmbeddingNd" href="../nn/#neojax.nn.positional_embedding.GridEmbeddingNd">GridEmbeddingNd</a> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Positional embedding to apply
+to last channels of raw input before passing through TFNO.
+Defaults to regular GridEmbeddingNd on a ((0, 1), ...) grid.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>domain_padding</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span> | <span title="collections.abc.Sequence">Sequence</span>[<span title="float">float</span>] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Percentage of padding to use.
+If single float, this padding is used for all dims.
+Sequence of floats indicates padding percentage per dim.
+Default is None, no padding.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+        <div class="admonition info">
+<p class="admonition-title">Internal Attributes</p>
+<p>These fields store the internal layers state (and weights).</p>
+<ul>
+<li><strong>positional_embedding</strong> (<code>GridEmbeddingNd | None</code>): Positional embedding to apply to last channels of raw input before passing through TFNO.</li>
+<li><strong>lifting</strong> (<code>PointwiseMLP</code>): The <code>PointwiseMLP</code> used to lift inputs to the hidden <code>hidden_channels</code>.</li>
+<li><strong>tfno_blocks</strong> (<code>TFNOBlocks</code>): The <code>TFNOBlocks</code> sequence containing spectral convolutions.</li>
+<li><strong>projection</strong> (<code>PointwiseMLP</code>): The <code>PointwiseMLP</code> used to project latent features to <code>out_channels</code>.</li>
+<li><strong>padding</strong> (<code>DomainPadding | None</code>): Percentage of domain padding to use.</li>
+</ul>
+</div>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>The TFNO has the same architecture as the FNO except for the
+factorized spectral weights.</p>
+</div>
+<div class="admonition info">
+<p class="admonition-title">Upcoming Features</p>
+<p>Current implementation doesn't support different TFNO block precisions,
+resolution scaling, stabilizers,
+separable spectral convolutions or enforcing hermitian symmetry.
+These will be added in future releases.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><h2 id="deep-operator-networks-deeponet">Deep Operator Networks (DeepONet)<a class="headerlink" href="#deep-operator-networks-deeponet" title="Permanent link">¤</a></h2>
+<p><strong>neojax</strong> implements a general modular <code>DeepONet</code> (arbitrary branch and trunk networks) and a preconfigured <code>MLPDeepONet</code> (MLP branch and MLP trunk network).</p>
+<p>The DeepONets are implemented to evaluate the underlying operator with input function <span class="arithmatex">\(u \in \mathbb{R}^m\)</span> at the output <span class="arithmatex">\(y \in \mathbb{R}^d\)</span>. In case of higher dimensional input spaces, e.g. <span class="arithmatex">\(\mathbb{R}^2, \mathbb{R}^3, \dots\)</span> the sensor locations <code>m</code> may not be 1D arrays, as long as the branch network handles this correctly.</p>
+<p>In practice, it is more useful to evaluate the output across a grid of points <code>y</code>. See below for details.</p>
+<p><strong>How to evaluate the input function across a grid of points</strong>: To evaluate a single input
+function <span class="arithmatex">\(u\)</span> across a grid (or batch) of points <span class="arithmatex">\(y\)</span>, use <code>jax.vmap</code>. Here is how you would
+evaluate on a <span class="arithmatex">\(256 \times 256\)</span> grid:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">neojax.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DeepONet</span>
+
+<span class="c1"># Initialize model</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">DeepONet</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="c1"># Define inputs</span>
+<span class="n">u</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">100</span><span class="p">,))</span>  <span class="c1"># One function input</span>
+<span class="n">y_grid</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">256</span><span class="p">),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">256</span><span class="p">))</span>
+<span class="n">y_points</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">y_grid</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># Shape: (256, 256, 2)</span>
+
+<span class="c1"># Vectorize the model over the coordinate axes</span>
+<span class="c1"># in_axes: (None, 0) means &#39;u&#39; is fixed, &#39;y&#39; is mapped over its 0-th dimension</span>
+<span class="n">vmapped_inner</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">vmap</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">in_axes</span><span class="o">=</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>          <span class="c1"># Maps (256, 2) -&gt; (256, 1)</span>
+<span class="n">vmapped_outer</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">vmap</span><span class="p">(</span><span class="n">vmapped_inner</span><span class="p">,</span> <span class="n">in_axes</span><span class="o">=</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>  <span class="c1"># Maps (256, 256, 2) -&gt; (256, 256, 1)</span>
+
+<span class="c1"># Generate predictions</span>
+<span class="n">predictions</span> <span class="o">=</span> <span class="n">vmapped_outer</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">y_points</span><span class="p">)</span>  <span class="c1"># Shape: (256, 256, 1)</span>
+</code></pre></div>
+<p><strong>Pro Tip</strong>: If you want to evaluate a batch of functions across a batch of points,
+just add a third <code>jax.vmap</code> call.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Batch of 32 functions, each evaluated at 256 points</span>
+<span class="n">u_batch</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">32</span><span class="p">,</span> <span class="mi">100</span><span class="p">))</span>
+<span class="n">y_batch</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">32</span><span class="p">,</span> <span class="mi">256</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+
+<span class="c1"># vmap over functions (axis 0) and points (axis 0)</span>
+<span class="n">batch_model</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">vmap</span><span class="p">(</span><span class="n">vmapped_inner</span><span class="p">,</span> <span class="n">in_axes</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+<span class="n">batch_preds</span> <span class="o">=</span> <span class="n">batch_model</span><span class="p">(</span><span class="n">u_batch</span><span class="p">,</span> <span class="n">y_batch</span><span class="p">)</span> <span class="c1"># Shape: (32, 256, 1)</span>
+</code></pre></div>
+<h3 id="general-deeponet">General DeepONet<a class="headerlink" href="#general-deeponet" title="Permanent link">¤</a></h3>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="neojax.models.deeponet.DeepONet" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <code>neojax.models.deeponet.DeepONet</code>
+
+
+<a href="#neojax.models.deeponet.DeepONet" class="headerlink" title="Permanent link">¤</a></h4>
+
+
+    <div class="doc doc-contents first">
+
+
+
+        <p>General DeepONet (Deep Operator Network).</p>
+<p>Learns a PDE operator through two separate
+branch and trunk networks.
+The branch net encodes the discrete function space
+and the trunk net encodes the domain of output functions.
+Implemented as in the original publication <a href="#neojax.models.deeponet.DeepONet--ref1">[1]</a>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>branch_net</code>
+            </td>
+            <td>
+                  <code><span title="Module">Module</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The network representing the branch (encodes u).
+Should map shape (m_sensors,) to (p,). May also take
+different input shapes, as long as it outputs (p,),
+e.g. CNN branch net.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>trunk_net</code>
+            </td>
+            <td>
+                  <code><span title="Module">Module</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The network representing the trunk (encodes y).
+Should map shape (d_dim,) to (p,).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>out_activation</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Callable">Callable</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional output activation after dot product.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>bias</code>
+            </td>
+            <td>
+                  <code><span title="builtins.Float">Float</span>[<span title="builtins.Array">Array</span>, 1] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional learnable bias after dot product.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+        <div class="admonition info">
+<p class="admonition-title">Internal Attributes</p>
+<p>These fields store the internal layers state (and weights).</p>
+<ul>
+<li><strong>branch_net</strong> (<code>eqx.Module</code>): Arbitrary NN that maps (m_sensors,) -&gt; (p,).</li>
+<li><strong>trunk_net</strong> (<code>eqx.Module</code>): Arbitrary NN that maps (d_dim,) -&gt; (p,).</li>
+<li><strong>out_activation</strong> (<code>Callable | None</code>): Optional output activation after dot product.</li>
+<li><strong>bias</strong> (<code>Float[Array, "1"] | None</code>): Optional learnable bias after dot product.</li>
+</ul>
+</div>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>This is the <strong>Unstacked (Standard)</strong> implementation as described in
+Lu et al. (2021). It uses a single branch network and a single trunk
+network for maximum computational efficiency.</p>
+<p>For vector-valued operators (the "Stacked" variant),
+it is recommended to either:</p>
+<ol>
+<li>Increase the output dimension of the branch/trunk networks.</li>
+<li>Use <code>jax.vmap</code> to wrap this class for multiple independent operators.</li>
+</ol>
+</div>
+<details class="cite">
+<summary>Cite</summary>
+<p>[Learning nonlinear operators via DeepONet
+based on the universal approximation theorem of operators]
+(https://www.nature.com/articles/s42256-021-00302-5)</p>
+<div class="highlight"><pre><span></span><code><span class="nc">@article</span><span class="p">{</span><span class="nl">lu2021learning</span><span class="p">,</span>
+<span class="w">    </span><span class="na">title</span><span class="p">=</span><span class="s">{Learning nonlinear operators via DeepONet</span>
+<span class="s">    based on the universal approximation theorem of operators}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">author</span><span class="p">=</span><span class="s">{Lu, Lu and Jin, Pengzhan and Pang,</span>
+<span class="s">    Guofei and Zhang, Zhongqiang and Karniadakis, George Em}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">journal</span><span class="p">=</span><span class="s">{Nature machine intelligence}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">volume</span><span class="p">=</span><span class="s">{3}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">number</span><span class="p">=</span><span class="s">{3}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">pages</span><span class="p">=</span><span class="s">{218--229}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">year</span><span class="p">=</span><span class="s">{2021}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">publisher</span><span class="p">=</span><span class="s">{Nature Publishing Group}</span>
+<span class="p">}</span>
+</code></pre></div>
+</details>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><h3 id="mlpdeeponet">MLPDeepONet<a class="headerlink" href="#mlpdeeponet" title="Permanent link">¤</a></h3>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="neojax.models.deeponet.MLPDeepONet" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>    <code>neojax.models.deeponet.MLPDeepONet</code>
+  <a href="https://github.com/paulgekeler/neojax/blob/ebafa64e0e19a26889e39ef243d9cb34500a1601/neojax/models/deeponet.py#L121-L177"><code class='hippogriffe-repo-url'></code></a>
+
+
+<a href="#neojax.models.deeponet.MLPDeepONet" class="headerlink" title="Permanent link">¤</a></h4>
+
+
+    <div class="doc doc-contents first">
+
+
+
+        <p>DeepONet with MLP branch and MLP trunk network.</p>
+<p>The branch MLP maps (m_sensors,) funtion values
+to the (p,) latent vector and the trunk MLP maps
+the (d,) evaluation vector to the (p,) latent vector.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>key</code>
+            </td>
+            <td>
+                  <code>PRNGKeyArray</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Jax random key.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>m_sensors</code>
+            </td>
+            <td>
+                  <code>int</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of function values u.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>d_dim</code>
+            </td>
+            <td>
+                  <code>int</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Output space dimension.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>p_latent</code>
+            </td>
+            <td>
+                  <code>int</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Latent vector dimension.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>branch_hidden_dims</code>
+            </td>
+            <td>
+                  <code>Sequence[int]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Hidden dimensions of the branch MLP.
+First layer is (m_sensors, branch_hidden_dims[0])
+and last layer is (branch_hidden_dims[-1], p_latent).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>trunk_hidden_dims</code>
+            </td>
+            <td>
+                  <code>Sequence[int]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Hidden dimensions of the trunk MLP.
+First layers is (d_dim, trunk_hidden_dims[0])
+and last layer is (trunk_hidden_dims[-1], p_latent).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>branch_activations</code>
+            </td>
+            <td>
+                  <code>Callable | Sequence[Callable]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Activation functions of branch MLP.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&lt;function gelu&gt;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>trunk_activations</code>
+            </td>
+            <td>
+                  <code>Callable | Sequence[Callable]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Activation functions of trunk MLP.
+Single callable means, all activations use this function.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&lt;function gelu&gt;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>out_activation</code>
+            </td>
+            <td>
+                  <code>Callable | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional output activation after dot product.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>bias</code>
+            </td>
+            <td>
+                  <code>Float[Array, &#39;1&#39;] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional learnable bias after dot product.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+        <div class="admonition info">
+<p class="admonition-title">Internal Attributes</p>
+<p>These fields store the internal layers state (and weights).</p>
+<ul>
+<li><strong>branch_net</strong> (<code>PointwiseMLP</code>): MLP that maps (m_sensors,) -&gt; (p,).</li>
+<li><strong>trunk_net</strong> (<code>PointwiseMLP</code>): MLP that maps (d_dim,) -&gt; (p,).</li>
+<li><strong>out_activation</strong> (<code>Callable | None</code>): Optional output activation after dot product.</li>
+<li><strong>bias</strong> (<code>Float[Array, "1"] | None</code>): Optional learnable bias after dot product.</li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "content.code.copy", "toc.integrate", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+      
+    
+  </body>
+</html>

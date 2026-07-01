@@ -1,8 +1,9 @@
 """Implementation of various skip connections."""
 
 import equinox as eqx
+import jax
 import jax.numpy as jnp
-from jaxtyping import Array, Float, PRNGKeyArray
+from jaxtyping import Array, Float, Inexact, PRNGKeyArray
 
 
 class SoftGating(eqx.Module):
@@ -19,7 +20,7 @@ class SoftGating(eqx.Module):
             If provided, must match `in_channels`.
         use_bias: Whether to include a learnable bias.
 
-    !!! info "Internal Attributes"
+    ??? info "Internal Attributes"
         These fields store the internal layers state (and weights).
 
         * **weight** (`Float[Array, ...]`): Learnable channel-wise weights.
@@ -45,7 +46,7 @@ class SoftGating(eqx.Module):
         if use_bias:
             self.bias = jnp.ones((in_channels,) + (1,) * ndim)
 
-    def __call__(self, x: Float[Array, "c ..."]) -> Float[Array, "c ..."]:
+    def __call__(self, x: Inexact[Array, "c ..."]) -> Inexact[Array, "c ..."]:
         """Applies soft-gating to input activations.
 
         Args:
@@ -73,7 +74,7 @@ class Flattened1dConv(eqx.Module):
         kernel_size: Size of the convolving kernel.
         use_bias: Whether to add a learnable bias to the output.
 
-    !!! info "Internal Attributes"
+    ??? info "Internal Attributes"
         These fields store the internal layers state (and weights).
 
         * **conv** (`eqx.nn.Conv1d`): The underlying 1D convolution layer.
@@ -100,7 +101,7 @@ class Flattened1dConv(eqx.Module):
         )
         self.out_channels = out_channels
 
-    def __call__(self, x: Float[Array, "in_c ..."]) -> Float[Array, "out_c ..."]:
+    def __call__(self, x: Inexact[Array, "in_c ..."]) -> Inexact[Array, "out_c ..."]:
         """Applies 1d convolution to flattened dimensions.
 
         Args:
@@ -111,5 +112,12 @@ class Flattened1dConv(eqx.Module):
         """
         shape = x.shape
         x = x.reshape(shape[0], -1)
-        x = self.conv(x)
+        if jnp.issubdtype(x.dtype, jnp.complexfloating):
+            conv = jax.tree_util.tree_map(
+                lambda leaf: leaf.astype(x.dtype) if isinstance(leaf, jax.Array) else leaf,
+                self.conv,
+            )
+        else:
+            conv = self.conv
+        x = conv(x)
         return x.reshape(self.out_channels, *shape[1:])

@@ -6,6 +6,7 @@ Also implements a subclass for practitioners:
 """
 
 from collections.abc import Callable, Sequence
+from typing import final
 
 import equinox as eqx
 import jax
@@ -13,10 +14,12 @@ import jax.numpy as jnp
 import jax.random as jr
 from jaxtyping import Array, Float, PRNGKeyArray
 
+from neojax.models.baseno import BaseNO
 from neojax.nn.pointwise_mlp import PointwiseMLP
 
 
-class DeepONet(eqx.Module):
+@final
+class DeepONet(BaseNO):
     """General DeepONet (Deep Operator Network).
 
     Learns a PDE operator through two separate
@@ -35,7 +38,7 @@ class DeepONet(eqx.Module):
         out_activation: Optional output activation after dot product.
         bias: Optional learnable bias after dot product.
 
-    !!! info "Internal Attributes"
+    ??? info "Internal Attributes"
         These fields store the internal layers state (and weights).
 
         * **branch_net** (`eqx.Module`): Arbitrary NN that maps (m_sensors,) -> (p,).
@@ -142,7 +145,7 @@ class MLPDeepONet(DeepONet):
         out_activation: Optional output activation after dot product.
         bias: Optional learnable bias after dot product.
 
-    !!! info "Internal Attributes"
+    ??? info "Internal Attributes"
         These fields store the internal layers state (and weights).
 
         * **branch_net** (`PointwiseMLP`): MLP that maps (m_sensors,) -> (p,).

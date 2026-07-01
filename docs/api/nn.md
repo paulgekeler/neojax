@@ -9,19 +9,16 @@ While you can easily use pre-built models like `FNO` or `TFNO`, these underlying
 These layers evaluate the continuous integral operator in Fourier space. They perform the core global operations that make Fourier Neural Operators discretization-invariant.
 
 ::: neojax.nn.spectral_conv.SpectralConvNd
+
 ::: neojax.nn.tucker_spectral_conv.TuckerSpectralConvNd
 
 ## FNO Blocks
 
 The standard layer of the Fourier Neural Operator. An FNO Block computes the sum of the global spectral convolution and a local skip connection, followed by optional normalization and non-linear activation.
+
 ::: neojax.nn.fno_blocks.FNOBlocks
+
 ::: neojax.nn.fno_blocks.FNOBlock
-
-## TFNO Blocks
-
-Tucker-factorized FNO blocks. By factorizing the spectral weights into a core tensor and factor matrices, TFNO blocks significantly reduce the parameter count and memory footprint, especially for 3D or 4D problems.
-::: neojax.nn.tfno_blocks.TFNOBlocks
-::: neojax.nn.tfno_blocks.TFNOBlock
 
 ## Pointwise MLP
 
@@ -45,4 +42,11 @@ Local operators used alongside the global spectral convolutions. They process hi
 *Note: For the standard identity skip connection, `neojax` directly uses `equinox.nn.Identity` for simplicity and seamless integration with the JAX/Equinox ecosystem.*
 
 ::: neojax.nn.skip_connections.SoftGating
+
 ::: neojax.nn.skip_connections.Flattened1dConv
+
+## Resampler
+
+Resamples inputs using different interpolation methods. Useful for architecures like the UNO, where data needs to be explicitely up- and downsampled as it flows through the network. 
+
+::: neojax.nn.resample.Resampler

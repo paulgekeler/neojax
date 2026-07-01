@@ -88,7 +88,7 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - Benchmarks: benchmarks.md
+  - Neojax vs Neuraloperator Benchmarks: benchmark_neojax_vs_neuraloperator.md
   - API Reference:
       - Models: api/models.md
       - Components: api/nn.md

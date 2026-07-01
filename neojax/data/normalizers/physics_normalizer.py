@@ -21,7 +21,7 @@ class PhysicsNormalizer(BaseNormalizer):
         *scales: Variable number of `PhysicalScale` providers to be
             applied to the data.
 
-    !!! info "Internal Attributes"
+    ??? info "Internal Attributes"
         These fields store the internal state of the normalizer.
 
         * **scales** (`tuple[PhysicalScale, ...]`): Tuple of physical scale providers.

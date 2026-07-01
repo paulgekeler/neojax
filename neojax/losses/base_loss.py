@@ -14,7 +14,7 @@ class BaseLoss(eqx.Module):
     its child class must be final,
     following the "Abstract or Final" pattern.
 
-    !!! info "Internal Attributes"
+    ??? info "Internal Attributes"
         These fields store the internal state of the loss.
 
         * **weight** (`Float[Array, ""]`): Weight for weighted losses e.g. in compositions. Optionally learnable if specified in child classes.

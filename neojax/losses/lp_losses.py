@@ -30,7 +30,7 @@ class LpLoss(BaseLoss):
             with `equinox.filter_...` or `equinox.partition`.
             Default is `False`.
 
-    !!! info "Internal Attributes"
+    ??? info "Internal Attributes"
         These fields store the internal state of the loss.
 
         * **weight** (`Float[Array, ""]`): Learnable loss weight. Filter during training to prevent updates.
@@ -107,7 +107,7 @@ class RelativeLpLoss(BaseLoss):
             with `equinox.filter_...` or `equinox.partition`.
             Default is `False`.
 
-    !!! info "Internal Attributes"
+    ??? info "Internal Attributes"
         These fields store the internal state of the loss.
 
         * **weight** (`Float[Array, ""]`): Learnable loss weight. Filter during training to prevent updates.

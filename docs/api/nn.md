@@ -10,8 +10,6 @@ These layers evaluate the continuous integral operator in Fourier space. They pe
 
 ::: neojax.nn.spectral_conv.SpectralConvNd
 
-::: neojax.nn.tucker_spectral_conv.TuckerSpectralConvNd
-
 ## FNO Blocks
 
 The standard layer of the Fourier Neural Operator. An FNO Block computes the sum of the global spectral convolution and a local skip connection, followed by optional normalization and non-linear activation.

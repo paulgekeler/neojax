@@ -36,7 +36,14 @@ theme:
 
 plugins:
   - search
-  - hippogriffe
+  - hippogriffe:
+      extra_public_objects:
+        - numpy.dtype
+        - equinox.if_array
+        - jax.ShapeDtypeStruct
+        - jax.extend.core.ClosedJaxpr
+        - jax.Device
+        - jax.sharding.Sharding
   - mkdocstrings:
       handlers:
         python:
@@ -85,10 +92,13 @@ nav:
   - API Reference:
       - Models: api/models.md
       - Components: api/nn.md
+      - Tensors: api/tensors.md
       - Losses: api/losses.md
       - Utilities: api/utils.md
       - Normalizers: api/normalizers.md
       - Scales: api/scales.md
+      - Data Downloading: api/download.md
+      - Benchmark: api/benchmark.md
   - Examples:
     - Basic Usage: examples/01_basics.md
     - Training FNO: examples/02_fno_burgers.md

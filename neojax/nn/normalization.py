@@ -5,7 +5,7 @@ from collections.abc import Sequence
 import equinox as eqx
 import jax
 import jax.numpy as jnp
-from jaxtyping import Array, Float
+from jaxtyping import Array, Float, Inexact
 
 
 class InstanceNorm(eqx.Module):
@@ -28,21 +28,23 @@ class InstanceNorm(eqx.Module):
         use_bias: Whether to include a learnable affine bias.
             Defaults to `True`.
 
-    !!! info "Internal Attributes"
+    ??? info "Internal Attributes"
         These fields store the internal layers state (and weights).
 
         * **shape** (`tuple[int, ...]`): The input shape.
         * **eps** (`float`): The numerical stability value.
         * **weight** (`Float[Array, ...] | None`): The learnable weights or `None`.
         * **bias** (`Float[Array, ...] | None`): The learnable bias or `None`.
+        * **use_weight** (`bool`): Whether to include a learnable affine weight.
+        * **use_bias** (`bool`): Whether to include a learnable affine bias.
     """
-
+    weight: Float[Array, "c ..."] | None
+    bias: Float[Array, "c ..."] | None
     shape: tuple[int, ...] = eqx.field(static=True)
     eps: float = eqx.field(static=True)
     use_weight: bool = eqx.field(default=True, static=True)
     use_bias: bool = eqx.field(default=True, static=True)
-    weight: Float[Array, "c ..."] | None
-    bias: Float[Array, "c ..."] | None
+
 
     def __init__(
         self,
@@ -61,7 +63,7 @@ class InstanceNorm(eqx.Module):
         self.weight = jnp.ones((c, *([1] * spatial_dims))) if use_weight else None
         self.bias = jnp.zeros((c, *([1] * spatial_dims))) if use_bias else None
 
-    def __call__(self, x: Float[Array, "c ..."]) -> Float[Array, "c ..."]:
+    def __call__(self, x: Inexact[Array, "c ..."]) -> Inexact[Array, "c ..."]:
         """Compute Instance Norm.
 
         Args:

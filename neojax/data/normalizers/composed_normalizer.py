@@ -20,7 +20,7 @@ class ComposedNormalizer(BaseNormalizer):
         *normalizers: Normalizer instances to be composed in the
             pipeline.
 
-    !!! info "Internal Attributes"
+    ??? info "Internal Attributes"
         These fields store the internal state of the normalizer.
 
         * **stats** (`dict[str, tuple[BaseNormalizer, ...]]`): Dict containing 'normalizers', which stores the sequence of normalizers as a tuple.

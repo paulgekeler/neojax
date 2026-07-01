@@ -6,12 +6,14 @@ from typing import Literal
 import equinox as eqx
 import jax
 import jax.random as jr
-from jaxtyping import Array, Float, PRNGKeyArray
+from jaxtyping import Array, Inexact, PRNGKeyArray
 
 from neojax.nn.normalization import InstanceNorm
 from neojax.nn.pointwise_mlp import PointwiseMLP
+from neojax.nn.resample import Resampler
 from neojax.nn.skip_connections import Flattened1dConv, SoftGating
 from neojax.nn.spectral_conv import SpectralConvNd
+from neojax.tensor import BaseTensor
 
 
 class FNOBlock(eqx.Module):
@@ -43,6 +45,8 @@ class FNOBlock(eqx.Module):
             the spectral_op + local_op sum, before activation.
             Can be `"layer"`, `"instance"`, `"group"` or None.
             Default is `"layer"`.
+        norm_groups: Number of groups to use if `normalization="group"`.
+            Defaults to 1.
         use_fno_residual: Whether to use a Resnet-style residual
             connection around each FNO block. Improves stability.
             Default True.
@@ -50,8 +54,36 @@ class FNOBlock(eqx.Module):
             before the spectral convolution and skip connection.
             Defaults to `False`. This is an exclusive flag.
             If activation is applied before, it isn't applied after.
+        enforce_hermitian_symmetry: Whether to enforce
+            hermitian symmetry on the outputs of the spectral convolutions
+            before calling `irfftn`.
+            Default is True. If set to False, the outputs will
+            not be hermitian-symmetric and the output will not
+            be real-valued. Only considered for real-valued inputs.
+        fft_norm: FFT normalization. Can be `None`, `"backward"`,
+            `"ortho"` or `"forward"`. Default is `"forward"`.
+        is_complex_data: Whether input data is complex valued.
+            If True, uses full FFT. Default is False.
+        resolution_scaling_factor: Factor by which to scale the domain
+            resolution of the function. Default is None, no scaling.
+        ranks: Number of ranks to contract the spectral tensors to.
+            If `ranks` is an Integer, the same number is used
+            for all ranks. If not, should be a sequence of ranks.
+            Default is None.
+        init_std: Standard deviation to use for weight initialization,
+            by default 'auto'. If 'auto',
+            uses (2 / (in_channels * out_channels)) ** 0.5.
+        factorization: Tensor factorization type. Can be a `BaseTensor`
+            instance, a string ("tucker", "cp", "tt"), or None.
+            Default is None.
+        implementation: Weight reconstruction mode.
+            Can be "reconstructed" or "factorized".
+            Default is "factorized".
+        separable: Whether to use separable implementation of contraction.
+            If True, contracts factors of factorized tensor weight individually.
+            Default is False.
 
-    !!! info "Internal Attributes"
+    ??? info "Internal Attributes"
         These fields store the internal layers state (and weights).
 
         * **spectral_conv** (`SpectralConvNd`): The `SpectralConvNd` layer performing the operator integral.
@@ -102,8 +134,81 @@ class FNOBlock(eqx.Module):
         norm_groups: int = 1,
         use_fno_residual: bool = True,
         preactivation: bool = False,
+        enforce_hermitian_symmetry: bool = True,
+        fft_norm: Literal["forward", "backward", "ortho"] | None = "forward",
+        is_complex_data: bool = False,
+        resolution_scaling_factor: float | int | None = None,
+        ranks: int | Sequence[int] | None = None,
+        init_std: float | Literal["auto"] = "auto",
+        factorization: BaseTensor | Literal["tucker", "cp", "tt"] | None = None,
+        implementation: Literal["reconstructed", "factorized"] = "factorized",
+        separable: bool = False,
     ) -> None:
-        ndim = len(modes) if isinstance(modes, Sequence) else 1
+        if not isinstance(in_channels, int) or in_channels <= 0:
+            raise ValueError("in_channels must be a positive integer.")
+        if not isinstance(out_channels, int) or out_channels <= 0:
+            raise ValueError("out_channels must be a positive integer.")
+
+        if not isinstance(separable, bool):
+            raise ValueError("separable must be a boolean.")
+        if separable and in_channels != out_channels:
+            raise ValueError(
+                f"in_channels ({in_channels}) must equal out_channels ({out_channels}) when separable is True."
+            )
+
+        if not isinstance(enforce_hermitian_symmetry, bool):
+            raise ValueError("enforce_hermitian_symmetry must be a boolean.")
+        if not isinstance(is_complex_data, bool):
+            raise ValueError("is_complex_data must be a boolean.")
+
+        if implementation not in ["reconstructed", "factorized"]:
+            raise ValueError(
+                "'implementation' must be one of ['reconstructed', 'factorized']."
+            )
+
+        if fft_norm not in ["forward", "backward", "ortho", None]:
+            raise ValueError(
+                "'fft_norm' must be one of ['forward', 'backward', 'ortho', None]."
+            )
+
+        if resolution_scaling_factor is not None:
+            if not isinstance(resolution_scaling_factor, (int, float)):
+                raise ValueError("resolution_scaling_factor must be an int, float, or None.")
+            if resolution_scaling_factor <= 0:
+                raise ValueError("resolution_scaling_factor must be positive.")
+
+        if isinstance(modes, int):
+            modes_tuple = (modes,)
+        elif isinstance(modes, Sequence):
+            modes_tuple = tuple(modes)
+        else:
+            raise ValueError("modes must be an int or a sequence of ints.")
+
+        if len(modes_tuple) == 0:
+            raise ValueError("modes sequence cannot be empty.")
+        if not all(isinstance(m, int) and m > 0 for m in modes_tuple):
+            raise ValueError("All modes must be positive integers.")
+
+        if not isinstance(init_std, float) and init_std != "auto":
+            raise ValueError("init_std must be a float or 'auto'.")
+
+        if isinstance(factorization, str):
+            if factorization not in ["tucker", "cp", "tt"]:
+                raise ValueError("Passed 'factorization' string invalid.")
+            if ranks is None:
+                raise ValueError(
+                    "ranks must be provided if factorization is specified as a string"
+                )
+            if isinstance(ranks, int):
+                if ranks <= 0:
+                    raise ValueError("ranks must be a positive integer.")
+            elif isinstance(ranks, Sequence):
+                if not all(isinstance(r, int) and r > 0 for r in ranks):
+                    raise ValueError("All ranks must be positive integers.")
+            else:
+                raise ValueError("ranks must be an int, a sequence of ints, or None.")
+
+        ndim = len(modes_tuple)
         fno_key, skip_key = jr.split(key, 2)
         if local_operator == "linear":
             self.local_operator = Flattened1dConv(
@@ -131,8 +236,24 @@ class FNOBlock(eqx.Module):
             self.local_operator = None
         else:
             raise ValueError(f"'{local_operator}' is not a valid local operator.")
+
+        if resolution_scaling_factor is None:
+            resolution_scaling_factor = 1
+
         self.spectral_conv = SpectralConvNd(
-            key=fno_key, in_channels=in_channels, out_channels=out_channels, modes=modes
+            key=fno_key,
+            in_channels=in_channels,
+            out_channels=out_channels,
+            modes=modes,
+            ranks=ranks,
+            init_std=init_std,
+            enforce_hermitian_symmetry=enforce_hermitian_symmetry,
+            fft_norm=fft_norm,
+            is_complex_data=is_complex_data,
+            resolution_scaling_factor=resolution_scaling_factor,
+            factorization=factorization,
+            implementation=implementation,
+            separable=separable,
         )
         # We use GroupNorm instead of eqx.nn.LayerNorm
         # because LayerNorm is very strict since equinox (v0.11+)
@@ -152,7 +273,7 @@ class FNOBlock(eqx.Module):
         self.preactivation = preactivation
         self.use_fno_residual = use_fno_residual
 
-    def __call__(self, x: Float[Array, "in_c ..."]) -> Float[Array, "out_c ..."]:
+    def __call__(self, x: Inexact[Array, "in_c ..."]) -> Inexact[Array, "out_c ..."]:
         """Forward pass of FNO block.
 
         Args:
@@ -167,6 +288,17 @@ class FNOBlock(eqx.Module):
 
         x_fft = self.spectral_conv(x)
         x_skip = self.local_operator(x) if self.local_operator is not None else 0
+
+        if self.local_operator is not None and x_skip.shape != x_fft.shape:
+            ndim = len(x_fft.shape) - 1
+            axes = tuple(range(1, ndim + 1))
+            resampler = Resampler(
+                input_shape=x_skip.shape,
+                res_scale=self.spectral_conv.resolution_scaling_factor,
+                axes=axes,
+                output_shape=x_fft.shape,
+            )
+            x_skip = resampler(x_skip)
 
         x = x_fft + x_skip
 
@@ -231,8 +363,39 @@ class FNOBlocks(eqx.Module):
         channel_mlp_activations: Activation function or sequence
             of activation functions used inside the channel MLPs.
             Default is `jax.nn.gelu`.
+        channel_mlp_dropout: Dropout probability applied after each layer
+            (except the last) of the channel MLPs. Defaults to 0.0.
+        enforce_hermitian_symmetry: Whether to enforce
+            hermitian symmetry on the outputs of the spectral convolutions
+            before calling `irfftn`.
+            Default is True.  If set to False, cuFFT on GPU may cause line artifacts
+            when calling irfftn.
+        fft_norm: FFT normalization. Can be `None`, `"backward"`,
+            `"ortho"` or `"forward"`. Default is `"forward"`.
+        is_complex_data: Whether input data is complex valued.
+            If True, uses full FFT. Default is False.
+        resolution_scaling_factor: Layerwise factor by which to scale the domain
+            resolution of the function. Default is None. Passing a scalar scales the
+            resolution by that value each layer. Passing a sequence, scales the i-th
+            layer by the i-th value.
+        ranks: Number of ranks to contract the spectral tensors to.
+            If `ranks` is an Integer, the same number is used
+            for all ranks. If not, should be a sequence of ranks.
+            Default is None.
+        init_std: Standard deviation to use for weight initialization,
+            by default 'auto'. If 'auto',
+            uses (2 / (in_channels * out_channels)) ** 0.5.
+        factorization: Tensor factorization type. Can be a `BaseTensor`
+            instance, a string ("tucker", "cp", "tt"), or None.
+            Default is None.
+        implementation: Weight reconstruction mode.
+            Can be "reconstructed" or "factorized".
+            Default is "factorized".
+        separable: Whether to use separable implementation of contraction.
+            If True, contracts factors of factorized tensor weight individually.
+            Default is False.
 
-    !!! info "Internal Attributes"
+    ??? info "Internal Attributes"
         These fields store the internal layers state (and weights).
 
         * **fno_layers** (`tuple[FNOBlock, ...]`): The initialized `FNOBlock` layers.
@@ -295,11 +458,6 @@ class FNOBlocks(eqx.Module):
             year={2023}
         }
         ```
-
-    !!! info "Upcoming Features"
-        The current implementation doesn't support dropout
-        for the channel-wise MLP or normalization layers.
-        Both will be added in future releases.
     """
 
     fno_layers: tuple[FNOBlock, ...]
@@ -325,7 +483,75 @@ class FNOBlocks(eqx.Module):
         | None = "identity",
         channel_mlp_expansion: float | None = 0.5,
         channel_mlp_activations: Callable | Sequence[Callable] = jax.nn.gelu,
+        channel_mlp_dropout: float = 0.0,
+        enforce_hermitian_symmetry: bool = True,
+        fft_norm: Literal["forward", "backward", "ortho"] | None = "forward",
+        is_complex_data: bool = False,
+        resolution_scaling_factor: float | int | Sequence[float | int] | None = None,
+        ranks: int | Sequence[int] | None = None,
+        init_std: float | Literal["auto"] = "auto",
+        factorization: BaseTensor | Literal["tucker", "cp", "tt"] | None = None,
+        implementation: Literal["reconstructed", "factorized"] = "factorized",
+        separable: bool = False,
     ) -> None:
+        if not isinstance(in_channels, int) or in_channels <= 0:
+            raise ValueError("in_channels must be a positive integer.")
+        if not isinstance(out_channels, int) or out_channels <= 0:
+            raise ValueError("out_channels must be a positive integer.")
+
+        if not isinstance(separable, bool):
+            raise ValueError("separable must be a boolean.")
+        if separable and in_channels != out_channels:
+            raise ValueError(
+                f"in_channels ({in_channels}) must equal out_channels ({out_channels}) when separable is True."
+            )
+
+        if not isinstance(enforce_hermitian_symmetry, bool):
+            raise ValueError("enforce_hermitian_symmetry must be a boolean.")
+        if not isinstance(is_complex_data, bool):
+            raise ValueError("is_complex_data must be a boolean.")
+
+        if implementation not in ["reconstructed", "factorized"]:
+            raise ValueError(
+                "'implementation' must be one of ['reconstructed', 'factorized']."
+            )
+
+        if fft_norm not in ["forward", "backward", "ortho", None]:
+            raise ValueError(
+                "'fft_norm' must be one of ['forward', 'backward', 'ortho', None]."
+            )
+
+        if isinstance(modes, int):
+            modes_tuple = (modes,)
+        elif isinstance(modes, Sequence):
+            modes_tuple = tuple(modes)
+        else:
+            raise ValueError("modes must be an int or a sequence of ints.")
+
+        if len(modes_tuple) == 0:
+            raise ValueError("modes sequence cannot be empty.")
+        if not all(isinstance(m, int) and m > 0 for m in modes_tuple):
+            raise ValueError("All modes must be positive integers.")
+
+        if not isinstance(init_std, float) and init_std != "auto":
+            raise ValueError("init_std must be a float or 'auto'.")
+
+        if isinstance(factorization, str):
+            if factorization not in ["tucker", "cp", "tt"]:
+                raise ValueError("Passed 'factorization' string invalid.")
+            if ranks is None:
+                raise ValueError(
+                    "ranks must be provided if factorization is specified as a string"
+                )
+            if isinstance(ranks, int):
+                if ranks <= 0:
+                    raise ValueError("ranks must be a positive integer.")
+            elif isinstance(ranks, Sequence):
+                if not all(isinstance(r, int) and r > 0 for r in ranks):
+                    raise ValueError("All ranks must be positive integers.")
+            else:
+                raise ValueError("ranks must be an int, a sequence of ints, or None.")
+
         fno_layers = []
         if isinstance(activation, Callable):
             activations = [activation] * n_layers
@@ -339,14 +565,25 @@ class FNOBlocks(eqx.Module):
                 )
             activations = activation
 
+        if isinstance(resolution_scaling_factor, (float, int)):
+            resolution_scaling_factor = (resolution_scaling_factor,) * n_layers
+        elif resolution_scaling_factor is None:
+            resolution_scaling_factor = (1,) * n_layers
+        elif isinstance(resolution_scaling_factor, Sequence):
+            resolution_scaling_factor = tuple(resolution_scaling_factor)
+        else:
+            raise ValueError("Invalid 'resolution_scaling_factor'.")
+
         for i in range(n_layers):
             fno_key, key = jr.split(key, 2)
             if i > 0:
-                in_channels = out_channels
+                in_channels_layer = out_channels
+            else:
+                in_channels_layer = in_channels
             fno_layers.append(
                 FNOBlock(
                     key=fno_key,
-                    in_channels=in_channels,
+                    in_channels=in_channels_layer,
                     out_channels=out_channels,
                     modes=modes,
                     activation=activations[i],
@@ -356,6 +593,15 @@ class FNOBlocks(eqx.Module):
                     norm_groups=norm_groups,
                     use_fno_residual=use_fno_residual,
                     preactivation=preactivation,
+                    enforce_hermitian_symmetry=enforce_hermitian_symmetry,
+                    fft_norm=fft_norm,
+                    is_complex_data=is_complex_data,
+                    resolution_scaling_factor=resolution_scaling_factor[i],
+                    ranks=ranks,
+                    init_std=init_std,
+                    factorization=factorization,
+                    implementation=implementation,
+                    separable=separable,
                 )
             )
         self.fno_layers = tuple(fno_layers)
@@ -367,7 +613,7 @@ class FNOBlocks(eqx.Module):
             else:
                 hidden_channel = out_channels
             channel_mlp_skips = []
-            ndim = len(modes) if isinstance(modes, Sequence) else 1
+            ndim = len(modes_tuple)
             for _ in range(n_layers):
                 skip_key, key = jr.split(key, 2)
                 if channel_mlp_residual == "linear":
@@ -401,6 +647,7 @@ class FNOBlocks(eqx.Module):
                     key=mlp_keys[i],
                     layers=(out_channels, hidden_channel, out_channels),
                     activations=channel_mlp_activations,
+                    dropout=channel_mlp_dropout,
                 )
                 for i in range(n_layers)
             ]
@@ -409,27 +656,44 @@ class FNOBlocks(eqx.Module):
             self.channel_mlps = None
             self.channel_mlp_residuals = None
 
-    def __call__(self, x: Float[Array, "in_c ..."]) -> Float[Array, "out_c ..."]:
+    def __call__(
+        self,
+        x: Inexact[Array, "in_c ..."],
+        *,
+        key: PRNGKeyArray | None = None,
+        inference: bool = False,
+    ) -> Inexact[Array, "out_c ..."]:
         """Forward pass through n_layers of FNO Blocks.
 
         Args:
             x: Input array.
+            key: PRNG key used for dropout masks.
+            inference: If True, dropout is disabled.
 
         Returns:
             Output array.
         """
         if self.channel_mlps is not None:
-            for fno_layer, mlp_layer, res_op in zip(
-                self.fno_layers,
-                self.channel_mlps,
-                self.channel_mlp_residuals,
-                strict=True,
+            n_layers = len(self.fno_layers)
+            if key is not None and not inference:
+                keys = jr.split(key, n_layers)
+            else:
+                keys = [None] * n_layers
+
+            for i, (fno_layer, mlp_layer, res_op) in enumerate(
+                zip(
+                    self.fno_layers,
+                    self.channel_mlps,
+                    self.channel_mlp_residuals,
+                    strict=True,
+                )
             ):
                 x = fno_layer(x)
+                mlp_out = mlp_layer(x, key=keys[i], inference=inference)
                 if res_op is not None:
-                    x = mlp_layer(x) + res_op(x)
+                    x = mlp_out + res_op(x)
                 else:
-                    x = mlp_layer(x)
+                    x = mlp_out
             return x
         else:
             for layer in self.fno_layers:

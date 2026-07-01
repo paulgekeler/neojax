@@ -18,7 +18,7 @@ class BaseNormalizer(eqx.Module):
     libraries, where `transform` is the forward operation
     and `inverse_transform` the inverse.
 
-    !!! info "Internal Attributes"
+    ??? info "Internal Attributes"
         These fields store the internal state of the normalizer.
 
         * **stats** (`PyTree`): A PyTree containing the normalization statistics (e.g. mean, std).

@@ -30,7 +30,6 @@ class TestTFNO:
             n_layers=2,
             modes=(4, 4),
             ranks=(2, 2, 2, 2),
-            share_factor_matrices=False,
             domain_padding=0.1,
         )
         assert model_2d(jnp.ones((2, 16, 16))).shape == (2, 16, 16)
@@ -114,3 +113,63 @@ class TestTFNO:
             ranks=(1, 1, 1, 1, 1, 1),
         )
         assert model_4d(jnp.ones((1, 4, 4, 4, 4))).shape == (1, 4, 4, 4, 4)
+
+    def test_resolution_scaling(self):
+        key = jr.key(0)
+        in_c, out_c, hidden = 2, 2, 8
+
+        # Test resolution scaling without domain padding
+        # 2 layers: 16 -> 24 -> 36 spatial size
+        model_no_pad = TFNO(
+            key=key,
+            in_channels=in_c,
+            out_channels=out_c,
+            hidden_channels=hidden,
+            n_layers=2,
+            modes=(4, 4),
+            ranks=(2, 2, 2, 2),
+            resolution_scaling_factor=1.5,
+        )
+        x = jnp.ones((in_c, 16, 16))
+        assert model_no_pad(x).shape == (out_c, 36, 36)
+
+        # Test resolution scaling with domain padding
+        model_pad = TFNO(
+            key=key,
+            in_channels=in_c,
+            out_channels=out_c,
+            hidden_channels=hidden,
+            n_layers=2,
+            modes=(4, 4),
+            ranks=(2, 2, 2, 2),
+            domain_padding=0.1,
+            resolution_scaling_factor=1.5,
+        )
+        assert model_pad(x).shape == (out_c, 36, 36)
+
+    def test_dropout(self):
+        key = jr.key(0)
+        in_c, out_c, hidden = 2, 2, 8
+        model = TFNO(
+            key=key,
+            in_channels=in_c,
+            out_channels=out_c,
+            hidden_channels=hidden,
+            n_layers=2,
+            modes=(4, 4),
+            ranks=2,
+            channel_mlp_dropout=0.2,
+        )
+
+        for mlp in model.fno_blocks.channel_mlps:
+            assert mlp.dropout == 0.2
+
+        x = jnp.ones((in_c, 16, 16))
+        out_inf1 = model(x, inference=True)
+        out_inf2 = model(x, key=jr.key(1), inference=True)
+        assert jnp.allclose(out_inf1, out_inf2)
+
+        out_drop = model(x, key=jr.key(2), inference=False)
+        assert out_drop.shape == (out_c, 16, 16)
+
+

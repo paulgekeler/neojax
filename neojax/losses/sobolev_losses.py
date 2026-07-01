@@ -55,7 +55,7 @@ class SobolevLoss(BaseLoss):
             in `"stochastic"` method.
             Default is standard Normal distribution.
 
-    !!! info "Internal Attributes"
+    ??? info "Internal Attributes"
         These fields store the internal state of the loss.
 
         * **k** (`int`): Order of partial derivatives.

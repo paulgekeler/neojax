@@ -23,7 +23,7 @@ class RobustNormalizer(BaseNormalizer):
             Default is None, i.e., use learned iqr from `self.stats`.
         quantile_range:
 
-    !!! info "Internal Attributes"
+    ??? info "Internal Attributes"
         These fields store the internal state of the normalizer.
 
         * **quantile_range** (`tuple[float, float]`): The lower and upper quantile bounds.

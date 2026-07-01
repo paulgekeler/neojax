@@ -47,7 +47,7 @@ class CharacteristicLengthScale(eqx.Module):
     Args:
         L_ref: The constant reference length scale.
 
-    !!! info "Internal Attributes"
+    ??? info "Internal Attributes"
         These fields store the internal state of the scale.
 
         * **L_ref** (`float | Float[Array, "..."]`): The stored reference length.
@@ -84,7 +84,7 @@ class ReynoldsScale(eqx.Module):
         L: Reference length.
         nu: Kinematic viscosity.
 
-    !!! info "Internal Attributes"
+    ??? info "Internal Attributes"
         These fields store the internal state of the scale.
 
         * **U** (`float | Float[Array, "..."]`): Reference velocity.
@@ -125,7 +125,7 @@ class GridBasedScale(eqx.Module):
         scale_field: An array of scaling factors
             defined on the domain grid.
 
-    !!! info "Internal Attributes"
+    ??? info "Internal Attributes"
         These fields store the internal state of the scale.
 
         * **scale_field** (`Float[Array, "..."]`): The spatially-varying scaling factors.

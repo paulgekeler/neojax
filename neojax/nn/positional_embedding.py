@@ -2,7 +2,7 @@
 
 import equinox as eqx
 import jax.numpy as jnp
-from jaxtyping import Array, Float
+from jaxtyping import Array, Float, Inexact
 
 
 class GridEmbeddingNd(eqx.Module):
@@ -15,7 +15,7 @@ class GridEmbeddingNd(eqx.Module):
             ((low, high), ...) or None.
             Default is None which is a ((0, 1), ...) bounded grid.
 
-    !!! info "Internal Attributes"
+    ??? info "Internal Attributes"
         These fields store the internal layers state (and weights).
 
         * **in_channels** (`int`): Number of input channels.
@@ -63,7 +63,7 @@ class GridEmbeddingNd(eqx.Module):
         grid = jnp.stack(jnp.meshgrid(*grid_points_1d, indexing="ij"), axis=0)
         return jnp.repeat(grid, self.in_channels, 0)
 
-    def __call__(self, x: Float[Array, "in_c ..."]) -> Float[Array, "out_c ..."]:
+    def __call__(self, x: Inexact[Array, "in_c ..."]) -> Inexact[Array, "out_c ..."]:
         """Generates n-dim regular grid and appends it to input signal.
 
         Args:

@@ -70,18 +70,7 @@ Real-world physics problems often require minimizing multiple objectives simulta
 
 When combining multiple losses, balancing their static weights can be notoriously difficult. `neojax` solves this by supporting dynamically learnable loss weights. 
 
-If you enable learnable weights in a `ComposedLoss`, custom `BaseLoss`, or any other loss instance, you must ensure JAX differentiates with respect to them. `neojax` provides the `is_learnable_loss_weight` utility to create the correct filter specification for `equinox`.
-
-```python
-import equinox as eqx
-from neojax.losses.utils import is_learnable_loss_weight
-
-# 1. Create a filter spec that isolates the network parameters AND learnable loss weights
-filter_spec = is_learnable_loss_weight(model_and_losses)
-
-# 2. Pass the spec to filter_grad
-grads = eqx.filter_grad(loss_fn, filter=filter_spec)(model_and_losses, data, targets)
-```
+If you enable learnable weights in a `ComposedLoss`, custom `BaseLoss`, or any other loss instance, you must ensure JAX differentiates with respect to them. `neojax` provides the `is_learnable_loss_weight` utility to create the correct filter specification for the loss functions.
 
 ::: neojax.losses.utils.is_learnable_loss_weight
 

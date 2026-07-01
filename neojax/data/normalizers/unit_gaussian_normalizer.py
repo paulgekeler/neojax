@@ -18,7 +18,7 @@ class UnitGaussianNormalizer(BaseNormalizer):
         std: Optional initial standard deviation if known.
             Default is unit 1.0.
 
-    !!! info "Internal Attributes"
+    ??? info "Internal Attributes"
         These fields store the internal state of the normalizer.
 
         * **stats** (`dict[str, Float[Array, ...] | None]`): Dict of mean and std.

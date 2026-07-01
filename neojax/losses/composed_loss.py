@@ -21,7 +21,7 @@ class ComposedLoss(BaseLoss):
         weight: Optional weighting for ComposedLoss.
             Default is 1.0, i.e., no weighting.
 
-    !!! info "Internal Attributes"
+    ??? info "Internal Attributes"
         These fields store the internal state of the loss.
 
         * **weight** (`Float[Array, ""]`): Learnable loss weight. Filter during training to prevent updates.

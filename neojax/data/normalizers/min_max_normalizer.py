@@ -34,7 +34,7 @@ class MinMaxNormalizer(BaseNormalizer):
                 If Array, should be broadcast-compatible
                 with transformation data and `minima`.
 
-    !!! info "Internal Attributes"
+    ??? info "Internal Attributes"
         These fields store the internal state of the normalizer.
 
         * **stats** (`dict[str, Float[Array, ...] | None]`): Dict of min and max if passed at initialization, else None.

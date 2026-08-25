@@ -171,5 +171,3 @@ class TestTFNO:
 
         out_drop = model(x, key=jr.key(2), inference=False)
         assert out_drop.shape == (out_c, 16, 16)
-
-

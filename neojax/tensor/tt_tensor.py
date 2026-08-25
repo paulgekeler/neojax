@@ -1,8 +1,9 @@
 """Implementation of Tensor Train Tensor."""
 
 from collections.abc import Sequence
-from typing import Literal
 from math import prod
+from typing import Literal, final
+
 import equinox as eqx
 import jax
 import jax.numpy as jnp
@@ -12,21 +13,27 @@ from jaxtyping import Array, Complex, PRNGKeyArray
 from neojax.tensor.base_tensor import BaseTensor
 
 
+@final
 class TTTensor(BaseTensor):
     r"""Tensor Train Tensor.
 
-    Decomposes the spectral weight tensor $W$ into a train/chain of low-dimensional tensors $U^{(j)}$ connected back-to-back.
+    Decomposes the spectral weight tensor $W$ into a train/chain
+    of low-dimensional tensors $U^{(j)}$ connected back-to-back.
 
-    For the standard case (`separable=False`), the weight tensor $W \in \mathbb{C}^{C_{out} \times C_{in} \times m_1 \times \dots \times m_d}$ is reconstructed as:
-
-    $$
-    W_{c_{out}, c_{in}, x_1, \dots, x_d} = \sum_{r_1, \dots, r_{d+1}} U^{(1)}_{c_{out}, r_1} U^{(2)}_{r_1, c_{in}, r_2} U^{(3)}_{r_2, x_1, r_3} \dots U^{(d+2)}_{r_{d+1}, x_d}
-    $$
-
-    For the separable case (`separable=True`), the weight tensor $W \in \mathbb{C}^{C \times m_1 \times \dots \times m_d}$ is reconstructed as:
+    For the standard case (`separable=False`), the weight tensor
+    $W \in \mathbb{C}^{C_{out} \times C_{in} \times m_1 \times \dots \times m_d}$ is reconstructed as:
 
     $$
-    W_{c, x_1, \dots, x_d} = \sum_{r_1, \dots, r_d} U^{(1)}_{c, r_1} U^{(2)}_{r_1, x_1, r_2} \dots U^{(d+1)}_{r_d, x_d}
+    W_{c_{out}, c_{in}, x_1, \dots, x_d} = \sum_{r_1, \dots, r_{d+1}} U^{(1)}_{c_{out}, r_1}
+    U^{(2)}_{r_1, c_{in}, r_2} U^{(3)}_{r_2, x_1, r_3} \dots U^{(d+2)}_{r_{d+1}, x_d}
+    $$
+
+    For the separable case (`separable=True`), the weight tensor
+    $W \in \mathbb{C}^{C \times m_1 \times \dots \times m_d}$ is reconstructed as:
+
+    $$
+    W_{c, x_1, \dots, x_d} = \sum_{r_1, \dots, r_d} U^{(1)}_{c, r_1}
+    U^{(2)}_{r_1, x_1, r_2} \dots U^{(d+1)}_{r_d, x_d}
     $$
 
     Args:
@@ -106,8 +113,8 @@ class TTTensor(BaseTensor):
 
         # n is the number of factor tensors in the chain: len(tensor_dims)
         n = len(tensor_dims)
-        s = (init_std / (ranks_prod ** 0.5)) ** (1.0 / n)
-        scale = s / (2.0 ** 0.5)
+        s = (init_std / (ranks_prod**0.5)) ** (1.0 / n)
+        scale = s / (2.0**0.5)
 
         lr_tensors = []
 

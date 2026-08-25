@@ -1,8 +1,9 @@
 """Implementation of Tucker-factorized spectral tensor."""
 
 from collections.abc import Sequence
-from typing import Literal, final
 from math import prod
+from typing import Literal, final
+
 import equinox as eqx
 import jax
 import jax.numpy as jnp
@@ -18,16 +19,20 @@ class TuckerTensor(BaseTensor):
 
     Decomposes the spectral weight tensor $W$ into a core tensor $G$ and factor matrices $U^{(j)}$ for each dimension.
 
-    For the standard case (`separable=False`), the weight tensor $W \in \mathbb{C}^{C_{out} \times C_{in} \times m_1 \times \dots \times m_d}$ is reconstructed as:
+    For the standard case (`separable=False`),
+    the weight tensor $W \in \mathbb{C}^{C_{out} \times C_{in} \times m_1 \times \dots \times m_d}$ is reconstructed as:
 
     $$
-    W_{c_{out}, c_{in}, x_1, \dots, x_d} = \sum_{r_1, \dots, r_{d+2}} G_{r_1, \dots, r_{d+2}} U^{(1)}_{c_{out}, r_1} U^{(2)}_{c_{in}, r_2} \prod_{j=1}^d U^{(j+2)}_{x_j, r_{j+2}}
+    W_{c_{out}, c_{in}, x_1, \dots, x_d} = \sum_{r_1, \dots, r_{d+2}}
+    G_{r_1, \dots, r_{d+2}} U^{(1)}_{c_{out}, r_1} U^{(2)}_{c_{in}, r_2} \prod_{j=1}^d U^{(j+2)}_{x_j, r_{j+2}}
     $$
 
-    For the separable case (`separable=True`), the weight tensor $W \in \mathbb{C}^{C \times m_1 \times \dots \times m_d}$ is reconstructed as:
+    For the separable case (`separable=True`),
+    the weight tensor $W \in \mathbb{C}^{C \times m_1 \times \dots \times m_d}$ is reconstructed as:
 
     $$
-    W_{c, x_1, \dots, x_d} = \sum_{r_1, \dots, r_{d+1}} G_{r_1, \dots, r_{d+1}} U^{(1)}_{c, r_1} \prod_{j=1}^d U^{(j+1)}_{x_j, r_{j+1}}
+    W_{c, x_1, \dots, x_d} = \sum_{r_1, \dots, r_{d+1}}
+    G_{r_1, \dots, r_{d+1}} U^{(1)}_{c, r_1} \prod_{j=1}^d U^{(j+1)}_{x_j, r_{j+1}}
     $$
 
     Args:
@@ -110,8 +115,8 @@ class TuckerTensor(BaseTensor):
         # p is the number of factor matrices: len(tensor_dims)
         # total terms multiplied: p + 1 (including core)
         p = len(tensor_dims) + 1
-        s = (init_std / (ranks_prod ** 0.5)) ** (1.0 / p)
-        scale = s / (2.0 ** 0.5)
+        s = (init_std / (ranks_prod**0.5)) ** (1.0 / p)
+        scale = s / (2.0**0.5)
 
         core_tensors = []
         for _ in range(num_corners):

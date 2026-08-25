@@ -16,15 +16,19 @@ from neojax.tensor.base_tensor import BaseTensor
 class CPTensor(BaseTensor):
     r"""Canonical-Polyadic-decomposed Tensor.
 
-    Decomposes the spectral weight tensor $W$ into a sum of $R$ rank-1 tensors (where $R$ is the CP rank), represented by a core vector $\lambda$ and factor matrices $U^{(j)}$ for each mode.
+    Decomposes the spectral weight tensor $W$ into a sum of $R$ rank-1 tensors (where $R$ is the CP rank),
+    represented by a core vector $\lambda$ and factor matrices $U^{(j)}$ for each mode.
 
-    For the standard case (`separable=False`), the weight tensor $W \in \mathbb{C}^{C_{out} \times C_{in} \times m_1 \times \dots \times m_d}$ is reconstructed as:
+    For the standard case (`separable=False`), the weight tensor
+    $W \in \mathbb{C}^{C_{out} \times C_{in} \times m_1 \times \dots \times m_d}$ is reconstructed as:
 
     $$
-    W_{c_{out}, c_{in}, x_1, \dots, x_d} = \sum_{r=1}^R \lambda_r U^{(1)}_{c_{out}, r} U^{(2)}_{c_{in}, r} \prod_{j=1}^d U^{(j+2)}_{x_j, r}
+    W_{c_{out}, c_{in}, x_1, \dots, x_d} = \sum_{r=1}^R
+    \lambda_r U^{(1)}_{c_{out}, r} U^{(2)}_{c_{in}, r} \prod_{j=1}^d U^{(j+2)}_{x_j, r}
     $$
 
-    For the separable case (`separable=True`), the weight tensor $W \in \mathbb{C}^{C \times m_1 \times \dots \times m_d}$ is reconstructed as:
+    For the separable case (`separable=True`), the weight tensor
+    $W \in \mathbb{C}^{C \times m_1 \times \dots \times m_d}$ is reconstructed as:
 
     $$
     W_{c, x_1, \dots, x_d} = \sum_{r=1}^R \lambda_r U^{(1)}_{c, r} \prod_{j=1}^d U^{(j+1)}_{x_j, r}
@@ -85,7 +89,7 @@ class CPTensor(BaseTensor):
         if not isinstance(init_std, float):
             raise ValueError("'init_std' must be float or 'auto'.")
 
-        # use modes instead of ranks
+        # Use modes instead of ranks
         self.ndim = len(modes)
         num_corners = 2 ** (len(modes) - 1)
 
@@ -94,12 +98,12 @@ class CPTensor(BaseTensor):
         else:
             tensor_dims = [out_channels, in_channels, *modes]
 
-        # calculate variance-preserving scaling factor s
+        # Calculate variance-preserving scaling factor s
         # p is the number of factor matrices: len(tensor_dims)
-        # total terms multiplied: p + 1 (including core)
+        # Total terms multiplied: p + 1 (including core)
         p = len(tensor_dims) + 1
-        s = (init_std / (ranks ** 0.5)) ** (1.0 / p)
-        scale = s / (2.0 ** 0.5)
+        s = (init_std / (ranks**0.5)) ** (1.0 / p)
+        scale = s / (2.0**0.5)
 
         core_tensors = []
         for _ in range(num_corners):

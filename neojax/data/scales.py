@@ -74,7 +74,7 @@ class CharacteristicLengthScale(eqx.Module):
 
 
 class ReynoldsScale(eqx.Module):
-    r"""Scales data based on the Reynolds number $Re = UL / \\nu$.
+    r"""Scales data based on the Reynolds number $Re = \frac{U L}{\nu}$.
 
     A fundamental scaling in fluid mechanics used to non-dimensionalize
     velocity and pressure fields.

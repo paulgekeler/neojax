@@ -38,13 +38,13 @@ class InstanceNorm(eqx.Module):
         * **use_weight** (`bool`): Whether to include a learnable affine weight.
         * **use_bias** (`bool`): Whether to include a learnable affine bias.
     """
+
     weight: Float[Array, "c ..."] | None
     bias: Float[Array, "c ..."] | None
     shape: tuple[int, ...] = eqx.field(static=True)
     eps: float = eqx.field(static=True)
     use_weight: bool = eqx.field(default=True, static=True)
     use_bias: bool = eqx.field(default=True, static=True)
-
 
     def __init__(
         self,

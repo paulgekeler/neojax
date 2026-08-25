@@ -105,6 +105,7 @@ class TestSpectralConv:
         assert conv_1d(jnp.ones((in_c, 32))).shape == (out_c, 48)
 
         # Test 2D resolution scaling (down-scaling)
-        conv_2d = SpectralConvNd(key, in_c, out_c, (8, 8), resolution_scaling_factor=0.5)
+        conv_2d = SpectralConvNd(
+            key, in_c, out_c, (8, 8), resolution_scaling_factor=0.5
+        )
         assert conv_2d(jnp.ones((in_c, 32, 32))).shape == (out_c, 16, 16)
-

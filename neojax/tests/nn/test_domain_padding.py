@@ -81,15 +81,15 @@ class TestDomainPadding:
         padding = (0.2,)
         res_scale_factor = (2.0, 3.0)
         with pytest.raises(ValueError):
-            padder = DomainPadding(padding, resolution_scaling_factor=res_scale_factor)
+            DomainPadding(padding, resolution_scaling_factor=res_scale_factor)
 
         # int padding or Seq[int] padding
         padding = 5
         with pytest.raises((ValueError, TypeCheckError)):
-            padder = DomainPadding(padding)
+            DomainPadding(padding)
         with pytest.raises((ValueError, TypeCheckError)):
-            padder = DomainPadding([5, 4])
+            DomainPadding([5, 4])
 
         # invalid pad mode
         with pytest.raises((ValueError, TypeCheckError)):
-            padder = DomainPadding((0.2, 0.2), mode="invalid")
+            DomainPadding((0.2, 0.2), mode="invalid")

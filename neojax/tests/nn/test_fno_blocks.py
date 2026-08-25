@@ -159,4 +159,3 @@ class TestFNOBlocks:
             resolution_scaling_factor=(2.0, 0.5),
         )
         assert blocks_seq(jnp.ones((in_c, 16, 16))).shape == (out_c, 16, 16)
-

@@ -13,6 +13,7 @@ import jax
 import jax.numpy as jnp
 import jax.random as jr
 from jaxtyping import Array, Float, PRNGKeyArray
+from typing_extensions import override
 
 from neojax.models.baseno import BaseNO
 from neojax.nn.pointwise_mlp import PointwiseMLP
@@ -59,9 +60,9 @@ class DeepONet(BaseNO):
 
     ??? cite
 
-        [Learning nonlinear operators via DeepONet
-        based on the universal approximation theorem of operators]
-        (https://www.nature.com/articles/s42256-021-00302-5)
+        [Learning nonlinear operators via
+        DeepONet based on the universal
+        approximation theorem of operators](https://www.nature.com/articles/s42256-021-00302-5)
 
         ```bibtex
         @article{lu2021learning,
@@ -96,6 +97,7 @@ class DeepONet(BaseNO):
         self.out_activation = out_activation
         self.bias = bias
 
+    @override
     def __call__(
         self, u: Float[Array, "m_sensors"], y: Float[Array, "d_dim"]
     ) -> Float[Array, ""]:
@@ -154,6 +156,7 @@ class MLPDeepONet(DeepONet):
         * **bias** (`Float[Array, "1"] | None`): Optional learnable bias after dot product.
     """
 
+    @override
     def __init__(
         self,
         key: PRNGKeyArray,

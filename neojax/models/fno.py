@@ -6,6 +6,7 @@ from typing import Literal, final
 import jax
 import jax.random as jr
 from jaxtyping import Array, Inexact, PRNGKeyArray
+from typing_extensions import override
 
 from neojax.models.baseno import BaseNO
 from neojax.nn.domain_padding import DomainPadding
@@ -124,7 +125,8 @@ class FNO(BaseNO):
     ??? info "Internal Attributes"
         These fields store the internal layers state (and weights).
 
-        * **positional_embedding** (`GridEmbeddingNd | None`): Positional embedding to apply to last channels of raw input before passing through FNO.
+        * **positional_embedding** (`GridEmbeddingNd | None`): Positional embedding
+            to apply to last channels of raw input before passing through FNO.
         * **lifting** (`PointwiseMLP`): The `PointwiseMLP` used to lift inputs to the hidden `hidden_channels`.
         * **fno_blocks** (`FNOBlocks`): The `FNOBlocks` sequence containing spectral convolutions.
         * **projection** (`PointwiseMLP`): The `PointwiseMLP` used to project latent features to `out_channels`.
@@ -132,8 +134,8 @@ class FNO(BaseNO):
 
     ??? cite
 
-        [Fourier Neural Operator for Parametric Partial Differential Equations]
-        (https://arxiv.org/abs/2010.08895)
+        [Fourier Neural Operator for Parametric Partial Differential Equations](
+        https://arxiv.org/abs/2010.08895)
 
         ```bibtex
         @inproceedings{
@@ -149,8 +151,8 @@ class FNO(BaseNO):
         }
         ```
 
-        [Neural Operator: Learning Maps Between Function Spaces With Applications to PDEs]
-        (https://www.jmlr.org/papers/volume24/21-1524/21-1524.pdf)
+        [Neural Operator: Learning Maps Between Function Spaces With Applications to PDEs](
+        https://www.jmlr.org/papers/volume24/21-1524/21-1524.pdf)
 
         ```bibtex
         @article{kovachki2023neural,
@@ -285,7 +287,7 @@ class FNO(BaseNO):
         else:
             raise ValueError(f"Positional embedding {positional_embedding} invalid.")
 
-        if isinstance(resolution_scaling_factor, (float, int)):
+        if isinstance(resolution_scaling_factor, float | int):
             resolution_scaling_factor = (resolution_scaling_factor,) * n_layers
         elif resolution_scaling_factor is None:
             resolution_scaling_factor = (1,) * n_layers
@@ -357,6 +359,7 @@ class FNO(BaseNO):
             separable=separable,
         )
 
+    @override
     def __call__(
         self,
         x: Inexact[Array, "in_c ..."],

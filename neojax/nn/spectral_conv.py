@@ -70,7 +70,7 @@ class SpectralConvNd(eqx.Module):
         * **separable** (`bool`): Whether the convolution is separable.
         * **num_corners** (`int`): Number of corners of the n-dimensional FFT hypercube.
 
-    Example:
+    Examples:
         ```python
         import jax.numpy as jnp
         import jax.random as jr
@@ -170,7 +170,9 @@ class SpectralConvNd(eqx.Module):
 
         if resolution_scaling_factor is not None:
             if not isinstance(resolution_scaling_factor, (int, float)):
-                raise ValueError("resolution_scaling_factor must be an int, float, or None.")
+                raise ValueError(
+                    "resolution_scaling_factor must be an int, float, or None."
+                )
             if resolution_scaling_factor <= 0:
                 raise ValueError("resolution_scaling_factor must be positive.")
         self.resolution_scaling_factor = resolution_scaling_factor
@@ -196,7 +198,10 @@ class SpectralConvNd(eqx.Module):
         self.is_complex_data = is_complex_data
 
         if isinstance(factorization, BaseTensor):
-            if hasattr(factorization, "separable") and factorization.separable != separable:
+            if (
+                hasattr(factorization, "separable")
+                and factorization.separable != separable
+            ):
                 raise ValueError(
                     f"factorization.separable ({factorization.separable}) must match the separable argument ({separable})."
                 )
@@ -295,7 +300,7 @@ class SpectralConvNd(eqx.Module):
         if self.is_complex_data:
             x_ft = jnp.fft.fftn(x, axes=tuple(range(1, ndim + 1)), norm=self.fft_norm)
         else:
-            # truncate last dim to spatial_shape[-1] // 2 + 1
+            # Truncate last dim to spatial_shape[-1] // 2 + 1
             x_ft = jnp.fft.rfftn(x, axes=tuple(range(1, ndim + 1)), norm=self.fft_norm)
 
         out_ft_shape = (self.out_channels,) + x_ft.shape[1:]
@@ -307,27 +312,27 @@ class SpectralConvNd(eqx.Module):
         else:
             weights = self.weights
 
-        # iterate through the corners using binary representation
+        # Iterate through the corners using binary representation
         for corner_idx in range(self.num_corners):
             slices = [slice(None)]
 
             for d in range(ndim):
                 if d == ndim - 1 and not self.is_complex_data:
-                    # truncate last dim from 0 to modes[-1] (hermitian symmetry)
+                    # Truncate last dim from 0 to modes[-1] (hermitian symmetry)
                     slices.append(slice(0, self.modes[d]))
                 else:
-                    # other dims use the positive or negative freq edge
+                    # Other dims use the positive or negative freq edge
                     is_negative_edge = (corner_idx >> d) & 1
                     if is_negative_edge:
                         slices.append(slice(-self.modes[d], None))
                     else:
                         slices.append(slice(0, self.modes[d]))
 
-            # channel-wise matrix multiplication using einsum
+            # Channel-wise matrix multiplication using einsum
             grid_slice = tuple(slices)
             out_ft = out_ft.at[grid_slice].set(weights(corner_idx, x_ft[grid_slice]))
 
-        # apply resolution scaling
+        # Apply resolution scaling
         if self.resolution_scaling_factor is not None:
             spatial_shape = tuple(
                 round(self.resolution_scaling_factor * s) for s in spatial_shape
@@ -342,7 +347,7 @@ class SpectralConvNd(eqx.Module):
             )
         else:
             if self.enforce_hermitian_symmetry:
-                # enforce that 0-th frequency and Nyquist frequency of final dim are real valued
+                # Enforce that 0-th frequency and Nyquist frequency of final dim are real valued
                 out_ft = out_ft.at[..., 0].set(jnp.real(out_ft[..., 0]))
                 if spatial_shape[-1] % 2 == 0:
                     out_ft = out_ft.at[..., -1].set(jnp.real(out_ft[..., -1]))

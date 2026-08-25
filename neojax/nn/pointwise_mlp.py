@@ -21,7 +21,7 @@ class PointwiseMLP(eqx.Module):
             and l - 1 instances of type `activation`.
             Otherwise, a final activation
             after the last layer can be passed.
-            Default is GeLu activation for all layers.
+            Default is GeLu activation for all hidden layers with no final activation.
         dropout: Dropout probability applied after each layer (except the last).
             If 0, no dropout is applied. Defaults to 0.0.
 
@@ -33,7 +33,7 @@ class PointwiseMLP(eqx.Module):
         * **activations** (`tuple[Callable, ...]`): Activation functions between layers.
         * **dropout** (`float`): Dropout probability.
 
-    Example:
+    Examples:
         ```python
         import jax.numpy as jnp
         import jax.random as jr
@@ -68,9 +68,15 @@ class PointwiseMLP(eqx.Module):
         self.dropout = float(dropout)
 
         if isinstance(activations, Callable):
-            self.activations = tuple(activations for _ in range(len(layers) - 1))
+            self.activations = tuple(activations for _ in range(len(layers) - 2)) + (
+                None,
+            )
         else:
-            if len(activations) > len(layers) or len(activations) < len(layers) - 2:
+            if len(activations) == len(layers) - 1:
+                self.activations = tuple(activations)
+            elif len(activations) == len(layers) - 2:
+                self.activations = tuple(activations) + (None,)
+            else:
                 raise ValueError(
                     "Mismatch in the number of activations and layers: "
                     "Can only have one less than or "
@@ -78,7 +84,6 @@ class PointwiseMLP(eqx.Module):
                     f" but got {len(activations)} activations and "
                     f"{len(layers)} layers!"
                 )
-            self.activations = tuple(activations)
 
         weights, biases = [], []
         for i in range(len(layers) - 1):
@@ -113,16 +118,20 @@ class PointwiseMLP(eqx.Module):
         else:
             keys = [None] * (n_layers - 1)
 
-        for i, (w, b, a) in enumerate(zip(self.weights, self.biases, self.activations, strict=False)):
+        for i, (w, b, a) in enumerate(
+            zip(self.weights, self.biases, self.activations, strict=True)
+        ):
             x = jnp.einsum("i...,ji->j...", x, w)
             x = x + b.reshape(-1, *([1] * (x.ndim - 1)))
-            if a:
+            if a is not None:
                 x = a(x)
 
             if i < n_layers - 1 and self.dropout > 0.0 and not inference:
                 drop_key = keys[i]
                 if drop_key is None:
-                    raise ValueError("A PRNG key must be passed to __call__ when dropout > 0 and inference = False.")
+                    raise ValueError(
+                        "A PRNG key must be passed to __call__ when dropout > 0 and inference = False."
+                    )
                 mask = jr.bernoulli(drop_key, 1.0 - self.dropout, shape=(x.shape[0],))
                 mask = mask.reshape(-1, *([1] * (x.ndim - 1)))
                 x = jnp.where(mask, x / (1.0 - self.dropout), 0.0)

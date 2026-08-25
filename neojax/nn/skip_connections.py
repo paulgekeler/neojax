@@ -114,10 +114,55 @@ class Flattened1dConv(eqx.Module):
         x = x.reshape(shape[0], -1)
         if jnp.issubdtype(x.dtype, jnp.complexfloating):
             conv = jax.tree_util.tree_map(
-                lambda leaf: leaf.astype(x.dtype) if isinstance(leaf, jax.Array) else leaf,
+                lambda leaf: (
+                    leaf.astype(x.dtype) if isinstance(leaf, jax.Array) else leaf
+                ),
                 self.conv,
             )
         else:
             conv = self.conv
         x = conv(x)
         return x.reshape(self.out_channels, *shape[1:])
+
+
+def make_skip_connection(
+    key: PRNGKeyArray,
+    kind: str | None,
+    in_channels: int,
+    out_channels: int,
+    ndim: int,
+    use_bias: bool = False,
+) -> Flattened1dConv | SoftGating | eqx.nn.Identity | None:
+    """Instantiate a skip-connection layer.
+
+    Args:
+        key: PRNG key.
+        kind: One of ``"linear"``, ``"soft-gating"``, ``"identity"`` or ``None``.
+        in_channels: Number of input channels.
+        out_channels: Number of output channels.
+        ndim: Number of spatial dimensions.
+        use_bias: Whether to use bias.
+
+    Returns:
+        The skip-connection module or ``None``.
+    """
+    if kind == "linear":
+        return Flattened1dConv(
+            key=key,
+            in_channels=in_channels,
+            out_channels=out_channels,
+            kernel_size=1,
+            use_bias=use_bias,
+        )
+    elif kind == "soft-gating":
+        return SoftGating(
+            ndim=ndim,
+            in_channels=in_channels,
+            out_channels=out_channels,
+        )
+    elif kind == "identity":
+        return eqx.nn.Identity()
+    elif kind is None:
+        return None
+    else:
+        raise ValueError(f"'{kind}' is not a valid skip connection type.")

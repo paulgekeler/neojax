@@ -27,3 +27,6 @@ site/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+
+# MacOS directory things
+*.DS_Store

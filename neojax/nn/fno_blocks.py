@@ -87,11 +87,14 @@ class FNOBlock(eqx.Module):
         These fields store the internal layers state (and weights).
 
         * **spectral_conv** (`SpectralConvNd`): The `SpectralConvNd` layer performing the operator integral.
-        * **local_operator** (`Flattened1dConv | SoftGating | eqx.nn.Identity | None`): The initialized local operator layer or `None`.
-        * **normalization** (`InstanceNorm | eqx.nn.GroupNorm | None`): Type of normalization to use. Applied after the spectral_op + local_op sum, before activation.
+        * **local_operator** (`Flattened1dConv | SoftGating | eqx.nn.Identity | None`): The initialized local operator
+            or `None`.
+        * **normalization** (`InstanceNorm | eqx.nn.GroupNorm | None`): Type of normalization to use.
+            Applied after the spectral_op + local_op sum, before activation.
         * **activation** (`Callable`): The activation function.
         * **preactivation** (`bool`): Boolean flag indicating if preactivation is used.
-        * **use_fno_residual** (`bool`): Whether to use a Resnet-style residual connection around each FNO block. Improves stability.
+        * **use_fno_residual** (`bool`): Whether to use a Resnet-style residual connection around each FNO block.
+            Improves stability.
 
     Examples:
         ```python
@@ -173,7 +176,9 @@ class FNOBlock(eqx.Module):
 
         if resolution_scaling_factor is not None:
             if not isinstance(resolution_scaling_factor, (int, float)):
-                raise ValueError("resolution_scaling_factor must be an int, float, or None.")
+                raise ValueError(
+                    "resolution_scaling_factor must be an int, float, or None."
+                )
             if resolution_scaling_factor <= 0:
                 raise ValueError("resolution_scaling_factor must be positive.")
 
@@ -399,7 +404,8 @@ class FNOBlocks(eqx.Module):
         These fields store the internal layers state (and weights).
 
         * **fno_layers** (`tuple[FNOBlock, ...]`): The initialized `FNOBlock` layers.
-        * **channel_mlps** (`tuple[PointwiseMLP, ...] | None`): The initialized `PointwiseMLP` layers, or None if `use_channel_mlp` is `False`.
+        * **channel_mlps** (`tuple[PointwiseMLP, ...] | None`): The initialized `PointwiseMLP` layers,
+            or None if `use_channel_mlp` is `False`.
         * **channel_mlp_residuals** (`tuple | None`): The residual connection instances or None.
 
     Examples:

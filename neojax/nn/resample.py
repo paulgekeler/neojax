@@ -40,7 +40,7 @@ class Resampler(eqx.Module):
         * **input_shape** (`tuple[int, ...]`): Shape of input including channel dimension.
         * **output_modes** (`tuple[int, ...]`): Output modes to resize frequency components with.
 
-    Example:
+    Examples:
         ```python
         import jax.random as jr
         from neojax.nn import Resampler
@@ -106,14 +106,14 @@ class Resampler(eqx.Module):
             )
         else:
             self.output_shape = output_shape
-        # get new fft modes separately
+        # Get new fft modes separately
         if len(input_shape[1:]) > 2:
             self._compute_fft_output_shape()
 
     def _compute_fft_output_shape(self) -> None:
         """Pre-computes output shape for fft-resampling."""
         output_shape = list(self.output_shape)
-        # truncate last dim from 0 to modes[-1] (hermitian symmetry)
+        # Truncate last dim from 0 to modes[-1] (hermitian symmetry)
         output_shape[-1] = output_shape[-1] // 2 + 1
         self.output_modes = tuple(output_shape[1:])
 
@@ -126,7 +126,7 @@ class Resampler(eqx.Module):
         Results:
             Resampled outputs.
         """
-        # treat original dim and new dim as linspaced [0, 1] range
+        # Treat original dim and new dim as linspaced [0, 1] range
         interp_vmap = jax.vmap(jnp.interp, in_axes=(None, None, 0, None, None))
         return interp_vmap(
             jnp.linspace(0, 1, self.output_shape[-1]),
@@ -153,7 +153,7 @@ class Resampler(eqx.Module):
             jnp.array(self.input_shape[1:]) - 1
         )
         translation = 0.5 * (1 - scale)
-        # pass all args as positional args
+        # Pass all args as positional args
         # jax raises TypeError for method string if passed as keyword arg
         interp_vmap = jax.vmap(
             jax.image.scale_and_translate,

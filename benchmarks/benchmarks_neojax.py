@@ -106,7 +106,7 @@ def train_jax(model, train_x, train_y, lr=1e-3, steps=100):
     compile_time = time.time() - start_comp
 
     start = time.time()
-    for i in range(steps):
+    for _ in range(steps):
         model, opt_state, loss = make_step(model, opt_state, train_x, train_y)
     # Ensure completion on GPU
     jax.block_until_ready(loss)

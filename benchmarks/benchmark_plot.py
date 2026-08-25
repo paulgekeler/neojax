@@ -90,7 +90,7 @@ def plot_results(
     # Set up 2x2 subplot layout
     fig, axes = plt.subplots(2, 2, figsize=(16, 12))
 
-    # 1. Inference Latency (Log-Log) [Top-Left]
+    # Inference Latency (Log-Log) [Top-Left]
     sns.lineplot(
         data=df_inf,
         x="Resolution",
@@ -106,7 +106,7 @@ def plot_results(
     axes[0, 0].set_ylabel("Latency per Batch (ms)")
     axes[0, 0].grid(True, which="both", ls="-", alpha=0.5)
 
-    # 2. Relative Speedup vs PyTorch Eager [Top-Right]
+    # Relative Speedup vs PyTorch Eager [Top-Right]
     eager_times = df_inf[df_inf["Implementation"] == "PyTorch (Eager)"].set_index(
         "Resolution"
     )["Inference Time (ms)"]
@@ -128,7 +128,7 @@ def plot_results(
     )
     axes[0, 1].set_ylabel("Speedup (x)")
 
-    # 3. Training Comparison (Execution Time only) [Bottom-Left]
+    # Training Comparison (Execution Time only) [Bottom-Left]
     sns.barplot(data=df_train, x="Implementation", y="Training Time (s)", ax=axes[1, 0])
     axes[1, 0].set_title(
         f"Training Execution Time for {train_steps} Steps (BS={train_bs})"
@@ -136,7 +136,7 @@ def plot_results(
     axes[1, 0].set_ylabel("Execution Time (seconds)")
     axes[1, 0].set_xlabel("")
 
-    # 4. Compilation Overhead Comparison [Bottom-Right]
+    # Compilation Overhead Comparison [Bottom-Right]
     compile_data = []
     try:
         # Find resolution (could be 128 for 1D, or 32 for 2D)

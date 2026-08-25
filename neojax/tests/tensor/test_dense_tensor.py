@@ -56,6 +56,7 @@ class TestDenseTensor:
 
     def test_jittable(self):
         from neojax.tests.conftest import assert_filter_jittable
+
         key = jr.key(0)
         in_c, out_c = 3, 5
         modes = (4, 4)
@@ -68,4 +69,3 @@ class TestDenseTensor:
         # Separable
         tensor_sep = DenseTensor(key, in_c, in_c, modes, separable=True)
         assert_filter_jittable(tensor_sep, 0, x_slice)
-

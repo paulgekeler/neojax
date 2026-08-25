@@ -27,7 +27,7 @@ class TestTuckerTensor:
 
         # Verify variance is within range
         init_std = (2.0 / (in_c * out_c)) ** 0.5
-        target_var = init_std ** 2
+        target_var = init_std**2
         actual_var = jnp.var(dense.real)
         assert 0.05 * (target_var / 2.0) < actual_var < 20.0 * (target_var / 2.0)
 
@@ -52,7 +52,7 @@ class TestTuckerTensor:
 
         # Verify variance is within range
         init_std = (2.0 / in_c) ** 0.5
-        target_var = init_std ** 2
+        target_var = init_std**2
         actual_var = jnp.var(dense.real)
         assert 0.05 * (target_var / 2.0) < actual_var < 20.0 * (target_var / 2.0)
 
@@ -69,6 +69,7 @@ class TestTuckerTensor:
 
     def test_jittable(self):
         from neojax.tests.conftest import assert_filter_jittable
+
         key = jr.key(0)
         in_c, out_c = 3, 5
         modes = (4, 4)
@@ -83,4 +84,3 @@ class TestTuckerTensor:
         ranks_sep = (2, 3, 3)
         tensor_sep = TuckerTensor(key, in_c, in_c, modes, ranks_sep, separable=True)
         assert_filter_jittable(tensor_sep, 0, x_slice)
-

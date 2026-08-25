@@ -117,12 +117,6 @@ Let's slice a batch of samples, project them using our schemas and normalizers, 
 ```python
 batch_bundle = dataset[0:4]
 
-# Pre-process proper meshgrid coordinates shape [4, 2, 16, 16]
-x, y = jnp.meshgrid(jnp.linspace(0, 1, 16), jnp.linspace(0, 1, 16), indexing="ij")
-coords = jnp.stack([x, y], axis=0)
-batched_coords = jnp.broadcast_to(coords, (4, *coords.shape))
-batch_bundle = eqx.tree_at(lambda b: b.coords, batch_bundle, batched_coords)
-
 # Forward transform
 model_inputs = processor.transform(batch_bundle, schema=in_schema)
 print(f"Model inputs shape: {model_inputs.shape}") # [batch, channels, x, y]

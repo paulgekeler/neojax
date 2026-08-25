@@ -2,11 +2,10 @@
 
 This page contains the API reference for all utility functions and classes throughout the library.
 
-## Loss Utilities
+## PyTorch Weight Conversion
 
-### Filter Functions
+These utilities help import pre-trained weights from PyTorch models (specifically the `neuraloperator` library) into their native JAX `neojax` equivalents.
 
-In order to filter fixed loss weights during training updates, there is a utility function to pass to the
-`equinox.filter_...` or `equinox.partition` functions as a `filter_spec`:
+::: neojax.utils.torch_converters.load_torch_weights_into_fno
 
-::: neojax.losses.utils.is_learnable_loss_weight
+::: neojax.utils.torch_converters.load_torch_weights_into_geo_fno

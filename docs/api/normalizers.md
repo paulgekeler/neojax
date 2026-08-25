@@ -1,8 +1,8 @@
 # Normalizer Reference
 
-Data normalization is essential for the stable and efficient training of Neural Operators. Skewed training data distributions heavily influence model performance and training, especially for physical data which may range across vastly different scales. **neojax** provides multiple normalizers for reliable training. 
+Physical data often spans widely different scales across fields, which affects training stability. `neojax` provides several normalizers to rescale data before it reaches the model.
 
-All normalizers share a common API, inherit from `BaseNormalizer`, and can be arbitrarily composed to build complex normalization pipelines.
+All normalizers share a common API, inherit from `BaseNormalizer`, and can be composed to apply several transformations in sequence.
 
 ## The Normalizer API
 
@@ -18,18 +18,18 @@ We adopt the common naming conventions of scientific computing libraries. Every 
 import jax.numpy as jnp
 from neojax.data.normalizers import MinMaxNormalizer
 
-# 1. Initialize the normalizer
+# Initialize the normalizer
 normalizer = MinMaxNormalizer()
 
-# 2. Learn statistics from training data
+# Learn statistics from training data
 train_data = jnp.array([[-10.0, 0.0, 10.0]])
 normalizer = normalizer.compute_stats(train_data)
 
-# 3. Transform data before passing to the model
+# Transform data before passing to the model
 normalized_data = normalizer(train_data) 
 # normalized_data is now scaled to [0, 1]
 
-# 4. Revert model predictions back to the original scale
+# Revert model predictions back to the original scale
 predictions = model(normalized_data)
 physical_predictions = normalizer.inverse_transform(predictions)
 ```
@@ -55,26 +55,26 @@ pipeline = pipeline.compute_stats(data)
 
 ## Base Normalizer
 
-:::neojax.data.normalizers.base_normalizer.BaseNormalizer
+:::neojax.data.normalizers.BaseNormalizer
 
 ## Unit Gaussian Normalizer
 
-:::neojax.data.normalizers.unit_gaussian_normalizer.UnitGaussianNormalizer
+:::neojax.data.normalizers.UnitGaussianNormalizer
 
 ## Robust Normalizer
 
-::: neojax.data.normalizers.robust_normalizer.RobustNormalizer
+::: neojax.data.normalizers.RobustNormalizer
 
 ## Min/Max Normalizer
 
 *(Supports both `"scale"` and destructive `"clip"` modes)*
-::: neojax.data.normalizers.min_max_normalizer.MinMaxNormalizer
+::: neojax.data.normalizers.MinMaxNormalizer
 
 ## Physics Normalizer
 
 *(Non-dimensionalizes data using physical scales. See Scales Reference.)*
-::: neojax.data.normalizers.physics_normalizer.PhysicsNormalizer
+::: neojax.data.normalizers.PhysicsNormalizer
 
 ## Composed Normalizer
 
-::: neojax.data.normalizers.composed_normalizer.ComposedNormalizer
+::: neojax.data.normalizers.ComposedNormalizer

@@ -1,8 +1,6 @@
 # Tensors Reference
 
-This page contains the API reference for the low-rank and standard spectral weight representations in `neojax`. 
-
-In neural operators (such as the FNO and TFNO), weights are parameterized in the Fourier domain. For high-dimensional or high-channel settings, storing the full parameter tensor $(C_{out}, C_{in}, m_1, \dots, m_d)$ is computationally expensive. `neojax` provides modular tensor classes to represent these weights in dense or low-rank factorized forms.
+In Neural Operators (such as the FNO and TFNO), weights are parameterized in the Fourier domain. For high-dimensional or high-channel settings, storing the full parameter tensor $(C_{out}, C_{in}, m_1, \dots, m_d)$ is computationally expensive. `neojax` provides modular tensor classes to represent these weights in dense or low-rank factorized forms.
 
 ??? cite "Useful overview on Tensor Operations"
 
@@ -28,9 +26,10 @@ In neural operators (such as the FNO and TFNO), weights are parameterized in the
 All tensor classes support depthwise-separable spectral convolutions via the `separable=True` flag.
 
 When `separable=True`:
+
 * Input and output channels must match (`in_channels == out_channels`).
 * The weight tensor dimensions are reduced from $(C_{out}, C_{in}, m_1, \dots, m_d)$ to $(C, m_1, \dots, m_d)$.
-* Contraction behaves pointwise/elementwise across the channel dimension. This is the spectral analogue of a depthwise separable convolution, significantly lowering parameter counts and memory usage.
+* Contraction behaves pointwise/elementwise across the channel dimension. This is the spectral analogue of a depthwise separable convolution, which lowers parameter counts and memory usage.
 
 ---
 
@@ -38,7 +37,7 @@ When `separable=True`:
 
 All representations inherit from `BaseTensor`.
 
-::: neojax.tensor.base_tensor.BaseTensor
+::: neojax.tensor.BaseTensor
 
 ---
 
@@ -46,7 +45,7 @@ All representations inherit from `BaseTensor`.
 
 A standard un-factorized representation of Fourier weights.
 
-::: neojax.tensor.dense_tensor.DenseTensor
+::: neojax.tensor.DenseTensor
 
 ---
 
@@ -54,7 +53,7 @@ A standard un-factorized representation of Fourier weights.
 
 Represents the weights in a Tucker decomposition format, factorized into a core tensor and mode-specific factor matrices.
 
-::: neojax.tensor.tucker_tensor.TuckerTensor
+::: neojax.tensor.TuckerTensor
 
 ---
 
@@ -62,7 +61,7 @@ Represents the weights in a Tucker decomposition format, factorized into a core 
 
 Represents the weights in a Canonical Polyadic decomposition format (approximating the weight tensor as a sum of K rank-1 tensors).
 
-::: neojax.tensor.cp_tensor.CPTensor
+::: neojax.tensor.CPTensor
 
 ---
 
@@ -70,4 +69,4 @@ Represents the weights in a Canonical Polyadic decomposition format (approximati
 
 Represents the weights in a Tensor Train format, factorizing the tensor into a chain of low-dimensional tensors connected back-to-back.
 
-::: neojax.tensor.tt_tensor.TTTensor
+::: neojax.tensor.TTTensor

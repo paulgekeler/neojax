@@ -3,18 +3,18 @@
 import os
 import tempfile
 from unittest.mock import MagicMock, patch
+
 import pytest
 import requests
 
 from neojax.data.download.dataset import download_dataset
 from neojax.data.download.dataverse_downloader import DataverseDownloader
-from neojax.data.download.huggingface_downloader import HuggingFaceDownloader
 from neojax.data.download.http_downloader import HTTPDownloader
+from neojax.data.download.huggingface_downloader import HuggingFaceDownloader
 from neojax.data.download.zenodo_downloader import ZenodoDownloader
 
 
 class TestHTTPDownloader:
-
     def test_http_downloader_success(self):
         """Test successful download and checksum validation."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -26,9 +26,7 @@ class TestHTTPDownloader:
             with patch("requests.get", return_value=mock_response) as mock_get:
                 urls = {"test_file.txt": "http://example.com/test_file.txt"}
                 # md5 of b"data1data2" is "ec7df88ac3eb6c69121cf62eb8231217"
-                checksums = {
-                    "test_file.txt": "md5:ec7df88ac3eb6c69121cf62eb8231217"
-                }
+                checksums = {"test_file.txt": "md5:ec7df88ac3eb6c69121cf62eb8231217"}
                 downloader = HTTPDownloader(urls=urls, checksums=checksums)
 
                 filepaths = downloader.download(tmpdir)
@@ -61,9 +59,7 @@ class TestHTTPDownloader:
                     urls=urls, checksums=checksums, max_retries=1
                 )
 
-                with pytest.raises(
-                    (requests.RequestException, ValueError, IOError)
-                ):
+                with pytest.raises((requests.RequestException, ValueError, IOError)):
                     downloader.download(tmpdir)
 
     def test_http_downloader_resume(self):
@@ -82,9 +78,7 @@ class TestHTTPDownloader:
 
             with patch("requests.get", return_value=mock_response) as mock_get:
                 urls = {"test_file.txt": "http://example.com/test_file.txt"}
-                checksums = {
-                    "test_file.txt": "md5:ec7df88ac3eb6c69121cf62eb8231217"
-                }
+                checksums = {"test_file.txt": "md5:ec7df88ac3eb6c69121cf62eb8231217"}
                 downloader = HTTPDownloader(urls=urls, checksums=checksums)
 
                 filepaths = downloader.download(tmpdir)
@@ -105,7 +99,6 @@ class TestHTTPDownloader:
 
 
 class TestZenodoDownloader:
-
     def test_zenodo_downloader_success(self):
         """Test Zenodo record parsing and HTTP downloader delegation."""
         with patch("requests.get") as mock_get:
@@ -122,9 +115,7 @@ class TestZenodoDownloader:
             }
             mock_get.return_value = mock_record_response
 
-            downloader = ZenodoDownloader(
-                record_id="12345", filenames=["file1.h5"]
-            )
+            downloader = ZenodoDownloader(record_id="12345", filenames=["file1.h5"])
 
             with patch(
                 "neojax.data.download.zenodo_downloader.HTTPDownloader"
@@ -144,7 +135,6 @@ class TestZenodoDownloader:
 
 
 class TestHuggingFaceDownloader:
-
     def test_huggingface_downloader_success(self):
         """Test HF api file discovery, filtering, and URL resolution."""
         with patch("requests.get") as mock_get:
@@ -194,7 +184,6 @@ class TestHuggingFaceDownloader:
 
 
 class TestDownloadDataset:
-
     def test_download_dataset_from_registry(self):
         """Test download_dataset resolving dataset names from registry."""
         with patch(
@@ -206,9 +195,7 @@ class TestDownloadDataset:
             paths = download_dataset("ace", "/tmp/target")
 
             assert paths == ["/tmp/ace_data.h5"]
-            MockHFDownloader.assert_called_once_with(
-                repo_id="camlab-ethz/ACE"
-            )
+            MockHFDownloader.assert_called_once_with(repo_id="camlab-ethz/ACE")
 
     def test_download_dataset_dataverse(self):
         """Test download_dataset resolving dataverse downloader."""
@@ -222,8 +209,7 @@ class TestDownloadDataset:
 
             assert paths == ["/tmp/pdebench_data.hdf5"]
             MockDataverseDownloader.assert_called_once_with(
-                doi="10.18419/darus-2986",
-                filenames=["Sod6.hdf5"]
+                doi="10.18419/darus-2986", filenames=["Sod6.hdf5"]
             )
 
     def test_download_dataset_invalid_name(self):
@@ -234,7 +220,6 @@ class TestDownloadDataset:
 
 
 class TestDataverseDownloader:
-
     @patch("requests.get")
     def test_dataverse_downloader_success(self, mock_get):
         """Test successful Dataverse API file discovery and download delegation."""
@@ -245,29 +230,22 @@ class TestDataverseDownloader:
                 "files": [
                     {
                         "label": "file1.hdf5",
-                        "dataFile": {
-                            "id": 12345,
-                            "md5": "abc123md5hash"
-                        }
+                        "dataFile": {"id": 12345, "md5": "abc123md5hash"},
                     },
                     {
                         "label": "file2.hdf5",
                         "dataFile": {
                             "id": 67890,
-                            "checksum": {
-                                "type": "MD5",
-                                "value": "def456md5hash"
-                            }
-                        }
-                    }
+                            "checksum": {"type": "MD5", "value": "def456md5hash"},
+                        },
+                    },
                 ]
             }
         }
         mock_get.return_value = mock_response
 
         downloader = DataverseDownloader(
-            doi="10.18419/darus-2986",
-            filenames=["file1.hdf5", "file2.hdf5"]
+            doi="10.18419/darus-2986", filenames=["file1.hdf5", "file2.hdf5"]
         )
 
         with patch(
@@ -276,24 +254,21 @@ class TestDataverseDownloader:
             mock_http_instance = MockHTTPDownloader.return_value
             mock_http_instance.download.return_value = [
                 "/tmp/target/file1.hdf5",
-                "/tmp/target/file2.hdf5"
+                "/tmp/target/file2.hdf5",
             ]
 
             paths = downloader.download("/tmp/target")
 
-            assert paths == [
-                "/tmp/target/file1.hdf5",
-                "/tmp/target/file2.hdf5"
-            ]
+            assert paths == ["/tmp/target/file1.hdf5", "/tmp/target/file2.hdf5"]
             MockHTTPDownloader.assert_called_once_with(
                 urls={
                     "file1.hdf5": "https://darus.uni-stuttgart.de/api/access/datafile/12345",
-                    "file2.hdf5": "https://darus.uni-stuttgart.de/api/access/datafile/67890"
+                    "file2.hdf5": "https://darus.uni-stuttgart.de/api/access/datafile/67890",
                 },
                 checksums={
                     "file1.hdf5": "md5:abc123md5hash",
-                    "file2.hdf5": "md5:def456md5hash"
+                    "file2.hdf5": "md5:def456md5hash",
                 },
                 max_retries=5,
-                backoff_factor=1.5
+                backoff_factor=1.5,
             )

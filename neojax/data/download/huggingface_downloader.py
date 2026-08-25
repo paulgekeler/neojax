@@ -1,6 +1,7 @@
 """Downloader that fetches files from Hugging Face Hub repositories."""
 
 import logging
+from pathlib import Path
 from typing import final
 
 import requests
@@ -57,7 +58,7 @@ class HuggingFaceDownloader(BaseDownloader):
         self.max_retries = max_retries
         self.backoff_factor = backoff_factor
 
-    def download(self, target_dir: str, force: bool = False) -> list[str]:
+    def download(self, target_dir: str | Path, force: bool = False) -> list[str]:
         """Query Hugging Face API to list files and download them.
 
         Args:
@@ -88,7 +89,7 @@ class HuggingFaceDownloader(BaseDownloader):
         urls = {}
 
         for sibling in siblings:
-            rpath = sibling.get("rpath")
+            rpath = sibling.get("rpath") or sibling.get("rfilename")
             if not rpath:
                 continue
 

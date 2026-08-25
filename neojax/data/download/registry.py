@@ -4,7 +4,7 @@ from typing import Any
 
 # Registry mapping dataset names to their downloader backend and configurations.
 DATASET_REGISTRY: dict[str, dict[str, Any]] = {
-    # --- Hugging Face PDEgym datasets (camlab-ethz) ---
+    # Hugging Face PDEgym datasets (camlab-ethz)
     "ace": {
         "description": "Allen-Cahn equation from PDEgym",
         "downloader": "huggingface",
@@ -24,8 +24,7 @@ DATASET_REGISTRY: dict[str, dict[str, Any]] = {
     },
     "ce_gauss": {
         "description": (
-            "Compressible Euler equations with Gaussian initial conditions from "
-            "PDEgym"
+            "Compressible Euler equations with Gaussian initial conditions from PDEgym"
         ),
         "downloader": "huggingface",
         "params": {
@@ -34,8 +33,7 @@ DATASET_REGISTRY: dict[str, dict[str, Any]] = {
     },
     "ce_kh": {
         "description": (
-            "Compressible Euler equations (Kelvin-Helmholtz instability) from "
-            "PDEgym"
+            "Compressible Euler equations (Kelvin-Helmholtz instability) from PDEgym"
         ),
         "downloader": "huggingface",
         "params": {
@@ -44,8 +42,7 @@ DATASET_REGISTRY: dict[str, dict[str, Any]] = {
     },
     "ce_rm": {
         "description": (
-            "Compressible Euler equations (Richtmyer-Meshkov problem) from "
-            "PDEgym"
+            "Compressible Euler equations (Richtmyer-Meshkov problem) from PDEgym"
         ),
         "downloader": "huggingface",
         "params": {
@@ -122,8 +119,7 @@ DATASET_REGISTRY: dict[str, dict[str, Any]] = {
     },
     "ns_sines": {
         "description": (
-            "Navier-Stokes equations with sine-based initial conditions from "
-            "PDEgym"
+            "Navier-Stokes equations with sine-based initial conditions from PDEgym"
         ),
         "downloader": "huggingface",
         "params": {
@@ -162,8 +158,7 @@ DATASET_REGISTRY: dict[str, dict[str, Any]] = {
     },
     "wave_gauss": {
         "description": (
-            "Wave equation with Gaussian initial conditions and wave speeds "
-            "from PDEgym"
+            "Wave equation with Gaussian initial conditions and wave speeds from PDEgym"
         ),
         "downloader": "huggingface",
         "params": {
@@ -177,7 +172,7 @@ DATASET_REGISTRY: dict[str, dict[str, Any]] = {
             "repo_id": "camlab-ethz/Wave-Layer",
         },
     },
-    # --- Standard Zenodo / HTTP datasets for verification ---
+    # Standard Zenodo / HTTP datasets for verification
     "burgers_1d": {
         "description": "1D Burgers' equation dataset from PDEBench",
         "downloader": "zenodo",
@@ -194,7 +189,7 @@ DATASET_REGISTRY: dict[str, dict[str, Any]] = {
             "filenames": ["2D_DarcyFlow_beta1.0_Train.hdf5"],
         },
     },
-    # --- PDEBench datasets from DaRUS (doi:10.18419/darus-2986) ---
+    # PDEBench datasets from DaRUS (doi:10.18419/darus-2986)
     "pdebench_advection_1d": {
         "description": "1D Advection dataset from PDEBench (DaRUS)",
         "downloader": "dataverse",
@@ -316,8 +311,8 @@ DATASET_REGISTRY: dict[str, dict[str, Any]] = {
             ],
         },
     },
-    "pdebench_reaction_diffusion_2d": {
-        "description": "2D Reaction-Diffusion (FitzHugh-Nagumo) dataset from PDEBench (DaRUS)",
+    "pdebench_reaction_diffusion_1d": {
+        "description": "1D Reaction-Diffusion (FitzHugh-Nagumo) dataset from PDEBench (DaRUS)",
         "downloader": "dataverse",
         "params": {
             "doi": "10.18419/darus-2986",

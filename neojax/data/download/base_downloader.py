@@ -1,6 +1,7 @@
 """Abstract base class for dataset downloaders."""
 
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 
 class BaseDownloader(ABC):
@@ -11,7 +12,7 @@ class BaseDownloader(ABC):
     """
 
     @abstractmethod
-    def download(self, target_dir: str, force: bool = False) -> list[str]:
+    def download(self, target_dir: str | Path, force: bool = False) -> list[str]:
         """Downloads the dataset files to target_dir.
 
         Args:
@@ -22,4 +23,3 @@ class BaseDownloader(ABC):
             A list of absolute file paths to the downloaded files.
         """
         ...
-

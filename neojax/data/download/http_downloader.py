@@ -3,8 +3,8 @@
 import hashlib
 import importlib
 import logging
-import os
 import time
+from pathlib import Path
 from typing import Any, final
 
 import requests
@@ -112,7 +112,7 @@ class HTTPDownloader(BaseDownloader):
             return False
 
     def _download_file(
-        self, filename: str, url: str, target_dir: str, force: bool
+        self, filename: str, url: str, target_dir: str | Path, force: bool
     ) -> str:
         """Downloads a single file from the URL with retry and resume support.
 
@@ -131,13 +131,13 @@ class HTTPDownloader(BaseDownloader):
             OSError: If a file system error occurs during reading or writing.
             RuntimeError: If the download loop terminates unexpectedly.
         """
-        filepath = os.path.join(target_dir, filename)
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        filepath = Path(target_dir) / filename
+        filepath.parent.mkdir(exist_ok=True)
 
         expected_checksum = self.checksums.get(filename)
 
         # Check if file exists and is valid
-        if not force and os.path.exists(filepath):
+        if not force and filepath.exists():
             if expected_checksum:
                 if self._verify_checksum(filepath, expected_checksum):
                     logger.info(
@@ -159,13 +159,13 @@ class HTTPDownloader(BaseDownloader):
         while retry <= self.max_retries:
             try:
                 # Check for partial download
-                temp_filepath = filepath + ".part"
+                temp_filepath = filepath.with_suffix(".part")
                 resume_header = {}
                 downloaded_bytes = 0
 
                 # Force re-download ignores partial download
-                if not force and os.path.exists(temp_filepath):
-                    downloaded_bytes = os.path.getsize(temp_filepath)
+                if not force and temp_filepath.exists():
+                    downloaded_bytes = temp_filepath.stat().st_size
                     # Use Range header for resume
                     resume_header = {"Range": f"bytes={downloaded_bytes}-"}
                     logger.info(
@@ -194,8 +194,8 @@ class HTTPDownloader(BaseDownloader):
                     logger.warning(
                         "HTTP Range Not Satisfiable (416). Resetting part file."
                     )
-                    if os.path.exists(temp_filepath):
-                        os.remove(temp_filepath)
+                    if temp_filepath.exists():
+                        temp_filepath.unlink()
                     write_mode = "wb"
                     downloaded_bytes = 0
                     response = requests.get(
@@ -242,9 +242,9 @@ class HTTPDownloader(BaseDownloader):
                     print()  # Add newline after print carriage return
 
                 # Move part file to final file location
-                if os.path.exists(filepath):
-                    os.remove(filepath)
-                os.rename(temp_filepath, filepath)
+                if filepath.exists():
+                    filepath.unlink()
+                temp_filepath.rename(filepath)
 
                 # Verify checksum of finished download
                 if expected_checksum:
@@ -264,10 +264,10 @@ class HTTPDownloader(BaseDownloader):
                         f"attempts. Error: {e}"
                     )
                     # Cleanup partial file on fatal failure
-                    temp_filepath = filepath + ".part"
-                    if os.path.exists(temp_filepath):
+                    temp_filepath = filepath.with_suffix(".part")
+                    if temp_filepath.exists():
                         try:
-                            os.remove(temp_filepath)
+                            temp_filepath.unlink()
                         except OSError:
                             pass
                     raise e
@@ -281,7 +281,7 @@ class HTTPDownloader(BaseDownloader):
 
         raise RuntimeError(f"Unexpected termination of download loop for {filename}.")
 
-    def download(self, target_dir: str, force: bool = False) -> list[str]:
+    def download(self, target_dir: str | Path, force: bool = False) -> list[str]:
         """Download all configured URLs.
 
         Args:

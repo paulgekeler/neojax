@@ -1,6 +1,7 @@
 """Downloader that fetches files from Zenodo record IDs."""
 
 import logging
+from pathlib import Path
 from typing import final
 
 import requests
@@ -51,7 +52,7 @@ class ZenodoDownloader(BaseDownloader):
         self.max_retries = max_retries
         self.backoff_factor = backoff_factor
 
-    def download(self, target_dir: str, force: bool = False) -> list[str]:
+    def download(self, target_dir: str | Path, force: bool = False) -> list[str]:
         """Query Zenodo API to list and download files.
 
         Args:

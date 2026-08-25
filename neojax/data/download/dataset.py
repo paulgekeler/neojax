@@ -1,8 +1,8 @@
 """Main function to resolve and download datasets."""
 
 import logging
+from pathlib import Path
 
-from neojax.data.download.base_downloader import BaseDownloader
 from neojax.data.download.dataverse_downloader import DataverseDownloader
 from neojax.data.download.http_downloader import HTTPDownloader
 from neojax.data.download.huggingface_downloader import HuggingFaceDownloader
@@ -12,7 +12,9 @@ from neojax.data.download.zenodo_downloader import ZenodoDownloader
 logger = logging.getLogger(__name__)
 
 
-def download_dataset(name: str, target_dir: str, force: bool = False) -> list[str]:
+def download_dataset(
+    name: str, target_dir: str | Path, force: bool = False
+) -> list[str]:
     """Downloads a dataset from the registry by name.
 
     Args:
@@ -39,7 +41,7 @@ def download_dataset(name: str, target_dir: str, force: bool = False) -> list[st
     params = config.get("params", {})
 
     if downloader_type == "huggingface":
-        downloader: BaseDownloader = HuggingFaceDownloader(**params)
+        downloader = HuggingFaceDownloader(**params)
     elif downloader_type == "zenodo":
         downloader = ZenodoDownloader(**params)
     elif downloader_type == "dataverse":

@@ -1,7 +1,9 @@
 """Downloader that fetches files from Dataverse datasets using DOIs."""
 
 import logging
+from pathlib import Path
 from typing import final
+
 import requests
 
 from neojax.data.download.base_downloader import BaseDownloader
@@ -56,7 +58,7 @@ class DataverseDownloader(BaseDownloader):
         self.max_retries = max_retries
         self.backoff_factor = backoff_factor
 
-    def download(self, target_dir: str, force: bool = False) -> list[str]:
+    def download(self, target_dir: str | Path, force: bool = False) -> list[str]:
         """Query Dataverse API to list and download files.
 
         Args:

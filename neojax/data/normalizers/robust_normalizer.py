@@ -5,6 +5,7 @@ from typing import final
 import equinox as eqx
 import jax.numpy as jnp
 from jaxtyping import Array, Float
+from typing_extensions import override
 
 from neojax.data.normalizers.base_normalizer import BaseNormalizer
 
@@ -54,6 +55,7 @@ class RobustNormalizer(BaseNormalizer):
         """Accessor for the scale stored in stats."""
         return self.stats["scale"]
 
+    @override
     def compute_stats(
         self,
         data: Float[Array, "c ..."],
@@ -80,6 +82,7 @@ class RobustNormalizer(BaseNormalizer):
 
         return eqx.tree_at(lambda n: n.stats, self, new_stats)
 
+    @override
     def transform(
         self,
         x: Float[Array, "..."],
@@ -94,6 +97,7 @@ class RobustNormalizer(BaseNormalizer):
         """
         return (x - self.median) / (self.scale + 1e-7)
 
+    @override
     def inverse_transform(
         self,
         x: Float[Array, "..."],

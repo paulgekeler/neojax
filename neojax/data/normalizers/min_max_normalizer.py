@@ -6,6 +6,7 @@ from typing import Literal, final
 import equinox as eqx
 import jax.numpy as jnp
 from jaxtyping import Array, Float
+from typing_extensions import override
 
 from neojax.data.normalizers.base_normalizer import BaseNormalizer
 
@@ -20,7 +21,7 @@ class MinMaxNormalizer(BaseNormalizer):
         (e.g. known physical bounds).
     2. Learned from data by passing them to `compute_stats`
 
-    Data can be clipped or scaled to [min, max] range.
+    Data can be clipped or scaled to `[min, max]` range.
 
     Args:
         minima: Optional min for dynamical scaling.
@@ -40,7 +41,7 @@ class MinMaxNormalizer(BaseNormalizer):
         * **stats** (`dict[str, Float[Array, ...] | None]`): Dict of min and max if passed at initialization, else None.
 
     !!! warning
-        Inverse transformation can only be applied for scaled transformations.
+        Inverse transformation can only be applied to scaled transformations.
     """
 
     def __init__(
@@ -63,6 +64,7 @@ class MinMaxNormalizer(BaseNormalizer):
         """Accessor for the max stored in stats."""
         return self.stats["max"]
 
+    @override
     def compute_stats(
         self,
         data: Float[Array, "c ..."],
@@ -71,8 +73,8 @@ class MinMaxNormalizer(BaseNormalizer):
         """Computes min and max from given data.
 
         To normalize per-channel for input (c, d1, ..., dN),
-        pass axis=tuple(range(1, data.ndim)). To normalize
-        across all axes, pass axis=None.
+        pass `axis=tuple(range(1, data.ndim))`. To normalize
+        across all axes, pass `axis=None`.
 
         Args:
             data: The input array.
@@ -96,6 +98,7 @@ class MinMaxNormalizer(BaseNormalizer):
 
         return eqx.tree_at(lambda n: n.stats, self, new_stats)
 
+    @override
     def transform(
         self,
         x: Float[Array, "..."],
@@ -113,9 +116,9 @@ class MinMaxNormalizer(BaseNormalizer):
                 min/max scaling (x - min) / (max - min + eps).
                 Default is `"scale"`.
 
-        Note:
+        !!! warning
             `"clip"` is a destructive operation. Clipped data cannot be
-            perfectly reconstructed:
+            reconstructed:
             ```python
                 inverse_transform(transform(x, mode="clip", ...), ...) != x
             ```
@@ -140,6 +143,7 @@ class MinMaxNormalizer(BaseNormalizer):
             return jnp.clip(x, self.stats["min"], self.stats["max"])
         raise ValueError(f"Unknown mode {mode}. Use either 'clip' or 'scale'.")
 
+    @override
     def inverse_transform(
         self,
         x: Float[Array, "..."],

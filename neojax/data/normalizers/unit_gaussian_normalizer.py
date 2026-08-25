@@ -5,6 +5,7 @@ from typing import final
 import equinox as eqx
 import jax.numpy as jnp
 from jaxtyping import Array, Float
+from typing_extensions import override
 
 from neojax.data.normalizers.base_normalizer import BaseNormalizer
 
@@ -41,6 +42,7 @@ class UnitGaussianNormalizer(BaseNormalizer):
         """Accessor for the std stored in stats."""
         return self.stats["std"]
 
+    @override
     def compute_stats(
         self,
         data: Float[Array, "c ..."],
@@ -49,8 +51,8 @@ class UnitGaussianNormalizer(BaseNormalizer):
         """Computes mean and std from diven data.
 
         To normalize per-channel for input (c, d1, ..., dN),
-        pass axis=tuple(range(1, data.ndim)). To normalize
-        across all axes, pass axis=None.
+        pass `axis=tuple(range(1, data.ndim))`. To normalize
+        across all axes, pass `axis=None`.
 
         Args:
             data: The input array.
@@ -68,6 +70,7 @@ class UnitGaussianNormalizer(BaseNormalizer):
 
         return eqx.tree_at(lambda n: n.stats, self, new_stats)
 
+    @override
     def transform(self, x: Float[Array, "..."]) -> Float[Array, "..."]:
         """Standardizes input using stored mean and std.
 
@@ -79,6 +82,7 @@ class UnitGaussianNormalizer(BaseNormalizer):
         """
         return (x - self.mean) / (self.std + 1e-7)
 
+    @override
     def inverse_transform(self, x: Float[Array, "..."]) -> Float[Array, "..."]:
         """Reverts standardization.
 

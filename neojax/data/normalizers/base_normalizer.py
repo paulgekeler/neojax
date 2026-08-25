@@ -1,6 +1,6 @@
 """Implementation of the abstract normalizer class."""
 
-import abc
+from abc import abstractmethod
 
 import equinox as eqx
 from jaxtyping import Array, Float, PyTree
@@ -9,7 +9,7 @@ from jaxtyping import Array, Float, PyTree
 class BaseNormalizer(eqx.Module):
     """Base class for all normalizers.
 
-    All normalizers should inherit from BaseNormalizer.
+    All normalizers should inherit from `BaseNormalizer`.
     Following the "Abstract or Final" pattern, this class contains no
     logic and only defines the interface. Subclasses should be marked
     as final.
@@ -26,21 +26,21 @@ class BaseNormalizer(eqx.Module):
 
     stats: PyTree
 
-    @abc.abstractmethod
+    @abstractmethod
     def compute_stats(self, data: Float[Array, "..."]) -> "BaseNormalizer":
         """Computes statistics from the provided data.
 
-        This function should set the stats attribute.
+        This function should set the `stats` attribute.
 
         Args:
             data: The data to compute statistics from.
 
         Returns:
-            A new BaseNormalizer instance with updated stats.
+            A new BaseNormalizer instance with updated `stats`.
         """
         ...
 
-    @abc.abstractmethod
+    @abstractmethod
     def transform(self, x: Float[Array, "..."]) -> Float[Array, "..."]:
         """Applies the forward normalization transform.
 
@@ -52,7 +52,7 @@ class BaseNormalizer(eqx.Module):
         """
         ...
 
-    @abc.abstractmethod
+    @abstractmethod
     def inverse_transform(self, x: Float[Array, "..."]) -> Float[Array, "..."]:
         """Applies the inverse normalization transform.
 

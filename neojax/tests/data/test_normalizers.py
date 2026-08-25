@@ -91,8 +91,8 @@ class TestComposedNormalizer:
         data = jnp.array([10.0, 20.0, 30.0])
 
         # Sequential (Default):
-        # 1. UnitGaussian: mean=20, std=~8.16 -> Out is approx [-1.2, 0, 1.2]
-        # 2. MinMax: Should scale [-1.2, 1.2] to [0, 1]
+        # UnitGaussian: mean=20, std=~8.16 -> Out is approx [-1.2, 0, 1.2]
+        # MinMax: Should scale [-1.2, 1.2] to [0, 1]
         norm_seq = ComposedNormalizer(
             UnitGaussianNormalizer(), MinMaxNormalizer()
         ).compute_stats(data, sequential=True)
@@ -102,16 +102,16 @@ class TestComposedNormalizer:
         assert jnp.allclose(jnp.max(out_seq), 1.0, atol=1e-5)
 
         # Parallel (Non-sequential):
-        # 1. UnitGaussian: mean=20, std=~8.16
-        # 2. MinMax: min=10, max=30
-        # If we apply this non-sequentially, the MinMax won't produce [0, 1]
-        # because it's using the range of the ORIGINAL data to scale the
-        # ALREADY Gaussian-normalized data.
+        # UnitGaussian: mean=20, std=~8.16
+        # MinMax: min=10, max=30
+        # If applied non-sequentially, MinMax doesn't produce [0, 1]
+        # because it uses the range of the original data to scale the
+        # already Gaussian-normalized data.
         norm_par = ComposedNormalizer(
             UnitGaussianNormalizer(), MinMaxNormalizer()
         ).compute_stats(data, sequential=False)
 
         out_par = norm_par(data)
-        # Min of Gaussian out was approx -1.2.
+        # Min of Gaussian approx -1.2.
         # MinMax scale step: (-1.2 - 10) / (30 - 10) = -11.2 / 20 = -0.56
         assert jnp.min(out_par) < 0.0

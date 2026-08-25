@@ -4,6 +4,7 @@ from typing import final
 
 import equinox as eqx
 from jaxtyping import Array, Float
+from typing_extensions import override
 
 from neojax.data.normalizers.base_normalizer import BaseNormalizer
 
@@ -23,7 +24,8 @@ class ComposedNormalizer(BaseNormalizer):
     ??? info "Internal Attributes"
         These fields store the internal state of the normalizer.
 
-        * **stats** (`dict[str, tuple[BaseNormalizer, ...]]`): Dict containing 'normalizers', which stores the sequence of normalizers as a tuple.
+        * **stats** (`dict[str, tuple[BaseNormalizer, ...]]`): Dict containing 'normalizers',
+            which stores the sequence of normalizers as a tuple.
 
     Examples:
         ```python
@@ -46,7 +48,7 @@ class ComposedNormalizer(BaseNormalizer):
         transformed = norm(data)
         ```
 
-    !!! info "Notes"
+    !!! info
         If all normalizer statistics need to be computed on raw data,
         pass `sequential=False` to `compute_stats()`.
     """
@@ -54,6 +56,7 @@ class ComposedNormalizer(BaseNormalizer):
     def __init__(self, *normalizers: BaseNormalizer) -> None:
         self.stats = {"normalizers": tuple(normalizer for normalizer in normalizers)}
 
+    @override
     def compute_stats(
         self,
         data: Float[Array, "c ..."],
@@ -94,6 +97,7 @@ class ComposedNormalizer(BaseNormalizer):
         new_stats = {"normalizers": tuple(new_normalizers)}
         return eqx.tree_at(lambda n: n.stats, self, new_stats)
 
+    @override
     def transform(self, x: Float[Array, "..."]) -> Float[Array, "..."]:
         """Applies the sequence of normalizations to the input.
 
@@ -107,6 +111,7 @@ class ComposedNormalizer(BaseNormalizer):
             x = normalizer(x)
         return x
 
+    @override
     def inverse_transform(self, x: Float[Array, "..."]) -> Float[Array, "..."]:
         """Reverts the sequence of normalizations in reverse order.
 

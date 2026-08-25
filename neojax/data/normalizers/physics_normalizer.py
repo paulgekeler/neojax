@@ -5,6 +5,7 @@ from typing import final
 import equinox as eqx
 import jax.numpy as jnp
 from jaxtyping import Array, Float
+from typing_extensions import override
 
 from neojax.data.normalizers.base_normalizer import BaseNormalizer
 from neojax.data.scales import PhysicalScale
@@ -25,11 +26,13 @@ class PhysicsNormalizer(BaseNormalizer):
         These fields store the internal state of the normalizer.
 
         * **scales** (`tuple[PhysicalScale, ...]`): Tuple of physical scale providers.
-        * **stats** (`dict[str, Float[Array, ...] | None]`): Dict containing 'scale_product', which is the resulting element-wise product of all computed scales.
+        * **stats** (`dict[str, Float[Array, ...] | None]`): Dict containing 'scale_product',
+            which is the resulting element-wise product of all computed scales.
 
     Examples:
         ```python
         from neojax.data.scales import CharacteristicLengthScale, ReynoldsScale
+        from neojax.data.normalizers import PhysicsNormalizer
 
         # Compose multiple physical scales
         norm = PhysicsNormalizer(
@@ -49,6 +52,7 @@ class PhysicsNormalizer(BaseNormalizer):
         self.scales = scales
         self.stats = {"scale_product": None}
 
+    @override
     def compute_stats(
         self,
         data: Float[Array, "c ..."],
@@ -73,6 +77,7 @@ class PhysicsNormalizer(BaseNormalizer):
         new_stats = {"scale_product": scale_product}
         return eqx.tree_at(lambda n: n.stats, self, new_stats)
 
+    @override
     def transform(self, x: Float[Array, "..."]) -> Float[Array, "..."]:
         """Non-dimensionalizes input by dividing by the scale product.
 
@@ -84,6 +89,7 @@ class PhysicsNormalizer(BaseNormalizer):
         """
         return x / (self.stats["scale_product"] + 1e-7)
 
+    @override
     def inverse_transform(self, x: Float[Array, "..."]) -> Float[Array, "..."]:
         """Reverts non-dimensionalization by multiplying by the scale product.
 

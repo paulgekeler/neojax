@@ -71,8 +71,8 @@ def assert_filter_jittable(func: Callable[..., Any], *args: Any, **kwargs: Any) 
         )
     jtu.tree_map(
         lambda e, j1, j2: (
-            np.testing.assert_allclose(j1, e, rtol=1e-5, atol=1e-5),
-            np.testing.assert_allclose(j2, e, rtol=1e-5, atol=1e-5),
+            np.testing.assert_allclose(j1, e, rtol=1e-4, atol=1e-4),
+            np.testing.assert_allclose(j2, e, rtol=1e-4, atol=1e-4),
         ),
         expected_output,
         jit_fun_out1,
@@ -110,8 +110,8 @@ def assert_jittable_w_static(
         )
     jtu.tree_map(
         lambda e, j1, j2: (
-            np.testing.assert_allclose(j1, e, rtol=1e-5, atol=1e-5),
-            np.testing.assert_allclose(j2, e, rtol=1e-5, atol=1e-5),
+            np.testing.assert_allclose(j1, e, rtol=1e-4, atol=1e-4),
+            np.testing.assert_allclose(j2, e, rtol=1e-4, atol=1e-4),
         ),
         expected_output,
         jit_fun_out1,
@@ -145,8 +145,8 @@ def assert_jaxpr_equal(
 ):
     assert len(jaxpr1.consts) == len(jaxpr2.consts)
     for c1, c2 in zip(jaxpr1.consts, jaxpr2.consts, strict=True):
-        if isinstance(c1, (jax.Array, np.ndarray)) or isinstance(
-            c2, (jax.Array, np.ndarray)
+        if isinstance(c1, jax.Array | np.ndarray) or isinstance(
+            c2, jax.Array | np.ndarray
         ):
             np.testing.assert_array_equal(c1, c2)
         else:

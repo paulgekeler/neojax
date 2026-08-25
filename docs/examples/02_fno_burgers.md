@@ -6,20 +6,18 @@ In this second example, we showcase how to train a Fourier Neural Operator on Bu
 
 To run this example, we first install and import the necessary python dependencies:
 
-```python
-!pip3 install equinox diffrax optax neojax-operators jaxtyping
+```bash
+pip3 install "neojax-operators[ex]"
 ```
 
 ```python
-# we use diffrax to solve burgers equation and generate data
-import diffrax
 import equinox as eqx
-# we use optax for gradient optimizers
-import optax
 import jax
 import jax.numpy as jnp
 import jax.random as jr
-from jaxtyping import Array
+
+# we use optax for gradient optimizers
+import optax
 
 from neojax.models import FNO
 from neojax.nn import GridEmbeddingNd
@@ -41,236 +39,87 @@ $$
 C = 625(-\frac{d^2}{dx^2} + 25I)^{-2}.
 $$
 
-(Skip the following part if you are more interested in model training and performance).
-
 #### Generating data
-We solve Burgers equation using a pseudo-spectral split step method (see [^1]), implemented in **Diffrax**. Using **Diffrax** allows us to use adaptive step sizes when solving the non-linear part which is faster than the very small fixed step size used [^1].
+We import the `generate_burgers_1d` function from **neojax** data generation module which solves the 1D Burgers equation using a pseudo-spectral split step method (see [^1]).
 
 We generate a total of 1000 training and 200 test samples. Generation takes around 6 minutes on a CPU but is considerably faster on a GPU.
 
 [^1]: Kovachki, N. et al. "Neural Operator: Learning Maps Between Function Spaces With Applications to PDEs". JMLR 2023, https://www.jmlr.org/papers/volume24/21-1524/21-1524.pdf.
 
 ```python
-def burgers_explicit_vf(t: Array, u: Array, args: tuple[float, Array, Array]) -> Array:
-    """Computes the non-linear advection term in Fourier space.
-
-    Args:
-        t: Time steps. Placeholder for compatibility.
-        u: Function values.
-        args: Additional vector field arguments.
-
-    Returns:
-        Non-linear advection term in Fourier space.
-    """
-    nu, ik, ik2 = args
-    # Compute the non-linear advection term: -u * (du/dx)
-    # Move back to spatial domain to handle the multiplication
-    u_spatial = jnp.fft.irfft(u)
-    # Compute du/dx in Fourier space, then move to spatial domain
-    dudx_spatial = jnp.fft.irfft(ik * u)
-    advection_spatial = -u_spatial * dudx_spatial
-    # Move the advection term back to Fourier space
-    advection_ft = jnp.fft.rfft(advection_spatial)
-    return advection_ft
-
-def burgers_implicit_vf(t: Array, u: Array, args: tuple[float, Array, Array]) -> Array:
-    """Computes the linear diffusion term exactly in Fourier space.
-
-    Args:
-        t: Time steps. Placeholder for compatibility.
-        u: Function values.
-        args: Additional vector field arguments.
-
-    Returns:
-        Linear diffusion term in Fourier space.
-    """
-    nu, ik, ik2 = args
-    # Compute the linear diffusion term exactly in Fourier space: ν * (d²u/dx²)
-    # Mathematically: ν * (ik)² * û
-    diffusion_ft = nu * ik2 * u
-    return diffusion_ft
-
-def solve_single_trajectory(u0_ft: Array, nu: float, ik: Array, ik2: Array, t1: float) -> Array:
-    """Solves Burgers equation for a single initial condition.
-
-    Args:
-        u0_ft:
-        nu: Viscosity
-        ik:
-        ik2:
-        t1: Maximum time.
-
-    Returns:
-        Solution trajectory.
-    """
-    # KenCarp5 is an IMEX (Implicit-Explicit) solver. 
-    # It expects a MultiTerm where the first term is treated explicitly 
-    # and the second implicitly (usually the stiff part).
-    terms = diffrax.MultiTerm(
-        diffrax.ODETerm(burgers_explicit_vf),
-        diffrax.ODETerm(burgers_implicit_vf)
-    )
-    solver = diffrax.KenCarp5()
-    # Save only the initial state (t=0) and the final state (t=t1) to save memory
-    saveat = diffrax.SaveAt(t0=True, t1=True)
-
-    sol = diffrax.diffeqsolve(
-        terms,
-        solver,
-        t0=0.0,
-        t1=t1,
-        dt0=0.001,
-        y0=u0_ft,
-        args=(nu, ik, ik2),
-        saveat=saveat,
-        stepsize_controller=diffrax.PIDController(rtol=1e-5, atol=1e-5)
-    )
-    return sol.ys
-
-solve_batched_trajectories = jax.vmap(
-    solve_single_trajectory,
-    in_axes=(0, None, None, None, None)
-)
-
-def generate_fno_initial_conditions(n_samples: int, n_grid_points: int = 8192, seed: int = 42) -> Array:
-    """Generates periodic GRF initial conditions.
-
-    Args:
-        n_samples: Number of samples.
-        n_grid_points: Number of spatial grid points.
-        seed: Jax random seed.
-    """
-    key = jr.key(seed)
-    r_key, i_key = jr.split(key)
-    # Compute the structural wavenumbers k for a periodic [0, 1] domain
-    k = jnp.fft.rfftfreq(n_grid_points, d=1.0/n_grid_points) * (2.0 * jnp.pi)
-    # Sample standard complex Gaussian white noise in Fourier space
-    noise_real = jr.normal(r_key, (n_samples, n_grid_points // 2 + 1))
-    noise_imag = jr.normal(i_key, (n_samples, n_grid_points // 2 + 1))
-    # Scale complex components to preserve variance across the FFT
-    white_noise_ft = (noise_real + 1j * noise_imag) * jnp.sqrt(n_grid_points)
-    # Apply the square-root covariance operator filter: C^{1/2} = 25 / (k^2 + 25)
-    covariance_filter = 25.0 / (k**2 + 25.0)
-    u0_ft = white_noise_ft * covariance_filter[None, :]
-    return u0_ft
-
-def normalize_datasets(train_x: Array, train_y: Array, test_x: Array, test_y: Array) -> tuple[Array, Array, Array, Array]:
-    """Normalizes the train and test datasets.
-
-    Args:
-        train_x: Training input dataset.
-        train_y: Training label dataset.
-        test_x: Testing input dataset.
-        test_y: Testing label dataset.
-
-    Returns:
-        Normalized training and test datasets.
-    """
-    x_mean = jnp.mean(train_x)
-    x_std = jnp.std(train_x)
-
-    y_mean = jnp.mean(train_y)
-    y_std = jnp.std(train_y)
-
-    train_x = (train_x - x_mean) / x_std
-    train_y = (train_y - y_mean) / y_std
-
-    test_x = (test_x - x_mean) / x_std
-    test_y = (test_y - y_mean) / y_std
-    return train_x, train_y, test_x, test_y
-
-def generate_burgers_dataset(
-    n_samples: int = 1000,
-    n_grid_points: int = 1024,
-    nu: float = 0.1,
-    t1: float = 1.0,
-    batch_size: int = 100,
-    seed: int = 42
-) -> tuple[Array, Array]:
-    """Generates Burgers equation training dataset.
-
-    Generation is batched to limit memory usage.
-
-    Args:
-        n_samples: Number of samples.
-        n_grid_points: Number of spatial grid points.
-        nu: Viscosity.
-        t1: Maximum time.
-        batch_size: Batch size for generation to save memory.
-        seed: Jax random seed.
-    """
-    if n_grid_points > 1024:
-        import warnings
-        warnings.warn(f"Resolution {n_grid_points} is high! Generation might take longer.")
-    # Precompute the wavenumbers for the spectral derivatives
-    k = jnp.fft.rfftfreq(n_grid_points, d=1.0 / n_grid_points) * (2.0 * jnp.pi)
-    ik = 1j * k
-    ik2 = -(k**2)
-    print(f"Generating {n_samples} initial conditions from GRF...")
-    u0_ft = generate_fno_initial_conditions(n_samples=n_samples, n_grid_points=n_grid_points, seed=seed)
-
-    print(f"Compiling and solving physics trajectories via Diffrax at {n_grid_points} resolution...")
-    jit_batched_solver = jax.jit(solve_batched_trajectories, static_argnums=(4,))
-
-    all_results = []
-    for i in range(0, n_samples, batch_size):
-        print(f"Solving batch {i//batch_size + 1}/{(n_samples-1)//batch_size + 1}...")
-        u0_batch = u0_ft[i : i + batch_size]
-        res = jit_batched_solver(u0_batch, nu, ik, ik2, t1)
-        all_results.append(res)
-
-    batched_solutions_ft = jnp.concatenate(all_results, axis=0)
-    print("Converting data back to spatial domain...")
-    # batched_solutions_ft shape is (num_samples, 2, N//2 + 1)
-    inputs_spatial = jnp.fft.irfft(batched_solutions_ft[:, 0, :], axis=-1)
-    labels_spatial = jnp.fft.irfft(batched_solutions_ft[:, 1, :], axis=-1)
-
-    # expand channel dim for compatibility
-    inputs_spatial = inputs_spatial[:, None, :]
-    labels_spatial = labels_spatial[:, None, :]
-    # normalize data
-    inputs_spatial_train, labels_spatial_train, inputs_spatial_test, labels_spatial_test = normalize_datasets(inputs_spatial[:1000], labels_spatial[:1000], inputs_spatial[1000:], labels_spatial[1000:])
-    inputs_spatial = jnp.concat([inputs_spatial_train, inputs_spatial_test], axis=0)
-    labels_spatial = jnp.concat([labels_spatial_train, labels_spatial_test], axis=0)
-    return inputs_spatial, labels_spatial
+from neojax.data.generation import generate_burgers_1d
 
 # generate 1000 training pairs and 200 testing pairs
-X, Y = generate_burgers_dataset(n_samples=1200, n_grid_points=1024, nu=0.1, t1=1.0, batch_size=100)
+# returns dataset containing dict(inputs=Array, labels=Array)
+dataset = generate_burgers_1d(n_samples=1200, n_grid_points=1024, nu=0.1, t1=1.0, batch_size=100, use_bundle=False)
+```
+
+**Output:**
+```bash
+Generating 1200 initial conditions from GRF...
+Compiling and solving physics trajectories via Diffrax at 1024 resolution...
+Solving batch 1/12...
+Solving batch 2/12...
+Solving batch 3/12...
+Solving batch 4/12...
+Solving batch 5/12...
+Solving batch 6/12...
+Solving batch 7/12...
+Solving batch 8/12...
+Solving batch 9/12...
+Solving batch 10/12...
+Solving batch 11/12...
+Solving batch 12/12...
+Converting data back to spatial domain...
+```
+
+!!! info
+    Complex support is still a work in progress in **Diffrax**, so some warnings may appear.
+
+
+Now we use **neojax** built-in normalization pipelines to normalize the inputs. The `dataset` is just a PyTree we can handle easily.
+We concatenate `input` and `label` arrays and compute the normalization mean and std over them.
+
+```python
+import jax.tree_util as jtu
+
+from neojax.data.normalizers import UnitGaussianNormalizer
+
+# fit normalizer to dataset
+normalizer = UnitGaussianNormalizer()
+normalizer = normalizer.compute_stats(jnp.concat(jtu.tree_leaves(dataset), axis=0), axis=None)
 ```
 
 #### Loss Function
-We also use the standard relative $L_2$ error
+We also use the standard relative $L^2$ error
 
 $$
-\text{Relative } L^2 \text{ Error} = \frac{\Vert \hat{y} - y\Vert_{L_2}}{\Vert y \Vert_{L_2}}
+\text{Relative } L^2 \text{ Error} = \frac{\Vert \hat{y} - y\Vert_{L^2}}{\Vert y \Vert_{L^2}}
 $$
 
 were $\hat{y}$ is the network prediction and $y$ the ground truth.
 
+We import the respective loss from **neojax**.
+
 ```python
-def rel_l2_error(y: Array, y_hat: Array) -> Array:
-    """Computes average relative L2 error over a batch."""
-    flat_pred = jnp.reshape(y_hat, (y_hat.shape[0], -1))
-    flat_true = jnp.reshape(y, (y.shape[0], -1))
+from neojax.metrics import RelativeLpMetric
 
-    error_norms = jnp.linalg.norm(flat_pred - flat_true, axis=-1)
-    true_norms = jnp.linalg.norm(flat_true, axis=-1)
-
-    relative_errors = error_norms / (true_norms + 1e-7)
-
-    return jnp.mean(relative_errors)
+rel_l2_error = RelativeLpMetric(p=2)
 ```
 
 #### Training
 We use common training settings:
+
 - Adam optimizer
 - Cosine decay scheduler
-- Train for 500 training epochs
-- Initial lr of 0.001
+- Train for 800 epochs
+- Initial learning rate of 1e-3
 - The hidden channel dimensions $d_{v_i}$ = 64
-- The number of modes is set to 16
+- The number of Fourier modes is set to 8
 
-Because of its tight integration in the **JAX** ecosystem, we can leverage **Optax** gradient optimizers and **Equinox** weight updates during training.
+We use **Optax** for the gradient optimizer and **Equinox** for the weight updates.
+
+We first initialize the model, the optimizer, the training parameters and split the dataset into training and test sets.
 
 ```python
 # Initialize the model
@@ -282,41 +131,59 @@ fno = FNO(
     out_channels=1,
     hidden_channels=64,
     n_layers=4,
-    modes=(16,),
+    modes=(8,),
     positional_embedding=grid_embedding,
+    domain_padding=0.1,
 )
 
+n_train_samples = 1000
 # Split dataset into train and test
-train_x = X[:1000]
-train_y = Y[:1000]
-test_x = X[1000:]
-test_y = Y[1000:]
+train_dset = dataset[:n_train_samples]
+test_dset = dataset[n_train_samples:]
 
 # Create batch sizes and number of epochs
 batch_size = 32
-num_epochs = 500
+num_epochs = 800
 key = jr.key(0)
 
 # Compute number of total steps
-total_steps = num_epochs * (len(train_x) // batch_size)
+total_steps = num_epochs * (n_train_samples // batch_size)
 
 # Create a Cosine Decay Schedule
-cosine_schedule = optax.schedules.cosine_decay_schedule(0.01, total_steps)
+cosine_schedule = optax.schedules.cosine_decay_schedule(1e-3, total_steps)
 # Create Adam optimizer
 optimizer = optax.adam(cosine_schedule)
 # Initialize the optimizer state with the model parameters
 # Here eqx.filter filters out all non-trainable parameters
 opt_state = optimizer.init(eqx.filter(fno, eqx.is_array))
+```
 
+We then define the outer loss function, which includes vmapping the model over each batch
+and computing the loss.
+
+```python
 # Create a loss function with our relative L2 error
 def loss_fn(model, xb, y_true):
     # vmap model over batch
     y_pred = jax.vmap(model)(xb)
-    return rel_l2_error(y_true, y_pred)
+    return rel_l2_error(target=y_true, pred=y_pred)
+```
 
+Lastly, we define the jitted training step and the training loop. Here we use `equinox.filter_jit` and `equinox.filter_value_and_grad` instead of `equinox.{partition,combine}` to pass the model smoothly across `jit`/`grad` boundaries.
+
+
+!!! info
+    It is not advisable to `jit`-wrap the entire training routine. While it might provide some
+    speedups, the resulting computational graph would be massive (the `for` loop is unrolled) which increases compilation time and we loose the ability to print intermediate losses and updates.
+    Jitting only the training step is a good middle ground.
+
+!!! info "Training Time"
+    Training the model takes a few minutes. In Google Colab approximately 10 Minutes for 800 epochs on a Tesla T4 GPU.
+
+```python
 # Create a training step function that handles
-# 1. Computation of loss and gradients
-# 2. Optimizer updates
+# Computation of loss and gradients
+# Optimizer updates
 # -> We jit this block for jit-compilation
 @eqx.filter_jit
 def training_step(model, opt_state, xb, yb):
@@ -328,24 +195,86 @@ def training_step(model, opt_state, xb, yb):
 # Start the training loop
 for epoch in range(num_epochs):
     key, perm_key = jr.split(key)
-    perm = jr.permutation(perm_key, train_x.shape[0])
+    perm = jr.permutation(perm_key, n_train_samples)
 
-    for start in range(0, train_x.shape[0], batch_size):
+    for start in range(0, n_train_samples, batch_size):
         batch_idx = perm[start:start + batch_size]
+        normed_ins = normalizer.transform(train_dset["inputs"][batch_idx])
+        normed_gts = normalizer.transform(train_dset["labels"][batch_idx])
         fno, opt_state, train_loss = training_step(
             fno,
             opt_state,
-            train_x[batch_idx],
-            train_y[batch_idx],
+            normed_ins,
+            normed_gts,
         )
 
+    # Make sure we compute validation loss on un-normalized predictions
     if (epoch + 1) % 10 == 0:
-        test_pred = jax.vmap(fno)(test_x)
-        test_rel_l2 = rel_l2_error(test_y, test_pred)
+        normed_test_ins = normalizer.transform(test_dset["inputs"])
+        test_preds = jax.vmap(fno)(normed_test_ins)
+        test_preds = normalizer.inverse_transform(test_preds)
+        test_rel_l2 = rel_l2_error(target=test_dset["labels"], pred=test_preds)
         print(
             f"Epoch {epoch + 1:03d} | loss={train_loss:.3e} "
             f"| test rel L2={test_rel_l2:.3e}"
         )
 ```
 
-Although the final test loss could surely be improved by tweaking the model further, we have successfully learned the underlying operator.
+**Output:**
+```bash
+Epoch 010 | loss=1.128e-01 | test rel L2=2.856e-01
+Epoch 020 | loss=3.150e-01 | test rel L2=4.586e-01
+Epoch 030 | loss=2.793e-01 | test rel L2=2.048e-01
+Epoch 040 | loss=3.851e-02 | test rel L2=1.060e-01
+Epoch 050 | loss=1.579e-01 | test rel L2=2.221e-01
+Epoch 060 | loss=1.277e-01 | test rel L2=1.172e-01
+Epoch 070 | loss=1.162e-01 | test rel L2=8.537e-02
+Epoch 080 | loss=7.651e-02 | test rel L2=1.291e-01
+Epoch 090 | loss=6.666e-02 | test rel L2=1.626e-01
+Epoch 100 | loss=1.888e-01 | test rel L2=9.952e-02
+...
+Epoch 710 | loss=1.385e-02 | test rel L2=2.693e-02
+Epoch 720 | loss=1.055e-02 | test rel L2=2.645e-02
+Epoch 730 | loss=1.144e-02 | test rel L2=2.663e-02
+Epoch 740 | loss=1.453e-02 | test rel L2=2.636e-02
+Epoch 750 | loss=1.130e-02 | test rel L2=2.634e-02
+Epoch 760 | loss=1.232e-02 | test rel L2=2.632e-02
+Epoch 770 | loss=1.546e-02 | test rel L2=2.630e-02
+Epoch 780 | loss=4.107e-02 | test rel L2=2.630e-02
+Epoch 790 | loss=1.325e-02 | test rel L2=2.630e-02
+Epoch 800 | loss=9.695e-03 | test rel L2=2.630e-02
+```
+
+Although the final test loss is far off the SOTA on this problem, the model appears to have started to learn the underlying operator.
+
+Lets visualize some predictions and see where we could still improve.
+
+```python
+import matplotlib.pyplot as plt
+import jax.numpy as jnp
+
+# Pick a few test samples
+sample_indices = jnp.array([0, 5, 10])
+
+# Transform inputs and get predictions
+normed_test_ins = normalizer.transform(test_dset['inputs'][sample_indices])
+preds = jax.vmap(fno)(normed_test_ins)
+# Inverse transform back to physical space
+preds_physical = normalizer.inverse_transform(preds)
+
+fig, axes = plt.subplots(1, len(sample_indices), figsize=(15, 4))
+
+for i, idx in enumerate(sample_indices.tolist()):
+    axes[i].plot(test_dset['labels'][idx, 0], label='Ground Truth', linestyle='--')
+    axes[i].plot(preds_physical[i, 0], label='FNO Prediction', alpha=0.8)
+    axes[i].set_title(f"Test Sample {idx}")
+    axes[i].legend()
+
+plt.tight_layout()
+plt.show()
+```
+
+**Output:**
+![FNO Prediction vs Ground Truth on three test samples](../images/fno_burger_pred.png)
+
+For an introduction to **neojax** model-agnostic data pipelines, see this [example](03_data_pipeline.md).

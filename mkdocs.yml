@@ -8,6 +8,9 @@ repo_url: https://github.com/paulgekeler/neojax
 
 strict: true
 
+extra_css:
+  - _assets/custom_css.css
+
 theme:
   name: material
   palette:
@@ -49,10 +52,15 @@ plugins:
         python:
           paths: [.] # Allow mkdocstrings to find the neojax package
           options:
+            extensions:
+            - griffe_pydantic:
+              schema: true
             docstring_style: google
+            docstring_options:
+              returns_multiple_items: false # Treat multiple return values as one
             force_inspection: true
             heading_level: 4
-            inherited_members: true
+            inherited_members: false
             members_order: source
             show_bases: false
             show_if_no_docstring: true
@@ -64,7 +72,7 @@ plugins:
             show_symbol_type_toc: true
             filters:
               - "!^_[^_]"  # Hides protected attrs/methods (e.g., _local_var)
-              - "!^__" # Blocks all dunder attrs
+              - "!^__[^c]" # Blocks all dunder attrs followed by c...
 
 extra_javascript:
   - https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML
@@ -74,7 +82,11 @@ markdown_extensions:
   - attr_list
   - footnotes
   - pymdownx.details
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.arithmatex:
       generic: true
   - pymdownx.snippets:
@@ -93,12 +105,25 @@ nav:
       - Models: api/models.md
       - Components: api/nn.md
       - Tensors: api/tensors.md
-      - Losses: api/losses.md
+      - Metrics: api/metrics.md
       - Utilities: api/utils.md
-      - Normalizers: api/normalizers.md
-      - Scales: api/scales.md
-      - Data Downloading: api/download.md
-      - Benchmark: api/benchmark.md
+      - Training: api/training.md
+      - Data:
+        - Datasets: api/datasets.md
+        - Schemas: api/schemas.md
+        - Processor: api/processor.md
+        - Normalizers: api/normalizers.md
+        - Scales: api/scales.md
+        - Data Bundle: api/bundle.md
+        - Data Downloading: api/download.md
+        - Data Generation: api/data_generation.md
+      - PDE Benchmark:
+        - Benchmarking: api/benchmark.md
+        - Benchmark Config: api/benchmark_config.md
+        - Evaluators: api/evaluators.md
   - Examples:
     - Basic Usage: examples/01_basics.md
     - Training FNO: examples/02_fno_burgers.md
+    - Data Pipeline: examples/03_data_pipeline.md
+    - Benchmarking: examples/04_benchmarking_pipeline.md
+    - Advanced Training: examples/05_advanced_training.md

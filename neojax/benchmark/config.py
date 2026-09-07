@@ -10,12 +10,12 @@ class FieldMappingConfig(BaseModel):
     """Configuration for mapping raw datasets to DataBundle keys.
 
     Attributes:
-        fields: Name or list of names for fields.
-        coords: Name or list of names for coordinates.
-        parameters: Optional name or list of names for parameters.
-        bc_masks: Optional name or list of names for boundary condition masks.
-        bc_values: Optional name or list of names for boundary condition values.
-        edge_indices: Optional name or list of names for edge indices.
+        fields (str | list[str]): Name or list of names for fields.
+        coords (str | list[str]): Name or list of names for coordinates.
+        parameters (str | list[str] | None): Optional name or list of names for parameters.
+        bc_masks (str | list[str] | None): Optional name or list of names for boundary condition masks.
+        bc_values (str | list[str] | None): Optional name or list of names for boundary condition values.
+        edge_indices (str | list[str] | None): Optional name or list of names for edge indices.
     """
 
     fields: str | list[str]
@@ -30,14 +30,15 @@ class DatasetConfig(BaseModel):
     """Configuration for a dataset used in benchmarking.
 
     Attributes:
-        name: A unique identifier for the dataset in this benchmark.
-        type: Dataset class name (e.g., 'BundleDataset', 'RawDataset').
-        source: Source type (e.g., 'pdebench', 'pdegym').
-        path: Path to the dataset directory or file.
-        field_mapping: Dictionary mapping for DataBundle keys.
-        train_split: Optional tuple of [start, end] fractions (e.g., (0.0, 0.8))
-            for computing normalizer statistics on the fly.
-        test_split: Tuple of [start, end] fractions (e.g., (0.8, 1.0)) for evaluation.
+        name (str): A unique identifier for the dataset in this benchmark.
+        type (str): Dataset class name (e.g., 'BundleDataset', 'RawDataset').
+        source (str): Source type (e.g., 'pdebench', 'pdegym').
+        path (str | Path): Path to the dataset directory or file.
+        field_mapping (FieldMappingConfig): Dictionary mapping for DataBundle keys.
+        train_split (tuple[float, float] | None): Optional tuple of [start, end] fractions
+            (e.g., (0.0, 0.8)) for computing normalizer statistics on the fly.
+        test_split (tuple[float, float]): Tuple of [start, end] fractions (e.g., (0.8, 1.0))
+            for evaluation.
     """
 
     name: str
@@ -53,8 +54,8 @@ class ComponentConfig(BaseModel):
     """Generic configuration for dynamic components like schemas or metrics.
 
     Attributes:
-        type: The class name of the component to instantiate.
-        kwargs: Additional keyword arguments to pass to the constructor.
+        type (str): The class name of the component to instantiate.
+        kwargs (dict[str, Any]): Additional keyword arguments to pass to the constructor.
     """
 
     model_config = ConfigDict(extra="allow")
@@ -67,9 +68,9 @@ class NormalizerConfig(BaseModel):
     """Configuration for normalizers within the pipeline.
 
     Attributes:
-        type: The class name of the normalizer (e.g., 'UnitGaussianNormalizer').
-        compute_on_fly: Whether to fit this normalizer on the `train_split` of the dataset.
-        kwargs: Additional arguments for the normalizer constructor.
+        type (str): The class name of the normalizer (e.g., 'UnitGaussianNormalizer').
+        compute_on_fly (bool): Whether to fit this normalizer on the `train_split` of the dataset.
+        kwargs (dict[str, Any]): Additional arguments for the normalizer constructor.
     """
 
     type: str
@@ -81,9 +82,11 @@ class PipelineConfig(BaseModel):
     """Configuration for the data processing pipeline.
 
     Attributes:
-        in_schema: Input schema component(s). Can be a single config or a list.
-        out_schema: ComponentConfig for the output.
-        normalizers: A dictionary mapping DataBundle keys to NormalizerConfigs.
+        in_schema (ComponentConfig | list[ComponentConfig]): Input schema component(s).
+            Can be a single config or a list.
+        out_schema (ComponentConfig): ComponentConfig for the output.
+        normalizers (dict[str, NormalizerConfig]): A dictionary mapping DataBundle keys to
+            NormalizerConfigs.
     """
 
     in_schema: ComponentConfig | list[ComponentConfig]
@@ -95,13 +98,14 @@ class ModelConfig(BaseModel):
     """Configuration for a neural operator model to be benchmarked.
 
     Attributes:
-        name: A unique identifier for the model in the benchmark.
-        architecture: The class name of the model (e.g., 'FNO', 'UNet').
-        framework: The framework the model is implemented in ('neojax', 'custom').
+        name (str): A unique identifier for the model in the benchmark.
+        architecture (str): The class name of the model (e.g., 'FNO', 'UNet').
+        framework (str): The framework the model is implemented in ('neojax', 'custom').
             If 'custom', ensure to pass `custom_model_builders` to `BenchmarkRunner`.
-        checkpoint_path: Path to the Orbax checkpoint directory.
-        hyperparameters: Dictionary of hyperparameters to pass to the model constructor.
-        pipeline: The data processing pipeline required by this model.
+        checkpoint_path (str | None): Path to the Orbax checkpoint directory.
+        hyperparameters (dict[str, Any]): Dictionary of hyperparameters to pass to the
+            model constructor.
+        pipeline (PipelineConfig): The data processing pipeline required by this model.
     """
 
     name: str
@@ -118,9 +122,10 @@ class EvaluatorConfig(BaseModel):
     """Configuration for the evaluator used in a task.
 
     Attributes:
-        type: The class name of the evaluator ('SteadyStateEvaluator' or 'TimeDependentEvaluator').
-        metrics: A list of metric names or ComponentConfigs.
-        autoregressive_steps: Number of rollout steps (for time_dependent evaluator).
+        type (str): The class name of the evaluator ('SteadyStateEvaluator' or
+            'TimeDependentEvaluator').
+        metrics (list[str | ComponentConfig]): A list of metric names or ComponentConfigs.
+        autoregressive_steps (int | None): Number of rollout steps (for time_dependent evaluator).
     """
 
     type: str
@@ -135,10 +140,10 @@ class TaskConfig(BaseModel):
     A task applies the same evaluator across a collection of datasets and models.
 
     Attributes:
-        name: A unique identifier for the task.
-        evaluator: The evaluator configuration.
-        datasets: A list of dataset configurations to evaluate.
-        models: A list of model configurations to benchmark.
+        name (str): A unique identifier for the task.
+        evaluator (EvaluatorConfig): The evaluator configuration.
+        datasets (list[DatasetConfig]): A list of dataset configurations to evaluate.
+        models (list[ModelConfig]): A list of model configurations to benchmark.
     """
 
     name: str
@@ -151,9 +156,9 @@ class GlobalSettingsConfig(BaseModel):
     """Global settings for the benchmark run.
 
     Attributes:
-        batch_size: The default batch size for evaluation.
-        output_dir: The directory where results should be saved.
-        seed: Random seed for reproducibility.
+        batch_size (int): The default batch size for evaluation.
+        output_dir (str | Path): The directory where results should be saved.
+        seed (int): Random seed for reproducibility.
     """
 
     batch_size: int
@@ -165,9 +170,9 @@ class BenchmarkConfig(BaseModel):
     """Root configuration schema for a Benchmark Runner suite.
 
     Attributes:
-        benchmark_name: The name of the overall benchmark suite.
-        global_settings: Global configuration settings.
-        tasks: A list of benchmarking tasks to execute.
+        benchmark_name (str): The name of the overall benchmark suite.
+        global_settings (GlobalSettingsConfig): Global configuration settings.
+        tasks (list[TaskConfig]): A list of benchmarking tasks to execute.
     """
 
     benchmark_name: str

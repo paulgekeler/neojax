@@ -1,7 +1,7 @@
 """Implementation of a general data wrapper for arbitrary PDE problems."""
 
 import equinox as eqx
-from jaxtyping import Array, Float, Int, Real
+from jaxtyping import Array, Inexact, Int, Real
 
 
 class DataBundle(eqx.Module):
@@ -22,16 +22,16 @@ class DataBundle(eqx.Module):
     - `edge_indices` shape `[2, 58000]` (connectivity map how the vertices form triangles)
 
     !!! info "Attributes"
-        * **coords** (`Float[Array, "d *spatial"]`): Grid-like or mesh-like coordinates shaped (dims, *spatial dims).
-        * **fields** (`Float[Array, "t c *spatial"]`): Discretized function fields
+        * **coords** (`Real[Array, "#b d *spatial"]`): Grid-like or mesh-like coordinates shaped (dims, *spatial dims).
+        * **fields** (`Inexact[Array, "#b t c *spatial"]`): Discretized function fields
             shaped (time dim, channels, *spatial dims).
-        * **parameters** (`Float[Array, "..."] | None`): Optional physical/material parameters of any shape.
+        * **parameters** (`Inexact[Array, "#b ..."] | None`): Optional physical/material parameters of any shape.
             Default is `None`.
-        * **bc_masks** (`Int[Array, "c_bc *spatial"] | None`): Optional boundary condition mask
+        * **bc_masks** (`Int[Array, "#b c_bc *spatial"] | None`): Optional boundary condition mask
             shaped (boundary cond channels, *spatial dims). Default is `None`.
-        * **bc_values** (`Float[Array, "t c_bc *spatial"] | None`): Optional boundary condition fields
+        * **bc_values** (`Inexact[Array, "#b t c_bc *spatial"] | None`): Optional boundary condition fields
             shaped (time dim, boundary cond channels, *spatial dims). Default is `None`.
-        * **edge_indices** (`Int[Array, "2 e"] | None`): Optional edge connectivity map shaped (2, num edges).
+        * **edge_indices** (`Int[Array, "#b 2 e"] | None`): Optional edge connectivity map shaped (2, num edges).
             Default is `None`.
 
     !!! info
@@ -49,13 +49,13 @@ class DataBundle(eqx.Module):
     coords: Real[Array, "#b d *spatial"]
     # discretized function fields
     # grid: [b, t, c, x, y, ...] | mesh: [b, t, c, N]
-    fields: Float[Array, "#b t c *spatial"]
+    fields: Inexact[Array, "#b t c *spatial"]
     # physical/material parameters
     # may be fields, constants or other
-    parameters: Float[Array, "#b ..."] | None = eqx.field(default=None)
+    parameters: Inexact[Array, "#b ..."] | None = eqx.field(default=None)
     # optional boundary fields
     bc_masks: Int[Array, "#b c_bc *spatial"] | None = eqx.field(default=None)
-    bc_values: Float[Array, "#b t c_bc *spatial"] | None = eqx.field(default=None)
+    bc_values: Inexact[Array, "#b t c_bc *spatial"] | None = eqx.field(default=None)
     # optional mesh topology
     # cartesian domain = None otherwise e is number of edges connecting nodes
     edge_indices: Int[Array, "#b 2 e"] | None = eqx.field(default=None)

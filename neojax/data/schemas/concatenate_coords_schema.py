@@ -7,13 +7,13 @@ import jax.numpy as jnp
 from jaxtyping import Array, Inexact
 from typing_extensions import override
 
-from neojax.data.bundles.data_bundle import DataBundle
+from neojax.data.bundles import DataBundle
 from neojax.data.schemas.base_schema import BaseSchema
 
 
 @final
 class ConcatenateCoordsSchema(BaseSchema):
-    """Schema that appends coordinate grids to the channel dimension of fields.
+    """Schema that concatenates coordinate grids to the channel dimension of fields.
 
     This is commonly used as an input schema for Neural Operators (like FNO or UNO)
     that need explicit positional information.
@@ -24,10 +24,10 @@ class ConcatenateCoordsSchema(BaseSchema):
             [batch, time, channel, *spatial]).
 
     ??? info "Internal Attributes"
-        * **channel_axis** (`int`): Axis index of channel dimensions. Default is 1.
+        * **channel_axis** (`int`): Axis index of channel dimensions. Default is 2.
     """
 
-    channel_axis: int = eqx.field(static=True, default=1)
+    channel_axis: int = eqx.field(static=True, default=2)
 
     @override
     def transform(
@@ -48,6 +48,7 @@ class ConcatenateCoordsSchema(BaseSchema):
         Raises:
             ValueError: If `reference_bundle` is None if `bundle` is an array.
             ValueError: If `bundle` or `reference_bundle` coords are None.
+            ValueError: If channel_axis is out of bounds for given fields shape.
         """
         if isinstance(bundle, DataBundle):
             fields = bundle.fields

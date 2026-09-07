@@ -1,13 +1,16 @@
+import equinox as eqx
 import jax.numpy as jnp
 
 from neojax.data.bundles.data_bundle import DataBundle
 from neojax.data.normalizers import (
     ComposedNormalizer,
     MinMaxNormalizer,
+    PhysicsNormalizer,
     RobustNormalizer,
     UnitGaussianNormalizer,
 )
 from neojax.data.processor import BundleProcessor
+from neojax.data.scales import CharacteristicLengthScale
 from neojax.data.schemas.bundle_reconstruct_schema import BundleReconstructSchema
 from neojax.data.schemas.identity_schema import IdentitySchema
 
@@ -79,6 +82,28 @@ class TestBundleProcessor:
 
         normed_unbatched = processor.normalizers["fields"].transform(bundle.fields[0])
         assert normed_unbatched.shape == bundle.fields.shape[1:]
+
+    def test_compute_stats_leaves_unbatched_normalizer_stats_untouched(self):
+        # PhysicsNormalizer.compute_stats doesn't reduce at all (unlike other normalizers)
+        # -> stats match input shape
+        # Check here if leading axes with size != 1 are kept as is
+        bundle = self._make_bundle()
+        bundle = eqx.tree_at(
+            lambda b: b.parameters,
+            bundle,
+            jnp.ones((5, 3)),
+            is_leaf=lambda x: x is None,
+        )
+        processor = BundleProcessor(
+            normalizers={
+                "parameters": PhysicsNormalizer(CharacteristicLengthScale(L_ref=1.0))
+            }
+        ).compute_stats(bundle)
+
+        scale_product = processor.normalizers["parameters"].stats["scale_product"]
+        assert scale_product.shape == bundle.parameters.shape
+        normed = processor.normalizers["parameters"].transform(bundle.parameters)
+        assert normed.shape == bundle.parameters.shape
 
     def test_compute_stats_ignores_missing_attribute(self):
         bundle = self._make_bundle()

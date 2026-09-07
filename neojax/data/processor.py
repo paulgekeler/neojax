@@ -13,7 +13,10 @@ def _squeeze_stats_batch_dim(normalizer: BaseNormalizer) -> BaseNormalizer:
     """Recursively squeezes the keepdims batch axis out of a normalizer's stats.
 
     Recurses into `ComposedNormalizer` so every normalizer's stats get squeezed,
-    not just the outermost one.
+    not just the outermost one. Only squeezes when the leading axis is actually
+    size 1: not every normalizer's `compute_stats` reduces with `keepdims=True`
+    (e.g. `PhysicsNormalizer`'s stat matches the input shape exactly, with no
+    batch axis to strip), so a bare leading-axis squeeze would break those.
 
     Args:
         normalizer: A normalizer whose `compute_stats` has just been called.
@@ -27,7 +30,8 @@ def _squeeze_stats_batch_dim(normalizer: BaseNormalizer) -> BaseNormalizer:
             return _squeeze_stats_batch_dim(v)
         if isinstance(v, tuple):
             return tuple(_squeeze_value(item) for item in v)
-        if eqx.is_array(v) and v.ndim > 0:
+        # Only squeeze size 1 dims
+        if eqx.is_array(v) and v.ndim > 0 and v.shape[0] == 1:
             return jnp.squeeze(v, axis=0)
         return v
 

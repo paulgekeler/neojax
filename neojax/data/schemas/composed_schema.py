@@ -1,5 +1,6 @@
 """Schema that composes multiple schemas together."""
 
+import warnings
 from collections.abc import Sequence
 from typing import final
 
@@ -9,6 +10,7 @@ from typing_extensions import override
 
 from neojax.data.bundles.data_bundle import DataBundle
 from neojax.data.schemas.base_schema import BaseSchema
+from neojax.data.schemas.time_to_stationary_schema import TimeToStationarySchema
 
 
 @final
@@ -26,6 +28,15 @@ class ComposedSchema(BaseSchema):
     schemas: tuple[BaseSchema, ...] = eqx.field(static=True)
 
     def __init__(self, schemas: Sequence[BaseSchema]) -> None:
+        for schema in schemas[:-1]:
+            if isinstance(schema, TimeToStationarySchema):
+                warnings.warn(
+                    "Used 'TimeToStationarySchema' as non-final schema:\n"
+                    "It causes divergent transformation branches.\n"
+                    "It should only be used as final component of a 'ComposedSchema'.\n"
+                    "Have a look at its documentation for details.",
+                    stacklevel=1,
+                )
         self.schemas = tuple(schemas)
 
     @override

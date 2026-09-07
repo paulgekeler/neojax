@@ -40,6 +40,15 @@ class TimeToStationarySchema(BaseSchema):
         Otherwise, the behavior will be undefined (uses JAX out-of-bounds fill-in with NaNs).
         E.g. (-5, -2) or (2, -2) correct for axis length 6, (-3, -4), (-1, 3) or (0, 7) not correct.
         The last of which would result in an NaN-filled slice.
+
+    !!! warning "Use in ComposedSchema"
+        `TimeToStationarySchema` in its current implementation causes divergent tranformation branches:
+        We extract two time slices, the first of which we would like to use as model input, the second as
+        ground truth. Now, if we needed to apply further transformations to the input only
+        (e.g. concatenating `parameters` to `fields`), we'd also apply these transformations to the ground truth
+        inside a `ComposedSchema`! This is undesirable. Until `BundleProcessor` supports divergent
+        branches, `TimeToStationarySchema` should only be used as a final component in a `ComposedSchema`.
+        Or apply transformation schemas separately, as in example notebook 5.
     """
 
     time_axis: int = eqx.field(static=True, default=1)

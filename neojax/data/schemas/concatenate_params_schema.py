@@ -13,10 +13,11 @@ from neojax.data.schemas.base_schema import BaseSchema
 
 @final
 class ConcatenateParamsSchema(BaseSchema):
-    """Schema that concatenates bundle `parameter` fields to the channel dimension of fields.
+    """Schema that concatenates bundle `parameters` to the channel dimension of fields.
 
-    This is commonly used when one or multiple additional `parameter fields` are used as
-    model inputs next to the bundle `fields`. (If they are not already in `fields`).
+    This is commonly used when one or multiple additional `parameters` are used as
+    model inputs next to the bundle `fields` (if they are not already in `fields`).
+    E.g. there is a spatially varying velocity field which was passed as `parameters`.
 
     Args:
         channel_axis: The axis index in the `fields` array corresponding to the channel

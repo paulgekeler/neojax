@@ -59,7 +59,8 @@ docs = [
 
 ex = [
   "optax",
-  "diffrax"
+  "diffrax",
+  "matplotlib",
 ]
 
 gen = [

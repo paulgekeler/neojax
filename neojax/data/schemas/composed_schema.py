@@ -9,12 +9,10 @@ from jaxtyping import Array, Inexact
 from typing_extensions import override
 
 from neojax.data.bundles.data_bundle import DataBundle
-from neojax.data.schemas import (
-    BaseSchema,
-    FlattenToPointsSchema,
-    MeshInputSchema,
-    TimeToStationarySchema,
-)
+from neojax.data.schemas.base_schema import BaseSchema
+from neojax.data.schemas.flatten_to_points_schema import FlattenToPointsSchema
+from neojax.data.schemas.mesh_schema import MeshInputSchema
+from neojax.data.schemas.time_to_stationary_schema import TimeToStationarySchema
 
 
 @final
@@ -30,7 +28,7 @@ class ComposedSchema(BaseSchema):
             schemas.
 
     Warns:
-        If `TimeToStationarySchema` is used as non-final schema.
+        UserWarning: If `TimeToStationarySchema` is used as non-final schema.
 
     ??? info "Internal Attributes"
         * **schemas** (`tuple[BaseSchema]`): Schemas to apply in sequentially in order.

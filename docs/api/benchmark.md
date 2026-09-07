@@ -40,6 +40,8 @@ The high-level orchestrator that takes the benchmark configuration and executes 
 
 ::: neojax.benchmark.runner.BenchmarkRunner
 
+---
+
 ## Saving Results
 
 We provide a utility `save_results` to serialize results to JSON or binary NumPy format.

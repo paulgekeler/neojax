@@ -62,7 +62,7 @@ class TestConcatenateParamsSchema:
         coords = jnp.ones((5, 1, 4, 4))
         bundle = DataBundle(fields=fields, parameters=parameters, coords=coords)
         out = schema.transform(bundle)
-        assert out.shape == (5, 1, 1, 4, 4)
+        assert out.shape == (5, 1, 2, 4, 4)
 
     def test_missing_reference_bundle_raises(self, schema):
         fields = jnp.ones((1, 1, 1, 4, 4))

@@ -9,8 +9,12 @@ from jaxtyping import Array, Inexact
 from typing_extensions import override
 
 from neojax.data.bundles.data_bundle import DataBundle
-from neojax.data.schemas.base_schema import BaseSchema
-from neojax.data.schemas.time_to_stationary_schema import TimeToStationarySchema
+from neojax.data.schemas import (
+    BaseSchema,
+    FlattenToPointsSchema,
+    MeshInputSchema,
+    TimeToStationarySchema,
+)
 
 
 @final
@@ -21,8 +25,20 @@ class ComposedSchema(BaseSchema):
         schemas: A tuple of schemas to compose. They will be applied sequentially
             in the order provided.
 
+    Raises:
+        ValueError: If `FlattenToPointsSchema` or `MeshInputSchema` are used as non-final
+            schemas.
+
+    Warns:
+        If `TimeToStationarySchema` is used as non-final schema.
+
     ??? info "Internal Attributes"
         * **schemas** (`tuple[BaseSchema]`): Schemas to apply in sequentially in order.
+
+    !!! warning "Known Design Flaw"
+        Not all schemas may be used in arbitrary order inside a `ComposedSchema`.
+        Have a look at the respective documentations for details on where to use each
+        schema.
     """
 
     schemas: tuple[BaseSchema, ...] = eqx.field(static=True)
@@ -37,6 +53,22 @@ class ComposedSchema(BaseSchema):
                     "Have a look at its documentation for details.",
                     stacklevel=1,
                 )
+            elif isinstance(schema, FlattenToPointsSchema):
+                raise ValueError(
+                    "Used 'FlattenToPointsSchema' as non-final schema:\n"
+                    "Its 'transform' method has an incompatible return signature.\n"
+                    "It can only be used as final component of a 'ComposedSchema'.\n"
+                    "Have a look at its documentation for details.",
+                )
+            elif isinstance(schema, MeshInputSchema):
+                raise ValueError(
+                    "Used 'MeshInputSchema' as non-final schema:\n"
+                    "Its 'transform' method has an incompatible return signature.\n"
+                    "It can only be used as final component of a 'ComposedSchema'.\n"
+                    "Have a look at its documentation for details.",
+                )
+            else:
+                continue
         self.schemas = tuple(schemas)
 
     @override

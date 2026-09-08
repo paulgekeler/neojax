@@ -1,15 +1,24 @@
 # Models Reference
 
-This page contains the API reference for all pre-built models in `neojax`. Currently, the library supports the Fourier Neural Operator (FNO), Tucker-factorized FNO (TFNO), and Deep Operator Networks (DeepONet).
+This page contains the API reference for all pre-built models in `neojax`. Currently, the library supports:
+
+- Fourier Neural Operator (FNO)
+- Tucker-factorized FNO (TFNO)
+- Deep Operator Networks (DeepONet)
+- U-shaped Neural Operator (UNO)
+- Geometry-aware FNO (GeoFNO)
 
 ## Shared Model Functionality
 
 All models inherit useful general functionality from `BaseNO` such as:
 
-- `size()`: Get the model size in MB
-- `astype()`: Cast a model weights to a different datatype
-- `profile_compile()`: Try to jit-compile the model and get a summary
-- ``
+- `size()`: Get the model size in MB.
+- `astype()`: Cast model weights to a different datatype.
+- `profile_compile()`: Try to jit-compile the model and get a compilation summary.
+- `load()`: Load model and hyperparameters.
+- `save()`: Save model and hyperparameters.
+- `load_weights()`: Load only the model weights.
+- `save_weights()`: Save only the model weights.
 
 ## Improved Parameter Naming (FNO & TFNO)
 
@@ -57,13 +66,19 @@ out_train = model(x, key=train_key, inference=False)
 out_eval = model(x, inference=True)
 ```
 
+---
+
 ## Fourier Neural Operator (FNO)
 
 ::: neojax.models.FNO
 
+---
+
 ## Tucker-factorized FNO (TFNO)
 
 ::: neojax.models.TFNO
+
+---
 
 ## Geometry-aware FNO (Geo-FNO)
 
@@ -71,9 +86,13 @@ The Geometry-aware Fourier Neural Operator (Geo-FNO) learns a coordinate deforma
 
 ::: neojax.models.GeoFNO
 
+---
+
 ## U-shaped FNO (UNO)
 
 ::: neojax.models.UNO
+
+---
 
 ## Deep Operator Networks (DeepONet)
 
@@ -122,13 +141,19 @@ batch_model = jax.vmap(vmapped_inner, in_axes=(0, 0))
 batch_preds = batch_model(u_batch, y_batch) # Shape: (32, 256, 1)
 ```
 
+---
+
 ### General DeepONet
 
 ::: neojax.models.DeepONet
 
+---
+
 ### MLPDeepONet
 
 ::: neojax.models.MLPDeepONet
+
+---
 
 ## Custom Models
 

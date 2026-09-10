@@ -346,7 +346,6 @@ class SobolevMetric(BaseMetric):
             )
 
         strategy = self.method
-        strategy = self.method
         # Determine method based on number of basis tensors used for seeding and
         # max derivative order
         # If k > 1, jax.jet always uses forward mode so we don't need to check target.size

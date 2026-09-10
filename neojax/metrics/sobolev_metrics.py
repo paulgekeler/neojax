@@ -57,26 +57,37 @@ class SobolevMetric(BaseMetric):
         random_type: Type of distribution to sample from
             in `"stochastic"` method.
             Default is standard Normal distribution.
+        direction_threshold: Maximum number of basis tensors for derivative seeding
+            until "stochastic" method is used. Default is 1024.
+            Only change if needed.
+
+    Raises:
+        ValueError: If the order of derivatives is negative or zero.
+        ValueError: If the `method`, `diff_mode` or `random_type` is invalid.
+        ValueError: If the `direction_threshold` is negative or zero.
 
     ??? info "Internal Attributes"
         These fields store the internal state of the metric.
 
         * **k** (`int`): Order of partial derivatives.
         * **p** (`float`): Power of the $L^{p}$-norm.
-        * **method** (`Literal["exact", "interpolate", "stochastic", "auto"]`): Method for computing higher order derivatives.
-            See documentation for details.
+        * **method** (`Literal["exact", "interpolate", "stochastic", "auto"]`): Method for computing
+            higher order derivatives. See documentation for details.
         * **diff_mode** (`Literal["fwd", "bwd", "auto"]`): Inner AD mode. See documentation for details.
         * **weight** (`Float[Array, ""]`): Learnable metric weight. Filter during training to prevent updates.
         * **learnable_weight** (`bool`): Flag indicating whether `weight` is learnable.
         * **n_random_samples** (`int`): Number of random vectors to sample.
-        * **random_type** (`Literal["rademacher", "normal"]`): Type of distribution to sample from in `"stochastic"` method.
-            Default is standard Normal distribution.
+        * **random_type** (`Literal["rademacher", "normal"]`): Type of distribution
+            to sample from in `"stochastic"` method. Default is standard Normal distribution.
+        * **direction_threshold** (`int`): Maximum number of basis tensors for derivative seeding
+            until "stochastic" method is used. Default is 1024.
 
-    !!! info
+    !!! warning
         Computing higher order derivates is expensive. Given a function
         $f: \mathbb{R}^m \rightarrow \mathbb{R}^d$,
-        computing the derivatives up to order k, the XLA graph
-        scales with $\mathcal{O}(m \cdot d^k)$.
+        computing the derivatives up to order k, the computational graph
+        scales with $\mathcal{O}(m \cdot d^k)$. Only change `method` if you
+        know what you are doing. Otherwise, it's a fast way to run out of memory.
     """
 
     k: int = eqx.field(static=True)
@@ -89,6 +100,7 @@ class SobolevMetric(BaseMetric):
     learnable_weight: bool = eqx.field(static=True)
     n_random_samples: int = eqx.field(static=True)
     random_type: Literal["rademacher", "normal"] = eqx.field(static=True)
+    direction_threshold: int = eqx.field(static=True)
 
     def __init__(
         self,
@@ -100,7 +112,10 @@ class SobolevMetric(BaseMetric):
         learnable_weight: bool = False,
         n_random_samples: int = 10,
         random_type: Literal["rademacher", "normal"] = "normal",
+        direction_threshold: int = 1024,
     ) -> None:
+        if k <= 0:
+            raise ValueError("Order of derivatives cannot be negative or zero.")
         self.k = k
         self.p = p
         methods = ["exact", "interpolate", "stochastic", "auto"]
@@ -122,6 +137,9 @@ class SobolevMetric(BaseMetric):
                 f"Invalid distribution type. Must be one of {random_types}."
             )
         self.random_type = random_type
+        if direction_threshold <= 0:
+            raise ValueError("'direction_threshold' must be larger than zero.")
+        self.direction_threshold = direction_threshold
 
     def exact_sobolev(
         self,
@@ -320,11 +338,6 @@ class SobolevMetric(BaseMetric):
         Raises:
             ValueError: If method is `"stochastic"` but no random key
                 was passed. Or if `model` or `x` are not provided.
-
-        !!! info
-            Higher order (partial) derivatives are expensive.
-            We therefore use both exact derivatives for lower order
-            metrics and inexact stochastic Sobolev metrics for higher order k.
         """
         if model is None or x is None:
             raise ValueError(
@@ -333,13 +346,22 @@ class SobolevMetric(BaseMetric):
             )
 
         strategy = self.method
+        strategy = self.method
+        # Determine method based on number of basis tensors used for seeding and
+        # max derivative order
+        # If k > 1, jax.jet always uses forward mode so we don't need to check target.size
         if strategy == "auto":
-            if self.k == 1:
-                strategy = "exact"
-            elif self.k >= 2 and not any(p > 10 for p in x.shape[2:]):
-                strategy = "interpolate"
-            else:
+            # Strip batch dim in directions check
+            num_directions = (
+                min(x[0].size, target[0].size) if self.k == 1 else x[0].size
+            )
+            if num_directions > self.direction_threshold:
                 strategy = "stochastic"
+            elif self.k == 1:
+                strategy = "exact"
+            else:
+                strategy = "interpolate"
+
         if strategy == "stochastic" and key is None:
             raise ValueError("Stochastic Sobolev metric requires a random key.")
 

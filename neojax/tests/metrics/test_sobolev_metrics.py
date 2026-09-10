@@ -118,14 +118,94 @@ class TestSobolevMetric:
         assert_filter_jittable(wrap_interp, mlp, inputs, targets)
         assert_filter_jittable(wrap_stoch, mlp, inputs, targets, lkey)
 
-    def test_auto_routing(self, mlp):
+
+@pytest.mark.usefixtures("mlp")
+class TestSobolevMetricAutoDirectionThreshold:
+    """Specific tests to check if the call method routing logic works as defined.
+
+    These are quite exhaustive. A routing error almost always causes OOM.
+    """
+
+    def test_auto_matches_exact_below_threshold(self, mlp):
         key = jr.key(0)
+        # channels=2 (fixed by `mlp`), spatial=1 -> x_i.size = target_i.size = 2
+        inputs = jr.normal(key, (5, 2, 1))
+        targets = jr.normal(key, (5, 2, 1))
 
-        inputs = jr.normal(key, (5, 2, 4))
-        targets = jr.normal(key, (5, 2, 4))
+        auto_metric = SobolevMetric(k=1, method="auto", direction_threshold=4)
+        exact_metric = SobolevMetric(k=1, method="exact", direction_threshold=4)
 
-        # Evaluate routing conditions to avoid crashing, just verify return type
-        metric_val_1 = SobolevMetric(k=1, method="auto")(mlp, x=inputs, target=targets)
-        metric_val_2 = SobolevMetric(k=2, method="auto")(mlp, x=inputs, target=targets)
-        assert not jnp.isnan(metric_val_1)
-        assert not jnp.isnan(metric_val_2)
+        auto_val = auto_metric(mlp, x=inputs, target=targets)
+        exact_val = exact_metric(mlp, x=inputs, target=targets)
+        assert jnp.allclose(auto_val, exact_val)
+
+    def test_auto_matches_stochastic_above_threshold(self, mlp):
+        key = jr.key(0)
+        mkey, lkey = jr.split(key)
+        # channels=2, spatial=4 -> x_i.size = target_i.size = 8 > threshold=4
+        inputs = jr.normal(mkey, (5, 2, 4))
+        targets = jr.normal(mkey, (5, 2, 4))
+
+        auto_metric = SobolevMetric(
+            k=1, method="auto", direction_threshold=4, n_random_samples=3
+        )
+        stochastic_metric = SobolevMetric(
+            k=1, method="stochastic", direction_threshold=4, n_random_samples=3
+        )
+
+        auto_val = auto_metric(mlp, x=inputs, target=targets, key=lkey)
+        stochastic_val = stochastic_metric(mlp, x=inputs, target=targets, key=lkey)
+        assert jnp.allclose(auto_val, stochastic_val)
+
+    def test_auto_matches_interpolate_below_threshold(self, mlp):
+        key = jr.key(0)
+        inputs = jr.normal(key, (5, 2, 1))
+        targets = jr.normal(key, (5, 2, 1))
+
+        auto_metric = SobolevMetric(k=2, method="auto", direction_threshold=4)
+        interp_metric = SobolevMetric(k=2, method="interpolate", direction_threshold=4)
+
+        auto_val = auto_metric(mlp, x=inputs, target=targets)
+        interp_val = interp_metric(mlp, x=inputs, target=targets)
+        assert jnp.allclose(auto_val, interp_val)
+
+    def test_auto_boundary_is_inclusive_of_threshold(self, mlp):
+        key = jr.key(0)
+        # channels=2, spatial=2 -> x_i.size = target_i.size = 4 == threshold
+        inputs = jr.normal(key, (5, 2, 2))
+        targets = jr.normal(key, (5, 2, 2))
+
+        metric = SobolevMetric(k=1, method="auto", direction_threshold=4)
+        # No key passed: would raise if this were (incorrectly) routed to stochastic.
+        metric_val = metric(mlp, x=inputs, target=targets)
+        assert not jnp.isnan(metric_val)
+
+    def test_auto_just_above_threshold_requires_key(self, mlp):
+        key = jr.key(0)
+        # channels=2, spatial=3 -> x_i.size = target_i.size = 6 > threshold=4
+        inputs = jr.normal(key, (5, 2, 3))
+        targets = jr.normal(key, (5, 2, 3))
+
+        metric = SobolevMetric(k=1, method="auto", direction_threshold=4)
+        with pytest.raises(ValueError):
+            metric(
+                mlp, x=inputs, target=targets
+            )  # no key -> must fail if routed to stochastic
+
+    def test_auto_k1_uses_min_size_but_k_ge_2_uses_input_size(self):
+        key = jr.key(0)
+        # in_channels=6 (large), out_channels=2 (small)
+        mlp_asym = PointwiseMLP(key, layers=(6, 8, 2), activations=jax.nn.tanh)
+        inputs = jr.normal(key, (5, 6, 1))  # x_i.size = 6
+        targets = jr.normal(key, (5, 2, 1))  # target_i.size = 2
+
+        threshold = 4
+        # k=1: num_directions = min(6, 2) = 2 <= threshold -> "exact" (no key needed)
+        k1_metric = SobolevMetric(k=1, method="auto", direction_threshold=threshold)
+        k1_val = k1_metric(mlp_asym, x=inputs, target=targets)
+        assert not jnp.isnan(k1_val)
+
+        # k=2: num_directions = x.size = 6 > threshold -> "stochastic" (key required)
+        k2_metric = SobolevMetric(k=2, method="auto", direction_threshold=threshold)
+        with pytest.raises(ValueError):
+            k2_metric(mlp_asym, x=inputs, target=targets)

@@ -50,6 +50,15 @@ class BundleProcessor(eqx.Module):
         These fields store the internal state of the processor.
 
         * **normalizers** (`dict[str, BaseNormalizer] | None`): Normalizer dictionary.
+
+    !!! info
+        A `DataBundle` may still hold host-resident numpy arrays at this point
+        (datasets hold data on the host by default; see
+        `neojax.data.datasets.utils.load_pdegym_data`), while normalizers only
+        accept jax arrays. This is the boundary where that conversion happens:
+        every attribute handed to a normalizer is explicitly converted with
+        `jnp.asarray` first, so a batch moves from "host data" to "jax array"
+        exactly once, here.
     """
 
     normalizers: dict[str, BaseNormalizer] | None = eqx.field(default=None)
@@ -103,6 +112,7 @@ class BundleProcessor(eqx.Module):
         for attr, normalizer in self.normalizers.items():
             val = getattr(bundle, attr)
             if val is not None:
+                val = jnp.asarray(val)
                 if inverse:
                     updates[attr] = normalizer.inverse_transform(val)
                 else:
@@ -131,7 +141,7 @@ class BundleProcessor(eqx.Module):
         for attr, normalizer in self.normalizers.items():
             val = getattr(dataset_bundle, attr)
             if val is not None:
-                new_norm = normalizer.compute_stats(val)
+                new_norm = normalizer.compute_stats(jnp.asarray(val))
                 new_normalizers[attr] = _squeeze_stats_batch_dim(new_norm)
             else:
                 new_normalizers[attr] = normalizer

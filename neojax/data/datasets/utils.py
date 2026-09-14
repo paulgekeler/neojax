@@ -128,7 +128,10 @@ def load_pdegym_data(
                         var_attrs[var_name] = {
                             k: var.getncattr(k) for k in var.ncattrs()
                         }
-                    var_chunks[var_name].append(var[:])
+                    # netcdf returns masked arrays whenever a fill value is configured
+                    # even for non-masked arrays
+                    # using np.ma we safely check if it's masked and fill if necessary
+                    var_chunks[var_name].append(np.ma.filled(var[:]))
 
         for var_name, chunks in var_chunks.items():
             dims = var_dims[var_name]

@@ -2,6 +2,7 @@ import pathlib
 import tempfile
 
 import equinox as eqx
+import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
@@ -11,6 +12,34 @@ from neojax.data.datasets.bundle_dataset import BundleDataset
 
 
 class TestBundleDataset:
+    def test_numpy_backed_dataset_stays_numpy_on_getitem(self):
+        fields = np.zeros((5, 1, 2, 4, 4), dtype=np.float32)
+        coords = np.zeros((2, 4, 4), dtype=np.float32)
+        ds = BundleDataset(coords=coords, fields=fields)
+
+        batch = ds[[0, 1]]
+        assert isinstance(batch.fields, np.ndarray)
+        assert isinstance(batch.coords, np.ndarray)
+
+    def test_get_batch_default_leaves_batch_on_host(self):
+        fields = np.zeros((5, 1, 2, 4, 4), dtype=np.float32)
+        coords = np.zeros((2, 4, 4), dtype=np.float32)
+        ds = BundleDataset(coords=coords, fields=fields)
+
+        batch = ds.get_batch([0, 1])
+        assert isinstance(batch.fields, np.ndarray)
+        assert isinstance(batch.coords, np.ndarray)
+
+    def test_get_batch_with_device_commits_to_jax(self):
+        fields = np.zeros((5, 1, 2, 4, 4), dtype=np.float32)
+        coords = np.zeros((2, 4, 4), dtype=np.float32)
+        ds = BundleDataset(coords=coords, fields=fields)
+
+        batch = ds.get_batch([0, 1], device=jax.devices()[0])
+        assert isinstance(batch.fields, jax.Array)
+        assert isinstance(batch.coords, jax.Array)
+        np.testing.assert_array_equal(np.asarray(batch.fields), fields[[0, 1]])
+
     @pytest.mark.parametrize("idx", [5, slice(4, None, None), slice(None, None, 3)])
     def test_getitem(self, idx):
         fields = jnp.repeat(
@@ -177,6 +206,9 @@ def test_from_pdegym(
 
     assert ds.fields.shape == (4, 5, 2, 16, 16)
     assert ds.coords.shape == (2, 16, 16)
+    # Loaded datasets stay host-resident numpy, not eagerly placed on a device.
+    assert isinstance(ds.fields, np.ndarray)
+    assert isinstance(ds.coords, np.ndarray)
 
     # Multi-file separated variables mapping
     ds_sep = BundleDataset.from_pdegym(
@@ -213,6 +245,49 @@ def test_from_pdebench(dummy_pdebench_dir: pathlib.Path):
 
     assert ds.fields.shape == (4, 5, 2, 16, 16)
     assert ds.coords.shape == (2, 16, 16)
+    # Loaded datasets stay host-resident numpy, not eagerly placed on a device.
+    assert isinstance(ds.fields, np.ndarray)
+    assert isinstance(ds.coords, np.ndarray)
+
+
+@pytest.fixture
+def dummy_pdegym_partial_download_dir() -> pathlib.Path:
+    """Mimics a partial wave_layer download: full parameters, partial fields."""
+    import netCDF4 as nc
+
+    temp_dir = pathlib.Path(tempfile.mkdtemp())
+
+    # Full 'c' (parameters) file: all 8 samples downloaded.
+    with nc.Dataset(temp_dir / "c_0.nc", "w") as f:
+        f.createDimension("sample", 8)
+        f.createDimension("x", 16)
+        f.createDimension("y", 16)
+        c_var = f.createVariable("c", "f4", ("sample", "x", "y"))
+        c_var[:] = np.random.rand(8, 16, 16)
+
+    # Partial 'solution' (fields) file: only 4 of the 8 samples downloaded.
+    with nc.Dataset(temp_dir / "solution_0.nc", "w") as f:
+        f.createDimension("sample", 4)
+        f.createDimension("time", 3)
+        f.createDimension("x", 16)
+        f.createDimension("y", 16)
+        s_var = f.createVariable("solution", "f4", ("sample", "time", "x", "y"))
+        s_var[:] = np.random.randn(4, 3, 16, 16)
+
+    return temp_dir
+
+
+def test_from_pdegym_truncates_mismatched_partial_download(
+    dummy_pdegym_partial_download_dir: pathlib.Path,
+):
+    with pytest.warns(UserWarning, match="parameters.*8 samples.*fields.*4"):
+        ds = BundleDataset.from_pdegym(
+            dummy_pdegym_partial_download_dir,
+            field_mapping={"fields": "solution", "parameters": "c"},
+        )
+
+    assert ds.fields.shape[0] == 4
+    assert ds.parameters.shape[0] == 4
 
 
 @pytest.mark.slow

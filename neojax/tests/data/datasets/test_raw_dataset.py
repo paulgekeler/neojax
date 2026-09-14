@@ -3,6 +3,7 @@ import tempfile
 
 import equinox as eqx
 import h5py
+import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
@@ -113,6 +114,35 @@ def dummy_pdegym_h5_dir() -> pathlib.Path:
 
 
 class TestRawDataset:
+    def test_numpy_backed_dataset_stays_numpy_on_getitem(self):
+        """Constructing/indexing with numpy shouldn't eagerly place data on a device."""
+        fields = np.zeros((5, 1, 2, 4), dtype=np.float32)
+        coords = np.zeros((2, 4), dtype=np.float32)
+        ds = RawDataset(fields=fields, coords=coords)
+
+        batch = ds[[0, 1]]
+        assert isinstance(batch["fields"], np.ndarray)
+        assert isinstance(batch["coords"], np.ndarray)
+
+    def test_get_batch_default_leaves_batch_on_host(self):
+        fields = np.zeros((5, 1, 2, 4), dtype=np.float32)
+        coords = np.zeros((2, 4), dtype=np.float32)
+        ds = RawDataset(fields=fields, coords=coords)
+
+        batch = ds.get_batch([0, 1])
+        assert isinstance(batch["fields"], np.ndarray)
+        assert isinstance(batch["coords"], np.ndarray)
+
+    def test_get_batch_with_device_commits_to_jax(self):
+        fields = np.zeros((5, 1, 2, 4), dtype=np.float32)
+        coords = np.zeros((2, 4), dtype=np.float32)
+        ds = RawDataset(fields=fields, coords=coords)
+
+        batch = ds.get_batch([0, 1], device=jax.devices()[0])
+        assert isinstance(batch["fields"], jax.Array)
+        assert isinstance(batch["coords"], jax.Array)
+        np.testing.assert_array_equal(np.asarray(batch["fields"]), fields[[0, 1]])
+
     @pytest.mark.parametrize("idx", [5, slice(3, None), slice(None, None, 2)])
     def test_getitem(self, idx: int | slice):
         fields = jnp.repeat(
@@ -173,6 +203,8 @@ class TestRawDataset:
         assert "fields" in ds.data_dict
         # Channel dimension moved to index 2, then concatenated
         assert ds.data_dict["fields"].shape == (4, 5, 2, 16, 16)
+        # Loaded datasets stay host-resident numpy, not eagerly placed on a device.
+        assert isinstance(ds.data_dict["fields"], np.ndarray)
 
         assert "coords" in ds.data_dict
         assert ds.data_dict["coords"].shape == (2, 16, 16)

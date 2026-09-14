@@ -17,6 +17,21 @@ from neojax.data.datasets.utils import (
 
 
 @pytest.fixture
+def dummy_pdegym_file_with_masked_entry() -> pathlib.Path:
+    import netCDF4 as nc
+
+    temp_dir = pathlib.Path(tempfile.mkdtemp())
+    file_path = temp_dir / "wave.nc"
+    with nc.Dataset(file_path, "w") as f:
+        f.createDimension("sample", 4)
+        f.createDimension("x", 8)
+        var = f.createVariable("solution", "f4", ("sample", "x"), fill_value=-999.0)
+        var[:] = np.random.randn(4, 8)
+        var[1, 2] = np.ma.masked
+    return file_path
+
+
+@pytest.fixture
 def dummy_pdegym_file() -> pathlib.Path:
     import netCDF4 as nc
 
@@ -50,6 +65,21 @@ class TestLoadingStaysHost:
         raw_data, var_dims = load_pdegym_data(dummy_pdegym_file)
         assert isinstance(raw_data["solution"], np.ndarray)
         assert "solution" in var_dims
+
+    def test_load_pdegym_data_unwraps_masked_arrays(
+        self, dummy_pdegym_file_with_masked_entry: pathlib.Path
+    ):
+        # netCDF4 returns numpy.ma.MaskedArray by default (a np.ndarray
+        # subclass, so a plain isinstance check alone wouldn't catch this).
+        # Every PDEGym variable comes back this way regardless of whether
+        # anything is actually missing.
+        raw_data, _ = load_pdegym_data(dummy_pdegym_file_with_masked_entry)
+        solution = raw_data["solution"]
+        assert type(solution) is np.ndarray
+        assert not isinstance(solution, np.ma.MaskedArray)
+        # The explicitly-masked entry resolves to the variable's fill value,
+        # not a masked sentinel/garbage value.
+        assert solution[1, 2] == -999.0
 
     def test_load_pdebench_data_returns_numpy(self, dummy_pdebench_file: pathlib.Path):
         raw_data = load_pdebench_data(dummy_pdebench_file)

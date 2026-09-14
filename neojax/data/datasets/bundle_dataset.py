@@ -4,15 +4,22 @@ from collections.abc import Sequence
 from pathlib import Path
 
 import equinox as eqx
-import jax.numpy as jnp
-from jaxtyping import Array, Float, Int, Real
+import jax
+from jaxtyping import Float, Int, Real
 
+from neojax.data.array_types import JaxNpArray
 from neojax.data.bundles.data_bundle import DataBundle
 from neojax.data.datasets.base_dataset import BaseDataset
+from neojax.data.datasets.utils import broadcast_like
 
 
 class BundleDataset(BaseDataset):
     """Unified dataset that yields DataBundles for each sample.
+
+    Datasets built from `from_pdegym`/`from_pdebench` hold their arrays as plain
+    numpy on the host (see `neojax.data.datasets.utils.load_pdegym_data`), so
+    constructing or indexing a `BundleDataset` doesn't eagerly place a large
+    dataset on an accelerator. Arrays passed in directly may be numpy or jax.
 
     Args:
         coords: Array of grid or mesh coordinates.
@@ -23,31 +30,31 @@ class BundleDataset(BaseDataset):
         edge_indices: Optional edge connectivity map for meshes.
 
     ??? info "Internal Attributes"
-        * **coords** (`Real[Array, "d *spatial"]`):
-        * **fields** (`Float[Array, "b t c *spatial"]`):
-        * **parameters** (`Float[Array, "b ..."] | None`):
-        * **bc_masks** (`Int[Array, "c_bc *spatial"] | None`):
-        * **bc_values** (`Float[Array, "b t c_bc *spatial"] | None`):
-        * **edge_indices** (`Int[Array, "2 e"] | None`):
+        * **coords** (`Real[JaxNpArray, "d *spatial"]`):
+        * **fields** (`Float[JaxNpArray, "b t c *spatial"]`):
+        * **parameters** (`Float[JaxNpArray, "b ..."] | None`):
+        * **bc_masks** (`Int[JaxNpArray, "c_bc *spatial"] | None`):
+        * **bc_values** (`Float[JaxNpArray, "b t c_bc *spatial"] | None`):
+        * **edge_indices** (`Int[JaxNpArray, "2 e"] | None`):
         * **_num_samples** (`int`):
     """
 
-    coords: Real[Array, "d *spatial"]
-    fields: Float[Array, "b t c *spatial"]
-    parameters: Float[Array, "b ..."] | None
-    bc_masks: Int[Array, "c_bc *spatial"] | None
-    bc_values: Float[Array, "b t c_bc *spatial"] | None
-    edge_indices: Int[Array, "2 e"] | None
+    coords: Real[JaxNpArray, "d *spatial"]
+    fields: Float[JaxNpArray, "b t c *spatial"]
+    parameters: Float[JaxNpArray, "b ..."] | None
+    bc_masks: Int[JaxNpArray, "c_bc *spatial"] | None
+    bc_values: Float[JaxNpArray, "b t c_bc *spatial"] | None
+    edge_indices: Int[JaxNpArray, "2 e"] | None
     _num_samples: int = eqx.field(static=True)
 
     def __init__(
         self,
-        coords: Real[Array, "d *spatial"],
-        fields: Float[Array, "b t c *spatial"],
-        parameters: Float[Array, "b ..."] | None = None,
-        bc_masks: Int[Array, "c_bc *spatial"] | None = None,
-        bc_values: Float[Array, "b t c_bc *spatial"] | None = None,
-        edge_indices: Int[Array, "2 e"] | None = None,
+        coords: Real[JaxNpArray, "d *spatial"],
+        fields: Float[JaxNpArray, "b t c *spatial"],
+        parameters: Float[JaxNpArray, "b ..."] | None = None,
+        bc_masks: Int[JaxNpArray, "c_bc *spatial"] | None = None,
+        bc_values: Float[JaxNpArray, "b t c_bc *spatial"] | None = None,
+        edge_indices: Int[JaxNpArray, "2 e"] | None = None,
     ) -> None:
         self.coords = coords
         self.fields = fields
@@ -61,7 +68,7 @@ class BundleDataset(BaseDataset):
         """Returns number of samples in dataset."""
         return self._num_samples
 
-    def __getitem__(self, idx: int | slice | jnp.ndarray | list) -> DataBundle:
+    def __getitem__(self, idx: int | slice | JaxNpArray | list) -> DataBundle:
         """Gets item(s) at index from dataset.
 
         Args:
@@ -83,11 +90,11 @@ class BundleDataset(BaseDataset):
 
         if is_batched:
             batch_size = fields.shape[0]
-            coords = jnp.broadcast_to(coords, (batch_size, *coords.shape))
+            coords = broadcast_like(coords, (batch_size, *coords.shape))
             if bc_masks is not None:
-                bc_masks = jnp.broadcast_to(bc_masks, (batch_size, *bc_masks.shape))
+                bc_masks = broadcast_like(bc_masks, (batch_size, *bc_masks.shape))
             if edge_indices is not None:
-                edge_indices = jnp.broadcast_to(
+                edge_indices = broadcast_like(
                     edge_indices, (batch_size, *edge_indices.shape)
                 )
 
@@ -99,6 +106,35 @@ class BundleDataset(BaseDataset):
             bc_values=self.bc_values[idx] if self.bc_values is not None else None,
             edge_indices=edge_indices,
         )
+
+    def get_batch(
+        self,
+        idx: int | slice | JaxNpArray | list,
+        *,
+        device: jax.Device | jax.sharding.Sharding | None = None,
+    ) -> DataBundle:
+        """Fetches a batch like `self[idx]`, optionally committing it to a device.
+
+        Datasets hold their arrays on the host (see `load_pdegym_data`); JAX
+        already implicitly (and efficiently) places a host-resident batch on
+        the default device the moment it reaches a `jax.jit`-compiled step, so
+        `device=None` (the default) needs no extra call here. Pass a `jax.Device`
+        to pin a batch to one specific accelerator, or a `jax.sharding.Sharding`
+        for full custom multi-device placement.
+
+        Args:
+            idx: Index or batch of indices of samples to fetch.
+            device: Optional device or sharding to commit the batch to.
+                Defaults to `None`, leaving placement to JAX's normal implicit
+                behavior.
+
+        Returns:
+            DataBundle of sample(s) at index, optionally committed to `device`.
+        """
+        batch = self[idx]
+        if device is None:
+            return batch
+        return jax.device_put(batch, device)
 
     @classmethod
     def from_pdebench(
@@ -120,7 +156,11 @@ class BundleDataset(BaseDataset):
         Raises:
             ValueError: If dataset is not found, field_mapping is missing, or keys are invalid.
         """
-        from neojax.data.datasets.utils import load_pdebench_data, map_dataset_fields
+        from neojax.data.datasets.utils import (
+            enforce_consistent_batch_size,
+            load_pdebench_data,
+            map_dataset_fields,
+        )
 
         if field_mapping is None:
             raise ValueError("field_mapping must be provided for BundleDataset.")
@@ -141,6 +181,7 @@ class BundleDataset(BaseDataset):
 
         raw_data = load_pdebench_data(file_path)
         mapped_data = map_dataset_fields(raw_data, field_mapping, concat_axes)
+        mapped_data = enforce_consistent_batch_size(mapped_data)
         return cls(**mapped_data)
 
     @classmethod
@@ -192,6 +233,7 @@ class BundleDataset(BaseDataset):
 
         from neojax.data.datasets.utils import (
             create_default_coords,
+            enforce_consistent_batch_size,
             ensure_time_and_channel_axes,
             load_pdegym_data,
             map_dataset_fields,
@@ -262,4 +304,5 @@ class BundleDataset(BaseDataset):
                     spatial_shape, [(0.0, 1.0)] * len(spatial_shape)
                 )
 
+        mapped_data = enforce_consistent_batch_size(mapped_data)
         return cls(**mapped_data)

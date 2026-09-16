@@ -19,7 +19,6 @@ from neojax.models.baseno import BaseNO
 from neojax.nn.pointwise_mlp import PointwiseMLP
 
 
-@final
 class DeepONet(BaseNO):
     """General DeepONet (Deep Operator Network).
 
@@ -83,7 +82,7 @@ class DeepONet(BaseNO):
     branch_net: eqx.Module
     trunk_net: eqx.Module
     out_activation: Callable | None = None
-    bias: Float[Array, "1"] | None = None
+    bias: Float[Array, ""] | None = None
 
     def __init__(
         self,
@@ -123,10 +122,11 @@ class DeepONet(BaseNO):
         return out
 
 
+@final
 class MLPDeepONet(DeepONet):
     """DeepONet with MLP branch and MLP trunk network.
 
-    The branch MLP maps (m_sensors,) funtion values
+    The branch MLP maps (m_sensors,) function values
     to the (p,) latent vector and the trunk MLP maps
     the (d,) evaluation vector to the (p,) latent vector.
 
@@ -145,7 +145,8 @@ class MLPDeepONet(DeepONet):
         trunk_activations: Activation functions of trunk MLP.
             Single callable means, all activations use this function.
         out_activation: Optional output activation after dot product.
-        bias: Optional learnable bias after dot product.
+            Default is `None`.
+        bias: Optional learnable bias after dot product. Default is no bias.
 
     ??? info "Internal Attributes"
         These fields store the internal layers state (and weights).
@@ -153,7 +154,7 @@ class MLPDeepONet(DeepONet):
         * **branch_net** (`PointwiseMLP`): MLP that maps (m_sensors,) -> (p,).
         * **trunk_net** (`PointwiseMLP`): MLP that maps (d_dim,) -> (p,).
         * **out_activation** (`Callable | None`): Optional output activation after dot product.
-        * **bias** (`Float[Array, "1"] | None`): Optional learnable bias after dot product.
+        * **bias** (`Float[Array, ""] | None`): Optional learnable bias after dot product.
     """
 
     @override
@@ -168,7 +169,7 @@ class MLPDeepONet(DeepONet):
         branch_activations: Callable | Sequence[Callable] = jax.nn.gelu,
         trunk_activations: Callable | Sequence[Callable] = jax.nn.gelu,
         out_activation: Callable | None = None,
-        bias: Float[Array, "1"] | None = None,
+        bias: Float[Array, ""] | None = None,
     ) -> None:
         bkey, tkey = jr.split(key, 2)
         self.branch_net = PointwiseMLP(
@@ -177,7 +178,7 @@ class MLPDeepONet(DeepONet):
             branch_activations,
         )
         self.trunk_net = PointwiseMLP(
-            tkey, [d_dim] + trunk_hidden_dims + [p_latent], trunk_activations
+            tkey, [d_dim] + list(trunk_hidden_dims) + [p_latent], trunk_activations
         )
         self.out_activation = out_activation
         self.bias = bias

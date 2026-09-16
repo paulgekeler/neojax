@@ -14,8 +14,9 @@ authors = [
 ]
 keywords = [
   "jax",
+    "equinox",
   "neural-operators",
-  "fno",
+  "sciml",
   "deep-learning",
   "scientific-computing",
 ]
@@ -30,6 +31,7 @@ dependencies = [
   "jax",
   "jaxlib",
   "equinox",
+    "numpy",
 ]
 
 [project.optional-dependencies]
@@ -122,7 +124,8 @@ warn_unused_configs = true
 
 # Pytest
 [tool.pytest.ini_options]
-addopts = "-m 'not slow'"
+# this import mode avoids basename collisions between same-named tests
+addopts = "-m 'not slow' --import-mode=importlib"
 markers = [
   "slow: marks tests as slow (deselect with '-m \"not slow\"')."
 ]

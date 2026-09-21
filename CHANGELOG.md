@@ -4,6 +4,10 @@ All notable changes to **neojax** will be documented in this file.
 
 ## [Released]
 
+## [0.2.1] - 2026-09-21
+
+No additions. Simple version bump for pypi compatibility.
+
 ## [0.2.0] - 2026-09-21
 
 ### Added

@@ -6,8 +6,9 @@ from os import PathLike
 from typing import Any, BinaryIO
 
 import equinox as eqx
+import jax.numpy as jnp
 import optax
-from jaxtyping import Array, Float, PRNGKeyArray
+from jaxtyping import Array, Float, Int, PRNGKeyArray
 
 
 class TrainState(eqx.Module):
@@ -26,25 +27,28 @@ class TrainState(eqx.Module):
 
         * **model** (`eqx.Module`): The Neural Operator or standard Equinox model.
         * **opt_state** (`optax.OptState`): The optax optimizer state.
-        * **step** (`int`): The current training step/iteration.
+        * **step** (`Int[Array, ""]`): The current training step/iteration.
         * **metadata** (`dict[str, Any]`): Static metadata dictionary (epochs, batch index, etc.).
     """
 
     model: eqx.Module
     opt_state: optax.OptState
-    step: int
+    step: Int[Array, ""]
     metadata: dict[str, Any] = eqx.field(static=True)
 
     def __init__(
         self,
         model: eqx.Module,
         opt_state: optax.OptState,
-        step: int = 0,
+        step: int | Int[Array, ""] = 0,
         metadata: dict[str, Any] | None = None,
     ) -> None:
         self.model = model
         self.opt_state = opt_state
-        self.step = step
+        if isinstance(step, int):
+            self.step = jnp.asarray(step, dtype=jnp.int32)
+        else:
+            self.step = step
         self.metadata = metadata if metadata is not None else {}
 
     def save(
@@ -63,9 +67,10 @@ class TrainState(eqx.Module):
             model_hyperparams: Dictionary describing the model initialization configuration.
             kwargs: Additional arguments passed to `tree_serialise_leaves`.
         """
+        # Cast step to int to be JSON serialisable
         checkpoint_dict = {
             "model_hyperparams": model_hyperparams,
-            "metadata": {**self.metadata, "step": self.step},
+            "metadata": {**self.metadata, "step": int(self.step)},
         }
         metadata_str = json.dumps(checkpoint_dict)
 
@@ -113,6 +118,7 @@ class TrainState(eqx.Module):
 
         model_hyperparams = checkpoint_dict.get("model_hyperparams", {})
         metadata = checkpoint_dict.get("metadata", {})
+        # No need to create Jax array here, the initializer calls `asarray` on step
         step = metadata.get("step", 0)
 
         # Rebuild the model skeleton
@@ -149,31 +155,49 @@ class Trainer(eqx.Module):
 
     Args:
         optimizer: The optax GradientTransformation optimizer.
-        loss_fn: Functional loss function taking (model, batch) and returning a scalar loss.
+        loss_fn: Functional loss function taking (model, batch, training) and
+            returning a scalar loss or `(loss, aux)` if `has_aux` is `True`.
+            `training` is `True` when called from `train_step` and `False`
+            when called from `eval_step`, so the loss function can forward it
+            as e.g. `inference=not training` to models with dropout
+            or other train/eval-dependent behavior.
         filter_spec: Optional PyTree filter spec (or callable) indicating which parameters
             are learnable. Defaults to `equinox.is_inexact_array`.
+        has_aux: If `True`, `loss_fn` returns `(loss, aux)` instead of a just
+            loss, mirroring `jax.value_and_grad` own `has_aux` convention.
+            `aux` is carried through unchanged. Useful for e.g. returning a
+            `ComposedMetric` per-term values (via its own
+            `return_components=True`). Changes `train_step` return to
+            `(state, loss, aux)` and `eval_step` to `(loss, aux)`.
 
     ??? info "Internal Attributes"
         These fields store the trainer configuration.
 
         * **optimizer** (`optax.GradientTransformation`): The optax optimizer instance.
-        * **loss_fn** (`Callable[[eqx.Module, Any], Float[Array, ""]]`): Functional loss function.
+        * **loss_fn** (`Callable[[eqx.Module, Any, bool], Float[Array, ""]]`): Functional
+            loss function, called with a `training` flag (see `Args`).
         * **filter_spec** (`Any`): Filter specification PyTree or callable for parameter updates.
+        * **has_aux** (`bool`): Whether `loss_fn` returns an auxiliary value alongside the loss.
     """
 
     optimizer: optax.GradientTransformation = eqx.field(static=True)
-    loss_fn: Callable[[eqx.Module, Any], Float[Array, ""]] = eqx.field(static=True)
+    loss_fn: Callable[[eqx.Module, Any, bool], Float[Array, ""]] = eqx.field(
+        static=True
+    )
     filter_spec: Any = eqx.field(static=True)
+    has_aux: bool = eqx.field(static=True)
 
     def __init__(
         self,
         optimizer: optax.GradientTransformation,
-        loss_fn: Callable[[eqx.Module, Any], Float[Array, ""]],
+        loss_fn: Callable[[eqx.Module, Any, bool], Float[Array, ""]],
         filter_spec: Any = None,
+        has_aux: bool = False,
     ) -> None:
         self.optimizer = optimizer
         self.loss_fn = loss_fn
         self.filter_spec = filter_spec
+        self.has_aux = has_aux
 
     def create_train_state(
         self,
@@ -199,7 +223,7 @@ class Trainer(eqx.Module):
     @eqx.filter_jit
     def train_step(
         self, state: TrainState, batch: Any
-    ) -> tuple[TrainState, Float[Array, ""]]:
+    ) -> tuple[TrainState, Any] | tuple[TrainState, Any, Any]:
         """Performs a single JIT-compiled functional optimization step.
 
         Args:
@@ -207,7 +231,7 @@ class Trainer(eqx.Module):
             batch: Data batch PyTree passed to `loss_fn`.
 
         Returns:
-            A tuple of the updated TrainState and the batch loss value.
+            `(new_state, loss)` or `(new_state, loss, aux)` if `has_aux`.
         """
         filter_fn = (
             self.filter_spec if self.filter_spec is not None else eqx.is_inexact_array
@@ -218,9 +242,15 @@ class Trainer(eqx.Module):
 
         def step_loss_fn(diff_parts):
             combined_model = eqx.combine(diff_parts, static)
-            return self.loss_fn(combined_model, batch)
+            return self.loss_fn(combined_model, batch, True)
 
-        loss_val, grads = eqx.filter_value_and_grad(step_loss_fn)(diff)
+        if self.has_aux:
+            (loss_val, aux), grads = eqx.filter_value_and_grad(
+                step_loss_fn, has_aux=True
+            )(diff)
+        else:
+            loss_val, grads = eqx.filter_value_and_grad(step_loss_fn)(diff)
+
         updates, opt_state = self.optimizer.update(grads, state.opt_state, diff)
         new_diff = eqx.apply_updates(diff, updates)
 
@@ -233,4 +263,27 @@ class Trainer(eqx.Module):
             step=state.step + 1,
             metadata=state.metadata,
         )
+
+        if self.has_aux:
+            return new_state, loss_val, aux
         return new_state, loss_val
+
+    @eqx.filter_jit
+    def eval_step(
+        self, state: TrainState, batch: Any
+    ) -> Float[Array, ""] | tuple[Float[Array, ""], tuple[Float[Array, ""], ...]]:
+        """Performs a single JIT-compiled evaluation forward pass.
+
+        Unlike `train_step`, this neither computes gradients nor updates the
+        optimizer. It calls `loss_fn` with `training=False` so the model
+        can disable dropout and other train-only stochastic behavior, and
+        returns the resulting loss value directly.
+
+        Args:
+            state: The current TrainState.
+            batch: Data batch PyTree passed to `loss_fn`.
+
+        Returns:
+            The batch loss value, or `(loss, aux)` if `has_aux`.
+        """
+        return self.loss_fn(state.model, batch, False)

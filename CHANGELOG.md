@@ -4,7 +4,7 @@ All notable changes to **neojax** will be documented in this file.
 
 ## [Released]
 
-## [0.2.0] - 2026-08-21
+## [0.2.0] - 2026-09-21
 
 ### Added
 
@@ -29,6 +29,7 @@ All notable changes to **neojax** will be documented in this file.
 
 #### Training Module
 - `Trainer` and `TrainState` for functional JAX training loops with checkpointing.
+- Diagnostics to uncover gradient anomalies and training failures.
 
 #### Tensor Module
 - `BaseTensor` interface, plus `DenseTensor`, `CPTensor`, `TuckerTensor`, and `TTTensor` factorized spectral weight representations, with `separable` support.

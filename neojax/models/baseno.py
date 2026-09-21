@@ -167,7 +167,7 @@ class BaseNO(eqx.Module):
 
     def profile_compile(
         self,
-        dummy_input: Inexact[Array, "in_c ..."],
+        dummy_inputs: Any,
         return_lowering: bool = False,
         filter_jax_frames: bool = True,
     ) -> tuple[bool, dict[str, Any]]:
@@ -177,7 +177,8 @@ class BaseNO(eqx.Module):
         See [JAX docs](https://docs.jax.dev/en/latest/jax.stages.html) for details.
 
         Args:
-            dummy_input: Dummy array representative of a training sample to pass
+            dummy_inputs: Dummy inputs representative of an input to model.__call__()
+                Typically, a dummy array representative of a training sample to pass
                 to the jitted model.
             return_lowering: Whether to return a human-readable representation of
                 the model lowering in the summary dict.
@@ -213,7 +214,7 @@ class BaseNO(eqx.Module):
         try:
             # filter_jit is a wrapper -> ensure we get the underlying object
             # then get jax.stages.Lowered from equinox.Lowered
-            lowered = eqx.filter_jit(self).lower(dummy_input).lowered
+            lowered = eqx.filter_jit(self).lower(dummy_inputs).lowered
             summary["lowering"] = lowered.as_text() if return_lowering else ""
             summary["lowering_cost_analysis"] = lowered.cost_analysis()
         except Exception as e:

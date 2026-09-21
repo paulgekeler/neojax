@@ -31,12 +31,12 @@ class TestUtils:
         metric_learnable = LpMetric(p=2.0, weight=1.5, learnable_weight=True)
 
         mask_fixed = is_learnable_metric_weight(metric_fixed)
-        # BaseMetric has 'weight' (array) and 'learnable_weight' (static bool)
+        # BaseMetric has 'raw_weight' (array) and 'learnable_weight' (static bool)
         # LpMetric also has 'p' (static float)
-        assert not mask_fixed.weight
+        assert not mask_fixed.raw_weight
 
         mask_learnable = is_learnable_metric_weight(metric_learnable)
-        assert mask_learnable.weight
+        assert mask_learnable.raw_weight
 
     def test_is_learnable_metric_weight_nested_composed_metric(self):
         # Each nested metric's own learnable_weight must be respected
@@ -47,9 +47,9 @@ class TestUtils:
         composed = ComposedMetric(learnable_child, fixed_child, learnable_weight=True)
 
         mask = is_learnable_metric_weight(composed)
-        assert mask.weight
-        assert mask.metrics[0].weight
-        assert not mask.metrics[1].weight
+        assert mask.raw_weight
+        assert mask.metrics[0].raw_weight
+        assert not mask.metrics[1].raw_weight
 
     def test_is_learnable_metric_weight_composed(self):
         fno = FNO(
@@ -72,7 +72,7 @@ class TestUtils:
 
         mask_fixed = is_learnable_metric_weight(model_fixed)
         assert not mask_fixed.model.lifting.weights[0]
-        assert not mask_fixed.metric_fn.weight
+        assert not mask_fixed.metric_fn.raw_weight
 
         model_learnable = ModelWithMetric(
             model=fno,
@@ -81,7 +81,7 @@ class TestUtils:
 
         mask_learnable = is_learnable_metric_weight(model_learnable)
         assert not mask_learnable.model.lifting.weights[0]
-        assert mask_learnable.metric_fn.weight
+        assert mask_learnable.metric_fn.raw_weight
 
     def test_is_learnable_metric_weight_gradient_update(self):
         fno = FNO(

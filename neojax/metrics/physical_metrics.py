@@ -20,7 +20,8 @@ class BoundaryConsistencyMetric(BaseMetric):
     at the locations specified by the boundary condition mask.
 
     $$
-    \text{BoundaryConsistency} = \left( \frac{\sum_{t, c, x} |(\hat{y}_{t,c,x} - y_{\text{bc}, t,c,x}) \cdot M_{c,x}|^p}{\sum_{t, c, x} M_{c,x} + \epsilon} \right)^{1/p}
+    \text{BoundaryConsistency} = \left( \frac{\sum_{t, c, x} |(\hat{y}_{t,c,x} - y_{\text{bc}, t,c,x})
+    \cdot M_{c,x}|^p}{\sum_{t, c, x} M_{c,x} + \epsilon} \right)^{1/p}
     $$
 
     where $y_{\text{bc}}$ is the boundary values, $\hat{y}$ is the prediction,
@@ -28,12 +29,14 @@ class BoundaryConsistencyMetric(BaseMetric):
 
     Args:
         p: Power of the error norm. Default is 2.0.
-        weight: (Learnable) weight. Metric is computed as `weight` * `metric`.
-            Default is 1.0.
-        learnable_weight: Whether `weight` is learnable.
-            Used to filter trainable parameters using
-            `is_learnable_metric_weight` utility function.
-            Default is `False`.
+        weight: (Learnable) scalar weight coefficient of the metric.
+            The metric is computed as 'metric * weight'. Default is 1.0.
+            If `learnable_weight` is True, weight has to be strictly positive and
+            will be optimized via gradient descent.
+        learnable_weight: Optional flag indicating whether `weight` is learnable.
+            If `True`, this flag is used in the `is_learnable_metric_weight` filter function
+            to indicate to `eqx.filter_...` or `eqx.partition` that `weight` should be
+            adapted by the optimizer. Default is `False`.
 
     ??? info "Internal Attributes"
         These fields store the internal state of the metric.
@@ -43,8 +46,6 @@ class BoundaryConsistencyMetric(BaseMetric):
         * **p** (`float`): Power of the norm.
     """
 
-    weight: Float[Array, ""]
-    learnable_weight: bool = eqx.field(static=True)
     p: float = eqx.field(static=True)
 
     def __init__(
@@ -54,8 +55,7 @@ class BoundaryConsistencyMetric(BaseMetric):
         learnable_weight: bool = False,
     ) -> None:
         self.p = p
-        self.weight = jnp.array(weight)
-        self.learnable_weight = learnable_weight
+        super().__init__(weight=weight, learnable_weight=learnable_weight)
 
     @override
     def __call__(
@@ -139,12 +139,14 @@ class ConservationMetric(BaseMetric):
         mode: Type of drift deviation, either `"absolute"` or `"relative"`.
             Default is `"absolute"`.
         p: Power of the norm. Default is 2.0.
-        weight: (Learnable) weight. Metric is computed as `weight` * `metric`.
-            Default is 1.0.
-        learnable_weight: Whether `weight` is learnable.
-            Used to filter trainable parameters using
-            `is_learnable_metric_weight` utility function.
-            Default is `False`.
+        weight: (Learnable) scalar weight coefficient of the metric.
+            The metric is computed as 'metric * weight'. Default is 1.0.
+            If `learnable_weight` is True, weight has to be strictly positive and
+            will be optimized via gradient descent.
+        learnable_weight: Optional flag indicating whether `weight` is learnable.
+            If `True`, this flag is used in the `is_learnable_metric_weight` filter function
+            to indicate to `eqx.filter_...` or `eqx.partition` that `weight` should be
+            adapted by the optimizer. Default is `False`.
 
     ??? info "Internal Attributes"
         These fields store the internal state of the metric.
@@ -159,8 +161,6 @@ class ConservationMetric(BaseMetric):
         May be used to ensure the model doesn't violate conservation of energy or mass.
     """
 
-    weight: Float[Array, ""]
-    learnable_weight: bool = eqx.field(static=True)
     conservation_fn: Callable[
         [Float[Array, "c ..."], Float[Array, "d ..."]], Float[Array, ""]
     ] = eqx.field(static=True)
@@ -182,8 +182,7 @@ class ConservationMetric(BaseMetric):
             raise ValueError("mode must be 'absolute' or 'relative'")
         self.mode = mode
         self.p = p
-        self.weight = jnp.array(weight)
-        self.learnable_weight = learnable_weight
+        super().__init__(weight=weight, learnable_weight=learnable_weight)
 
     @override
     def __call__(
@@ -258,12 +257,14 @@ class ResidualMetric(BaseMetric):
             `fields` is prediction trajectory shaped `(t, c, *spatial)` and `coords`
             is shaped `(d, *spatial)`. Output must have shape `(t_res, c_res, *spatial_res)`.
         p: Power of the norm. Default is 2.0.
-        weight: (Learnable) weight. Metric is computed as `weight` * `metric`.
-            Default is 1.0.
-        learnable_weight: Whether `weight` is learnable.
-            Used to filter trainable parameters using
-            `is_learnable_metric_weight` utility function.
-            Default is `False`.
+        weight: (Learnable) scalar weight coefficient of the metric.
+            The metric is computed as 'metric * weight'. Default is 1.0.
+            If `learnable_weight` is True, weight has to be strictly positive and
+            will be optimized via gradient descent.
+        learnable_weight: Optional flag indicating whether `weight` is learnable.
+            If `True`, this flag is used in the `is_learnable_metric_weight` filter function
+            to indicate to `eqx.filter_...` or `eqx.partition` that `weight` should be
+            adapted by the optimizer. Default is `False`.
 
     ??? info "Internal Attributes"
         These fields store the internal state of the metric.
@@ -274,8 +275,6 @@ class ResidualMetric(BaseMetric):
         * **p** (`float`): Power of the norm.
     """
 
-    weight: Float[Array, ""]
-    learnable_weight: bool = eqx.field(static=True)
     residual_fn: Callable[
         [Float[Array, "t c ..."], Float[Array, "d ..."]], Float[Array, "..."]
     ] = eqx.field(static=True)
@@ -292,8 +291,7 @@ class ResidualMetric(BaseMetric):
     ) -> None:
         self.residual_fn = residual_fn
         self.p = p
-        self.weight = jnp.array(weight)
-        self.learnable_weight = learnable_weight
+        super().__init__(weight=weight, learnable_weight=learnable_weight)
 
     @override
     def __call__(

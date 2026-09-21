@@ -49,13 +49,14 @@ class SobolevMetric(BaseMetric):
             See documentation for details. Default is `auto`.
         diff_mode: Inner AD mode for first order derivates.
             See documentation for details. Default is `auto`.
-        weight: (Learnable) weight. Metric is computed as `weight` * `metric`.
-            Default is 1.0.
-        learnable_weight: Whether `weight` is learnable.
-            Used to filter trainable parameters using
-            `is_learnable_metric_weight` utility function
-            with `equinox.filter_...` or `equinox.partition`.
-            Default is `False`.
+        weight: (Learnable) scalar weight coefficient of the metric.
+            The metric is computed as 'metric * weight'. Default is 1.0.
+            If `learnable_weight` is True, weight has to be strictly positive and
+            will be optimized via gradient descent.
+        learnable_weight: Optional flag indicating whether `weight` is learnable.
+            If `True`, this flag is used in the `is_learnable_metric_weight` filter function
+            to indicate to `eqx.filter_...` or `eqx.partition` that `weight` should be
+            adapted by the optimizer. Default is `False`.
         n_random_samples: Number of random vectors to sample (without replacement) in
             `"stochastic"` method. Ignored in other methods.
             Default is 10.
@@ -108,8 +109,6 @@ class SobolevMetric(BaseMetric):
         static=True
     )
     diff_mode: Literal["fwd", "bwd", "auto"] = eqx.field(static=True)
-    weight: Float[Array, ""]
-    learnable_weight: bool = eqx.field(static=True)
     n_random_samples: int = eqx.field(static=True)
     direction_threshold: int = eqx.field(static=True)
 
@@ -143,8 +142,7 @@ class SobolevMetric(BaseMetric):
             )
 
         self.diff_mode = diff_mode
-        self.weight = jnp.array(weight)
-        self.learnable_weight = learnable_weight
+        super().__init__(weight=weight, learnable_weight=learnable_weight)
         self.n_random_samples = n_random_samples
         if direction_threshold <= 0:
             raise ValueError("'direction_threshold' must be larger than zero.")

@@ -26,13 +26,14 @@ class LpMetric(BaseMetric):
 
     Args:
         p: Power of the norm. Can be a number or "inf" (representing L-infinity norm).
-        weight: (Learnable) scalar weight. Metric is computed as `weight` * `metric`.
-            Default is 1.0.
-        learnable_weight: Whether `weight` is learnable.
-            Used to filter trainable parameters using
-            `is_learnable_metric_weight` utility function
-            with `equinox.filter_...` or `equinox.partition`.
-            Default is `False`.
+        weight: (Learnable) scalar weight coefficient of the metric.
+            The metric is computed as 'metric * weight'. Default is 1.0.
+            If `learnable_weight` is True, weight has to be strictly positive and
+            will be optimized via gradient descent.
+        learnable_weight: Optional flag indicating whether `weight` is learnable.
+            If `True`, this flag is used in the `is_learnable_metric_weight` filter function
+            to indicate to `eqx.filter_...` or `eqx.partition` that `weight` should be
+            adapted by the optimizer. Default is `False`.
 
     ??? info "Internal Attributes"
         These fields store the internal state of the metric.
@@ -43,9 +44,7 @@ class LpMetric(BaseMetric):
         * **is_p_inf** (`bool`): Flag indicating if `p` is infinity.
     """
 
-    weight: Float[Array, ""]
     p: float | int | Literal["inf"] = eqx.field(static=True)
-    learnable_weight: bool = eqx.field(static=True)
     is_p_inf: bool = eqx.field(static=True)
 
     def __init__(
@@ -55,9 +54,8 @@ class LpMetric(BaseMetric):
         learnable_weight: bool = False,
     ) -> None:
         self.p = p
-        self.weight = jnp.array(weight)
-        self.learnable_weight = learnable_weight
-        self.is_p_inf = (p == "inf") or (isinstance(p, (int, float)) and math.isinf(p))
+        super().__init__(weight=weight, learnable_weight=learnable_weight)
+        self.is_p_inf = (p == "inf") or (isinstance(p, int | float) and math.isinf(p))
 
     @override
     def __call__(
@@ -119,13 +117,14 @@ class RelativeLpMetric(BaseMetric):
 
     Args:
         p: Power of the norm. Can be a number or "inf" (representing L-infinity norm).
-        weight: (Learnable) weight. Metric is computed as `weight` * `metric`.
-            Default is 1.0.
-        learnable_weight: Whether `weight` is learnable.
-            Used to filter trainable parameters using
-            `is_learnable_metric_weight` utility function
-            with `equinox.filter_...` or `equinox.partition`.
-            Default is `False`.
+        weight: (Learnable) scalar weight coefficient of the metric.
+            The metric is computed as 'metric * weight'. Default is 1.0.
+            If `learnable_weight` is True, weight has to be strictly positive and
+            will be optimized via gradient descent.
+        learnable_weight: Optional flag indicating whether `weight` is learnable.
+            If `True`, this flag is used in the `is_learnable_metric_weight` filter function
+            to indicate to `eqx.filter_...` or `eqx.partition` that `weight` should be
+            adapted by the optimizer. Default is `False`.
 
     ??? info "Internal Attributes"
         These fields store the internal state of the metric.
@@ -137,7 +136,6 @@ class RelativeLpMetric(BaseMetric):
     """
 
     p: float | int | Literal["inf"] = eqx.field(static=True)
-    learnable_weight: bool = eqx.field(static=True)
     is_p_inf: bool = eqx.field(static=True)
 
     def __init__(
@@ -147,9 +145,8 @@ class RelativeLpMetric(BaseMetric):
         learnable_weight: bool = False,
     ) -> None:
         self.p = p
-        self.weight = jnp.array(weight)
-        self.learnable_weight = learnable_weight
-        self.is_p_inf = (p == "inf") or (isinstance(p, (int, float)) and math.isinf(p))
+        super().__init__(weight=weight, learnable_weight=learnable_weight)
+        self.is_p_inf = (p == "inf") or (isinstance(p, int | float) and math.isinf(p))
 
     @override
     def __call__(

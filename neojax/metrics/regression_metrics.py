@@ -24,12 +24,14 @@ class MSEMetric(BaseMetric):
     where $y$ is the ground truth target and $\hat{y}$ is the model prediction.
 
     Args:
-        weight: (Learnable) weight. Metric is computed as `weight` * `metric`.
-            Default is 1.0.
-        learnable_weight: Whether `weight` is learnable.
-            Used to filter trainable parameters using
-            `is_learnable_metric_weight` utility function.
-            Default is `False`.
+        weight: (Learnable) scalar weight coefficient of the metric.
+            The metric is computed as 'metric * weight'. Default is 1.0.
+            If `learnable_weight` is True, weight has to be strictly positive and
+            will be optimized via gradient descent.
+        learnable_weight: Optional flag indicating whether `weight` is learnable.
+            If `True`, this flag is used in the `is_learnable_metric_weight` filter function
+            to indicate to `eqx.filter_...` or `eqx.partition` that `weight` should be
+            adapted by the optimizer. Default is `False`.
 
     ??? info "Internal Attributes"
         These fields store the internal state of the metric.
@@ -38,16 +40,12 @@ class MSEMetric(BaseMetric):
         * **learnable_weight** (`bool`): Flag indicating whether `weight` is learnable.
     """
 
-    weight: Float[Array, ""]
-    learnable_weight: bool = eqx.field(static=True)
-
     def __init__(
         self,
         weight: float = 1.0,
         learnable_weight: bool = False,
     ) -> None:
-        self.weight = jnp.array(weight)
-        self.learnable_weight = learnable_weight
+        super().__init__(weight=weight, learnable_weight=learnable_weight)
 
     @override
     def __call__(
@@ -102,12 +100,14 @@ class RMSEMetric(BaseMetric):
     and $\epsilon = 10^{-7}$ is a small regularization constant to prevent NaN gradients at zero.
 
     Args:
-        weight: (Learnable) weight. Metric is computed as `weight` * `metric`.
-            Default is 1.0.
-        learnable_weight: Whether `weight` is learnable.
-            Used to filter trainable parameters using
-            `is_learnable_metric_weight` utility function.
-            Default is `False`.
+        weight: (Learnable) scalar weight coefficient of the metric.
+            The metric is computed as 'metric * weight'. Default is 1.0.
+            If `learnable_weight` is True, weight has to be strictly positive and
+            will be optimized via gradient descent.
+        learnable_weight: Optional flag indicating whether `weight` is learnable.
+            If `True`, this flag is used in the `is_learnable_metric_weight` filter function
+            to indicate to `eqx.filter_...` or `eqx.partition` that `weight` should be
+            adapted by the optimizer. Default is `False`.
 
     ??? info "Internal Attributes"
         These fields store the internal state of the metric.
@@ -116,16 +116,12 @@ class RMSEMetric(BaseMetric):
         * **learnable_weight** (`bool`): Flag indicating whether `weight` is learnable.
     """
 
-    weight: Float[Array, ""]
-    learnable_weight: bool = eqx.field(static=True)
-
     def __init__(
         self,
         weight: float = 1.0,
         learnable_weight: bool = False,
     ) -> None:
-        self.weight = jnp.array(weight)
-        self.learnable_weight = learnable_weight
+        super().__init__(weight=weight, learnable_weight=learnable_weight)
 
     @override
     def __call__(
@@ -181,12 +177,14 @@ class R2Metric(BaseMetric):
     is a small regularization constant to prevent division by zero.
 
     Args:
-        weight: (Learnable) weight. Metric is computed as `weight` * `metric`.
-            Default is 1.0.
-        learnable_weight: Whether `weight` is learnable.
-            Used to filter trainable parameters using
-            `is_learnable_metric_weight` utility function.
-            Default is `False`.
+        weight: (Learnable) scalar weight coefficient of the metric.
+            The metric is computed as 'metric * weight'. Default is 1.0.
+            If `learnable_weight` is True, weight has to be strictly positive and
+            will be optimized via gradient descent.
+        learnable_weight: Optional flag indicating whether `weight` is learnable.
+            If `True`, this flag is used in the `is_learnable_metric_weight` filter function
+            to indicate to `eqx.filter_...` or `eqx.partition` that `weight` should be
+            adapted by the optimizer. Default is `False`.
 
     ??? info "Internal Attributes"
         These fields store the internal state of the metric.
@@ -195,16 +193,12 @@ class R2Metric(BaseMetric):
         * **learnable_weight** (`bool`): Flag indicating whether `weight` is learnable.
     """
 
-    weight: Float[Array, ""]
-    learnable_weight: bool = eqx.field(static=True)
-
     def __init__(
         self,
         weight: float = 1.0,
         learnable_weight: bool = False,
     ) -> None:
-        self.weight = jnp.array(weight)
-        self.learnable_weight = learnable_weight
+        super().__init__(weight=weight, learnable_weight=learnable_weight)
 
     @override
     def __call__(

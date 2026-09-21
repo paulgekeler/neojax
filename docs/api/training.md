@@ -32,8 +32,10 @@ model = FNO(
 optimizer = optax.adam(learning_rate=1e-3)
 loss_metric = RelativeLpMetric(p=2.0)
 
-# Define functional loss taking (model, batch_data)
-def loss_fn(model, batch):
+# Define functional loss taking (model, batch_data, training). `training` is
+# True from train_step and False from eval_step, e.g. to forward
+# 'inference=not training' to models with dropout.
+def loss_fn(model, batch, training):
     x, y = batch  # x shape: (batch, channels, *spatial), y shape: (batch, channels, *spatial)
     predictions = jax.vmap(model)(x)
     return loss_metric(pred=predictions, target=y)
@@ -47,6 +49,10 @@ dummy_batch = (jnp.ones((10, 2, 64, 64)), jnp.ones((10, 1, 64, 64)))
 new_state, loss_val = trainer.train_step(state, dummy_batch)
 
 print(f"Step: {new_state.step}, Loss: {loss_val}")
+
+# Evaluate on a held-out batch without updating the model or optimizer state
+eval_loss = trainer.eval_step(new_state, dummy_batch)
+print(f"Eval loss: {eval_loss}")
 ```
 
 ### Example: Resuming Training Checkpoints

@@ -107,7 +107,9 @@ nav:
       - Tensors: api/tensors.md
       - Metrics: api/metrics.md
       - Utilities: api/utils.md
-      - Training: api/training.md
+      - Training:
+        - Training: api/training.md
+        - Diagnostics: api/diagnostics.md
       - Data:
         - Datasets: api/datasets.md
         - Schemas: api/schemas.md

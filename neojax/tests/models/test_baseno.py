@@ -10,20 +10,22 @@ import pytest
 from neojax.models.fno import FNO
 
 
-class TestBaseNO:
-    def _make_model(self, key):
-        return FNO(
-            key=key,
-            in_channels=1,
-            out_channels=1,
-            hidden_channels=4,
-            n_layers=1,
-            modes=(4,),
-        )
+@pytest.fixture
+def model():
+    key = jr.key(0)
+    return FNO(
+        key=key,
+        in_channels=1,
+        out_channels=1,
+        hidden_channels=4,
+        n_layers=1,
+        modes=(4,),
+    )
 
-    def test_save_load_weights(self):
-        key = jr.key(0)
-        model = self._make_model(key)
+
+@pytest.mark.usefixtures("model")
+class TestBaseNO:
+    def test_save_load_weights(self, model):
         x = jnp.ones((1, 32))
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -31,27 +33,25 @@ class TestBaseNO:
             with open(path, "wb") as f:
                 model.save_weights(f)
 
-            skeleton = self._make_model(key)
+            skeleton = model
             with open(path, "rb") as f:
                 loaded = skeleton.load_weights(f)
 
         assert jnp.allclose(model(x), loaded(x))
 
-    def test_save_load_weights_file_path(self):
-        key = jr.key(0)
-        model = self._make_model(key)
+    def test_save_load_weights_file_path(self, model):
         x = jnp.ones((1, 32))
 
         with tempfile.TemporaryDirectory() as tmpdir:
             path = os.path.join(tmpdir, "weights.eqx")
             model.save_weights(path)
 
-            skeleton = self._make_model(key)
+            skeleton = model
             loaded = skeleton.load_weights(path)
 
         assert jnp.allclose(model(x), loaded(x))
 
-    def test_save_load(self):
+    def test_save_load(self, model):
         key = jr.key(0)
         hyperparams = dict(
             in_channels=1,
@@ -60,7 +60,7 @@ class TestBaseNO:
             n_layers=1,
             modes=(4,),
         )
-        model = FNO(key=key, **hyperparams)
+
         x = jnp.ones((1, 32))
 
         def make_fn(**hp):
@@ -75,7 +75,7 @@ class TestBaseNO:
 
         assert jnp.allclose(model(x), loaded(x))
 
-    def test_save_load_file_path(self):
+    def test_save_load_file_path(self, model):
         key = jr.key(0)
         hyperparams = dict(
             in_channels=1,
@@ -84,7 +84,7 @@ class TestBaseNO:
             n_layers=1,
             modes=(4,),
         )
-        model = FNO(key=key, **hyperparams)
+
         x = jnp.ones((1, 32))
 
         def make_fn(**hp):
@@ -97,10 +97,7 @@ class TestBaseNO:
 
         assert jnp.allclose(model(x), loaded(x))
 
-    def test_size(self):
-        key = jr.key(0)
-        model = self._make_model(key)
-
+    def test_size(self, model):
         size_mb = model.size()
         assert isinstance(size_mb, float)
         assert size_mb > 0
@@ -110,18 +107,12 @@ class TestBaseNO:
         assert isinstance(n_params, int)
         assert n_params > 0
 
-    def test_astype_no_op(self):
-        key = jr.key(0)
-        model = self._make_model(key)
-
+    def test_astype_no_op(self, model):
         cast = model.astype(jnp.float32)
         for leaf in jtu.tree_leaves(eqx.filter(cast, eqx.is_array)):
             assert leaf.dtype in (jnp.float32, jnp.complex64)
 
-    def test_astype_preserves_real_complex_separation(self):
-        key = jr.key(0)
-        model = self._make_model(key)
-
+    def test_astype_preserves_real_complex_separation(self, model):
         # bfloat16 has no native complex counterpart, so complex params
         # should fall back to complex64 while real params become bfloat16.
         cast = model.astype(jnp.bfloat16)
@@ -131,17 +122,11 @@ class TestBaseNO:
             else:
                 assert leaf.dtype == jnp.bfloat16
 
-    def test_astype_invalid_dtype(self):
-        key = jr.key(0)
-        model = self._make_model(key)
-
+    def test_astype_invalid_dtype(self, model):
         with pytest.raises(ValueError):
             model.astype(jnp.int32)
 
-    def test_profile_compile_success(self):
-        key = jr.key(0)
-        model = self._make_model(key)
-
+    def test_profile_compile_success(self, model):
         success, summary = model.profile_compile(jnp.ones((1, 32)))
         assert success is True
         assert summary["exception"] is None
@@ -149,17 +134,12 @@ class TestBaseNO:
         assert summary["lowering_cost_analysis"] is not None
         assert summary["compiled_cost_analysis"] is not None
 
-    def test_profile_compile_return_lowering(self):
-        key = jr.key(0)
-        model = self._make_model(key)
-
+    def test_profile_compile_return_lowering(self, model):
         _, summary = model.profile_compile(jnp.ones((1, 32)), return_lowering=True)
         assert isinstance(summary["lowering"], str)
         assert len(summary["lowering"]) > 0
 
-    def test_profile_compile_failure(self):
-        key = jr.key(0)
-        model = self._make_model(key)
+    def test_profile_compile_failure(self, model):
         # 2D spatial input for a model configured with 1D modes.
         bad_input = jnp.ones((1, 16, 16))
 

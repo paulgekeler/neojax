@@ -37,6 +37,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0.0",
+    "pytest-mock",
     "ruff",
     "mypy",
     "jaxtyping",

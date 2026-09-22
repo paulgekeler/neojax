@@ -2,6 +2,7 @@
 
 from typing import final
 
+import equinox as eqx
 from jaxtyping import Array, Inexact, Real
 from typing_extensions import override
 
@@ -19,11 +20,26 @@ class FlattenToPointsSchema(BaseSchema):
     in `fields` is preserved. The batch axis of `coords` is inferred from its own rank
     as it may be shared across a batch.
 
+    ??? info "Internal Attributes"
+        * **time_axis** (`int`): Axis index of time dimensions.
+        * **channel_axis** (`int`): Axis index of channel dimensions.
+
     !!! warning "Use in ComposedSchema"
         `FlattenToPointsSchema` can only be used as final schema in a `ComposedSchema`.
         It doesn't fulfill the contract w.r.t. the return signature of the `BaseSchema.transform` method
         in its current implementation. This may be improved/changed in future versions.
     """
+
+    time_axis: int = eqx.field(static=True)
+    channel_axis: int = eqx.field(static=True)
+
+    def __init__(self, time_axis: int = 1, channel_axis: int = 2) -> None:
+        if time_axis >= channel_axis:
+            raise ValueError(
+                "Time axis must be strictly before channel axis for simple flattening."
+            )
+        self.time_axis = time_axis
+        self.channel_axis = channel_axis
 
     @override
     def transform(

@@ -112,9 +112,10 @@ class TestComposedMetric:
             seen["vals"] = vals
             return sum(vals)
 
-        composed = ComposedMetric(
-            metric1, metric2, composition_fn=capturing_composition
-        )
+        with pytest.warns(UserWarning):
+            composed = ComposedMetric(
+                metric1, metric2, composition_fn=capturing_composition
+            )
         composed(pred=pred, target=target)
 
         raw1 = metric1(pred=pred, target=target) / metric1.weight
@@ -137,15 +138,15 @@ class TestComposedMetric:
         grad = eqx.filter_grad(lambda c: c(pred=pred, target=target))(composed)
         assert jnp.allclose(grad.metrics[0].raw_weight, 0.0, atol=1e-6)
 
-    def test_fixed_nonunit_child_weight_warns_and_is_inert(self):
-        # A *fixed* (non-learnable) weight is just as inert once composed as
-        # a learnable one -- ComposedMetric divides it back out either way --
-        # so it must warn too, not just the learnable_weight=True case.
+    def test_fixed_nonunit_child_weight_warns_and_is_inert(self, sum_composition):
+        # A fixed (non-learnable) weight is just as inert once composed as
+        # a learnable one
+        # So it must also warn in the learnable_weight=False case.
         fixed_child = LpMetric(p=2, weight=0.5)
         pred = jnp.array([[1.0, 2.0, 3.0]])
         target = jnp.array([[2.0, 4.0, 6.0]])
 
-        with pytest.warns(UserWarning, match="was constructed with weight=0.5"):
+        with pytest.warns(UserWarning, match="This also applies to fixed weights."):
             composed = ComposedMetric(fixed_child, composition_fn=sum_composition)
 
         # weight=1.0 (the default) is the true no-op case and must not warn.
@@ -184,7 +185,8 @@ class TestComposedMetric:
 
         metric1 = LpMetric(p=2, weight=3.7)
         metric2 = RelativeLpMetric(p=2, weight=0.2)
-        composed = ComposedMetric(metric1, metric2, composition_fn=sum_composition)
+        with pytest.warns(UserWarning):
+            composed = ComposedMetric(metric1, metric2, composition_fn=sum_composition)
 
         plain_result = composed(pred=pred, target=target)
         result, components = composed(pred=pred, target=target, return_components=True)

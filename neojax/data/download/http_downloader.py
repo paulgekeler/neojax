@@ -77,7 +77,7 @@ class HTTPDownloader(BaseDownloader):
         self.max_retries = max_retries
         self.backoff_factor = backoff_factor
 
-    def _verify_checksum(self, filepath: str, expected_checksum_str: str) -> bool:
+    def _verify_checksum(self, filepath: Path, expected_checksum_str: str) -> bool:
         """Verifies the checksum of a file.
 
         Args:
@@ -113,7 +113,7 @@ class HTTPDownloader(BaseDownloader):
 
     def _download_file(
         self, filename: str, url: str, target_dir: str | Path, force: bool
-    ) -> str:
+    ) -> Path:
         """Downloads a single file from the URL with retry and resume support.
 
         Args:
@@ -159,7 +159,7 @@ class HTTPDownloader(BaseDownloader):
         while retry <= self.max_retries:
             try:
                 # Check for partial download
-                temp_filepath = filepath.with_suffix(".part")
+                temp_filepath = filepath.with_suffix(filepath.suffix + ".part")
                 resume_header = {}
                 downloaded_bytes = 0
 
@@ -264,7 +264,7 @@ class HTTPDownloader(BaseDownloader):
                         f"attempts. Error: {e}"
                     )
                     # Cleanup partial file on fatal failure
-                    temp_filepath = filepath.with_suffix(".part")
+                    temp_filepath = filepath.with_suffix(filepath.suffix + ".part")
                     if temp_filepath.exists():
                         try:
                             temp_filepath.unlink()
@@ -281,7 +281,7 @@ class HTTPDownloader(BaseDownloader):
 
         raise RuntimeError(f"Unexpected termination of download loop for {filename}.")
 
-    def download(self, target_dir: str | Path, force: bool = False) -> list[str]:
+    def download(self, target_dir: str | Path, force: bool = False) -> list[Path]:
         """Download all configured URLs.
 
         Args:

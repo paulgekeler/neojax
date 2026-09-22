@@ -24,19 +24,4 @@ jobs:
         run: uv sync --all-extras --dev
 
       - name: Run tests
-        run: |
-          (
-            while true; do
-              echo "=== $(date -u +%H:%M:%S) ==="
-              echo "--- disk ---"
-              df -h /
-              echo "--- memory ---"
-              free -h
-              echo "--- top memory processes ---"
-              ps aux --sort=-%mem | head -6
-              sleep 10
-            done
-          ) &
-          WATCHER_PID=$!
-          uv run pytest neojax/tests/
-          kill $WATCHER_PID 2>/dev/null || true
+        run: uv run pytest neojax/tests/

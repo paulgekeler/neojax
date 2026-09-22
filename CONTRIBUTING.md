@@ -69,6 +69,15 @@ If you are using standard tools (with your virtual environment activated):
 pytest neojax/tests/
 ```
 
+Please also run all tests against the supported Python versions using `nox`:
+
+Install `nox` via `uv tool install nox` or `pipx install nox` and then run
+
+```bash
+nox
+```
+from the project root. It will automatically find `noxfile.py` and execute the test suite against all supported Python versions.
+
 Make sure all tests pass before submitting your changes. It is highly recommended to write new tests for any new features or bug fixes.
 
 ## Git Commit Guidelines

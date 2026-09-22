@@ -271,7 +271,7 @@ class Trainer(eqx.Module):
     @eqx.filter_jit
     def eval_step(
         self, state: TrainState, batch: Any
-    ) -> Float[Array, ""] | tuple[Float[Array, ""], tuple[Float[Array, ""], ...]]:
+    ) -> Float[Array, ""] | tuple[Float[Array, ""], Any]:
         """Performs a single JIT-compiled evaluation forward pass.
 
         Unlike `train_step`, this neither computes gradients nor updates the

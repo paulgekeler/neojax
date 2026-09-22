@@ -4,6 +4,17 @@ All notable changes to **neojax** will be documented in this file.
 
 ## [Released]
 
+## [0.3.0] -2026-09-22
+
+### Added
+- Added `nox` as dev tool to run test suite against all supported Python versions.
+  - Add `noxfile.py` to repository root.
+- Add Python version matrix to `ci.yaml` workflow.
+- Update `CONTRIBUTING.md` with use of `nox`.
+
+### Removed
+- Dropped support for Python `3.10`.
+
 ## [0.2.1] - 2026-09-21
 
 No additions. Simple version bump for pypi compatibility.

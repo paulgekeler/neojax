@@ -1,6 +1,8 @@
 import equinox as eqx
 import jax
 import jax.numpy as jnp
+import pytest
+from jaxtyping import Array, Float
 
 from neojax.metrics.composed_metric import ComposedMetric
 from neojax.metrics.lp_metrics import LpMetric, RelativeLpMetric
@@ -44,12 +46,49 @@ class TestUtils:
         learnable_child = RelativeLpMetric(p=2.0, weight=0.9, learnable_weight=True)
         fixed_child = LpMetric(p=2.0, weight=0.1, learnable_weight=False)
 
-        composed = ComposedMetric(learnable_child, fixed_child, learnable_weight=True)
+        class StatefulComposedMetric(eqx.Module):
+            weight_learnable: Float[Array, ""]
+            own_weight_learnable: Float[Array, ""]
+            # Mark as static to avoid recompilation (shouldn't change but this is clearer)
+            weight_fixed: float = eqx.field(static=True)
 
+            def __init__(self, weight_learnable, own_weight_learnable, weight_fixed):
+                self.weight_learnable = jnp.asarray(weight_learnable, dtype=jnp.float32)
+                self.own_weight_learnable = jnp.asarray(
+                    own_weight_learnable, dtype=jnp.float32
+                )
+                self.weight_fixed = weight_fixed
+
+            def __call__(
+                self, *raw_values: tuple[Float[Array, ""]]
+            ) -> Float[Array, ""]:
+                return self.own_weight_learnable * (
+                    self.weight_learnable * raw_values[0]
+                    + self.weight_fixed * raw_values[1]
+                )
+
+        scm = StatefulComposedMetric(
+            weight_learnable=0.9, own_weight_learnable=1.0, weight_fixed=0.1
+        )
+        with pytest.warns(UserWarning):
+            composed = ComposedMetric(
+                learnable_child, fixed_child, learnable_weight=True, composition_fn=scm
+            )
+
+        # The passed learnable_weight flags should be ignored
         mask = is_learnable_metric_weight(composed)
-        assert mask.raw_weight
-        assert mask.metrics[0].raw_weight
+        assert mask.composition_fn.own_weight_learnable
+        assert mask.composition_fn.weight_learnable
+        # weight_fixed is not a bool in masked pytree but static float
+        assert (
+            isinstance(mask.composition_fn.weight_fixed, float)
+            and mask.composition_fn.weight_fixed == 0.1
+        )
+        # raw_weights are still learnable here that is bool=True if learnable_weight=True but will be ignored
+        # Should be fixed in the future to be False -> currently somewhat ambiguous despite warning
         assert not mask.metrics[1].raw_weight
+        assert mask.metrics[0].raw_weight
+        assert mask.raw_weight
 
     def test_is_learnable_metric_weight_composed(self):
         fno = FNO(

@@ -43,10 +43,13 @@ plugins:
       extra_public_objects:
         - numpy.dtype
         - equinox.if_array
+        - equinox.Module
         - jax.ShapeDtypeStruct
         - jax.extend.core.ClosedJaxpr
         - jax.Device
         - jax.sharding.Sharding
+        - jax._src.typing.SupportsDType
+        - optax._src.base.GradientTransformation
   - mkdocstrings:
       handlers:
         python:

@@ -7,9 +7,9 @@ from typing import Any
 import equinox as eqx
 import jax
 
-from neojax.data.array_types import JaxNpArray
 from neojax.data.datasets.base_dataset import BaseDataset
 from neojax.data.datasets.utils import broadcast_like
+from neojax.data.types import JaxNpArray
 
 
 class RawDataset(BaseDataset):

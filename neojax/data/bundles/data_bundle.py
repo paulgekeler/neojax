@@ -3,7 +3,7 @@
 import equinox as eqx
 from jaxtyping import Inexact, Int, Real
 
-from neojax.data.array_types import JaxNpArray
+from neojax.data.types import JaxNpArray
 
 
 class DataBundle(eqx.Module):

@@ -11,7 +11,7 @@ import jax.numpy as jnp
 import numpy as np
 from jaxtyping import Inexact, Real
 
-from neojax.data.array_types import JaxNpArray
+from neojax.data.types import JaxNpArray
 
 
 def broadcast_like(array: JaxNpArray, shape: Sequence[int]) -> JaxNpArray:

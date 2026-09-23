@@ -5,7 +5,6 @@ from collections.abc import Sequence
 from typing import final
 
 import equinox as eqx
-from jaxtyping import Array, Inexact
 from typing_extensions import override
 
 from neojax.data.bundles.data_bundle import DataBundle
@@ -13,10 +12,11 @@ from neojax.data.schemas.base_schema import BaseSchema
 from neojax.data.schemas.flatten_to_points_schema import FlattenToPointsSchema
 from neojax.data.schemas.mesh_schema import MeshInputSchema
 from neojax.data.schemas.time_to_stationary_schema import TimeToStationarySchema
+from neojax.data.types import BundleOrArray
 
 
 @final
-class ComposedSchema(BaseSchema):
+class ComposedSchema(BaseSchema[BundleOrArray, BundleOrArray]):
     """Schema that applies a sequence of schemas in order.
 
     Args:
@@ -72,10 +72,10 @@ class ComposedSchema(BaseSchema):
     @override
     def transform(
         self,
-        bundle: DataBundle | Inexact[Array, "..."],
+        bundle: BundleOrArray,
         /,
         reference_bundle: DataBundle | None = None,
-    ) -> DataBundle | Inexact[Array, "..."]:
+    ) -> BundleOrArray:
         """Applies each schema's transform sequentially.
 
         Args:

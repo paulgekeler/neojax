@@ -3,15 +3,16 @@
 from typing import final
 
 import equinox as eqx
-from jaxtyping import Array, Inexact
+from jaxtyping import Inexact
 from typing_extensions import override
 
 from neojax.data.bundles.data_bundle import DataBundle
 from neojax.data.schemas.base_schema import BaseSchema
+from neojax.data.types import BundleOrArray, JaxNpArray
 
 
 @final
-class MeshInputSchema(BaseSchema):
+class MeshInputSchema(BaseSchema[BundleOrArray, dict[str, Inexact[JaxNpArray, "..."]]]):
     """Schema for mesh-based operators that maps a DataBundle to a dictionary of fields and coordinates.
 
     Returns a dictionary `{"u": u, "x_in": x_in}` where `u` has shape `(#batch, channels, num_nodes)`
@@ -43,10 +44,10 @@ class MeshInputSchema(BaseSchema):
     @override
     def transform(
         self,
-        bundle: DataBundle | Inexact[Array, "..."],
+        bundle: DataBundle | Inexact[JaxNpArray, "..."],
         /,
         reference_bundle: DataBundle | None = None,
-    ) -> dict[str, Inexact[Array, "..."]]:
+    ) -> dict[str, Inexact[JaxNpArray, "..."]]:
         """Maps fields and coordinates to mesh-based operator format.
 
         Args:

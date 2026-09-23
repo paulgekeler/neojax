@@ -3,15 +3,18 @@
 from typing import final
 
 import equinox as eqx
-from jaxtyping import Array, Inexact, Real
+from jaxtyping import Inexact, Real
 from typing_extensions import override
 
 from neojax.data.bundles.data_bundle import DataBundle
 from neojax.data.schemas.base_schema import BaseSchema
+from neojax.data.types import BundleOrArray, JaxNpArray
+
+FlattenOutput = tuple[Inexact[JaxNpArray, "..."], Real[JaxNpArray, "..."]]
 
 
 @final
-class FlattenToPointsSchema(BaseSchema):
+class FlattenToPointsSchema(BaseSchema[BundleOrArray, FlattenOutput]):
     """Schema that prepares inputs for pointwise models by flattening fields and coordinates.
 
     Returns a tuple `(u, y)` where `u` has shape `(*leading, m_sensors)`, combining the
@@ -44,10 +47,10 @@ class FlattenToPointsSchema(BaseSchema):
     @override
     def transform(
         self,
-        bundle: DataBundle | Inexact[Array, "..."],
+        bundle: BundleOrArray,
         /,
         reference_bundle: DataBundle | None = None,
-    ) -> tuple[Inexact[Array, "..."], Real[Array, "..."]]:
+    ) -> FlattenOutput:
         """Flattens fields into 1D and coords into point lists.
 
         Args:

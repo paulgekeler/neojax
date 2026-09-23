@@ -3,15 +3,15 @@
 from typing import final
 
 import equinox as eqx
-from jaxtyping import Array, Inexact
 from typing_extensions import override
 
 from neojax.data.bundles.data_bundle import DataBundle
 from neojax.data.schemas.base_schema import BaseSchema
+from neojax.data.types import BundleOrArray
 
 
 @final
-class ReshapePointsToGridSchema(BaseSchema):
+class ReshapePointsToGridSchema(BaseSchema[BundleOrArray, DataBundle]):
     """Schema that reconstructs the spatial grid from a flattened array of point predictions."""
 
     time_steps: int = eqx.field(static=True, default=1)
@@ -20,7 +20,7 @@ class ReshapePointsToGridSchema(BaseSchema):
     @override
     def transform(
         self,
-        bundle: DataBundle | Inexact[Array, "..."],
+        bundle: BundleOrArray,
         /,
         reference_bundle: DataBundle | None = None,
     ) -> DataBundle:

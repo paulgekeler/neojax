@@ -1,14 +1,17 @@
 """Implementation of the base schema."""
 
 from abc import abstractmethod
+from typing import Generic, TypeVar
 
 import equinox as eqx
-from jaxtyping import PyTree
 
 from neojax.data.bundles.data_bundle import DataBundle
 
+TIn = TypeVar("TIn")
+TOut = TypeVar("TOut")
 
-class BaseSchema(eqx.Module):
+
+class BaseSchema(eqx.Module, Generic[TIn, TOut]):
     """Abstract base schema.
 
     All custom schemas should inherit from BaseSchema.
@@ -17,10 +20,10 @@ class BaseSchema(eqx.Module):
     @abstractmethod
     def transform(
         self,
-        bundle_or_model_output: DataBundle | PyTree,
+        bundle_or_model_output: TIn,
         /,
         reference_bundle: DataBundle | None = None,
-    ) -> DataBundle | PyTree:
+    ) -> TOut:
         """Transforms a data bundle into the needed model format.
 
         Args:

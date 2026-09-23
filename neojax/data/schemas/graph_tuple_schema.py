@@ -3,15 +3,16 @@
 from typing import Any, final
 
 import jax.numpy as jnp
-from jaxtyping import Array, Inexact
+from jaxtyping import Inexact
 from typing_extensions import override
 
 from neojax.data.bundles.data_bundle import DataBundle
 from neojax.data.schemas.base_schema import BaseSchema
+from neojax.data.types import BundleOrArray, JaxNpArray
 
 
 @final
-class GraphTupleInputSchema(BaseSchema):
+class GraphTupleInputSchema(BaseSchema[BundleOrArray, dict[str, Any]]):
     """Schema to prepare inputs for external graph-based or region interaction neural operators.
 
     Transforms a DataBundle into a dictionary containing a structured `Inputs` NamedTuple.
@@ -23,7 +24,7 @@ class GraphTupleInputSchema(BaseSchema):
     @override
     def transform(
         self,
-        bundle: DataBundle | Inexact[Array, "..."],
+        bundle: BundleOrArray,
         /,
         reference_bundle: DataBundle | None = None,
     ) -> dict[str, Any]:
@@ -75,7 +76,7 @@ class GraphTupleInputSchema(BaseSchema):
 
 
 @final
-class GraphTupleOutputSchema(BaseSchema):
+class GraphTupleOutputSchema(BaseSchema[Inexact[JaxNpArray, "..."], DataBundle]):
     """Schema to reconstruct a DataBundle from the output of external graph/unstructured models.
 
     Translates an output tensor of shape `[batch, time, num_nodes, channel]`
@@ -85,7 +86,7 @@ class GraphTupleOutputSchema(BaseSchema):
     @override
     def transform(
         self,
-        outputs: Inexact[Array, "..."],
+        outputs: Inexact[JaxNpArray, "..."],
         /,
         reference_bundle: DataBundle | None = None,
     ) -> DataBundle:

@@ -4,15 +4,16 @@ from typing import final
 
 import equinox as eqx
 import jax.numpy as jnp
-from jaxtyping import Array, Inexact
+from jaxtyping import Inexact
 from typing_extensions import override
 
 from neojax.data.bundles.data_bundle import DataBundle
 from neojax.data.schemas.base_schema import BaseSchema
+from neojax.data.types import JaxNpArray
 
 
 @final
-class BundleReconstructSchema(BaseSchema):
+class BundleReconstructSchema(BaseSchema[Inexact[JaxNpArray, "..."], DataBundle]):
     """Schema that takes raw model outputs and places them back into a DataBundle.
 
     Args:
@@ -34,7 +35,7 @@ class BundleReconstructSchema(BaseSchema):
     @override
     def transform(
         self,
-        model_output: Inexact[Array, "..."],
+        model_output: Inexact[JaxNpArray, "..."],
         /,
         reference_bundle: DataBundle | None = None,
     ) -> DataBundle:

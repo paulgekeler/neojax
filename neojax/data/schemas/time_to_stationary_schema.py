@@ -6,15 +6,16 @@ from typing import final
 
 import equinox as eqx
 import jax.numpy as jnp
-from jaxtyping import Array, Inexact
+from jaxtyping import Array
 from typing_extensions import override
 
 from neojax.data.bundles.data_bundle import DataBundle
 from neojax.data.schemas.base_schema import BaseSchema
+from neojax.data.types import BundleOrArray
 
 
 @final
-class TimeToStationarySchema(BaseSchema):
+class TimeToStationarySchema(BaseSchema[BundleOrArray, DataBundle]):
     """Schema that extracts two time slices from all time axes of a `DataBundle`.
 
     Can be used to convert a time-dependent problem or problem with multiple time steps
@@ -37,8 +38,8 @@ class TimeToStationarySchema(BaseSchema):
     !!! warning "Validation of time slice indices"
         The first index of `time_slice_indices` must preceed the second after modulo time axis length.
         Also, they must not index outside of time axis length.
-        Otherwise, the behavior will be undefined (uses JAX out-of-bounds fill-in with NaNs).
-        E.g. (-5, -2) or (2, -2) correct for axis length 6, (-3, -4), (-1, 3) or (0, 7) not correct.
+        Otherwise, the behavior will be undefined (uses JAX out-of-bounds fill-in with `NaN`s).
+        E.g. `(-5, -2)` or `(2, -2)` correct for axis length 6, `(-3, -4)`, `(-1, 3)` or `(0, 7)` not correct.
         The last of which would result in an NaN-filled slice.
 
     !!! warning "Use in ComposedSchema"
@@ -57,7 +58,7 @@ class TimeToStationarySchema(BaseSchema):
     @override
     def transform(
         self,
-        bundle: DataBundle | Inexact[Array, "..."],
+        bundle: BundleOrArray,
         /,
         reference_bundle: DataBundle | None = None,
     ) -> DataBundle:

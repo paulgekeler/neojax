@@ -4,15 +4,18 @@ from typing import final
 
 import equinox as eqx
 import jax.numpy as jnp
-from jaxtyping import Array, Inexact
+from jaxtyping import Inexact
 from typing_extensions import override
 
 from neojax.data.bundles import DataBundle
 from neojax.data.schemas.base_schema import BaseSchema
+from neojax.data.types import JaxNpArray
 
 
 @final
-class ConcatenateCoordsSchema(BaseSchema):
+class ConcatenateCoordsSchema(
+    BaseSchema[DataBundle | Inexact[JaxNpArray, "..."], Inexact[JaxNpArray, "..."]]
+):
     """Schema that concatenates coordinate grids to the channel dimension of fields.
 
     This is commonly used as an input schema for Neural Operators (like FNO or UNO)
@@ -32,10 +35,10 @@ class ConcatenateCoordsSchema(BaseSchema):
     @override
     def transform(
         self,
-        bundle: DataBundle | Inexact[Array, "..."],
+        bundle: DataBundle | Inexact[JaxNpArray, "..."],
         /,
         reference_bundle: DataBundle | None = None,
-    ) -> Inexact[Array, "..."]:
+    ) -> Inexact[JaxNpArray, "..."]:
         """Concatenates the coordinate grids into the fields' channel dimension.
 
         Args:

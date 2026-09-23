@@ -2,24 +2,25 @@
 
 from typing import final
 
-from jaxtyping import Array, Inexact
+from jaxtyping import Inexact
 from typing_extensions import override
 
 from neojax.data.bundles.data_bundle import DataBundle
 from neojax.data.schemas.base_schema import BaseSchema
+from neojax.data.types import BundleOrArray, JaxNpArray
 
 
 @final
-class IdentitySchema(BaseSchema):
+class IdentitySchema(BaseSchema[BundleOrArray, Inexact[JaxNpArray, "..."]]):
     """Schema that simply returns the fields array without modifying it."""
 
     @override
     def transform(
         self,
-        bundle: DataBundle | Inexact[Array, "..."],
+        bundle: BundleOrArray,
         /,
         reference_bundle: DataBundle | None = None,
-    ) -> Inexact[Array, "..."]:
+    ) -> Inexact[JaxNpArray, "..."]:
         """Returns the fields array.
 
         Args:

@@ -7,10 +7,10 @@ import equinox as eqx
 import jax
 from jaxtyping import Float, Int, Real
 
-from neojax.data.array_types import JaxNpArray
 from neojax.data.bundles.data_bundle import DataBundle
 from neojax.data.datasets.base_dataset import BaseDataset
 from neojax.data.datasets.utils import broadcast_like
+from neojax.data.types import JaxNpArray
 
 
 class BundleDataset(BaseDataset):

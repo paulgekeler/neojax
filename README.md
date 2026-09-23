@@ -4,7 +4,7 @@
 [![CI](https://github.com/paulgekeler/neojax/actions/workflows/ci.yml/badge.svg)](https://github.com/paulgekeler/neojax/actions)
 [![Documentation](https://img.shields.io/badge/docs-latest-blue.svg)](https://paulgekeler.github.io/neojax/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/paulgekeler/neojax/blob/main/LICENSE)
-[![Python versions](https://img.shields.io/pypi/pyversions/neojax-operators.svg)](https://pypi.org/project/neojax-operators/)
+[![Python versions](https://img.shields.io/pypi/pyversions/neojax-operators.svg?v=2)](https://pypi.org/project/neojax-operators/)
 
 **neojax** (**Ne**ural **O**perators in **JAX**) is an implementation of Neural Operators built on top of [JAX](https://github.com/jax-ml/jax) and [Equinox](https://github.com/patrick-kidger/equinox). It provides a clean, modular API inspired by the original [neuraloperator](https://github.com/neuraloperator/neuraloperator) library.
 

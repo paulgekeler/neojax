@@ -37,7 +37,7 @@ When `separable=True`:
 
 All representations inherit from `BaseTensor`.
 
-::: neojax.tensor.BaseTensor
+::: neojax.tensor.base_tensor.BaseTensor
 
 ---
 
@@ -45,7 +45,7 @@ All representations inherit from `BaseTensor`.
 
 A standard un-factorized representation of Fourier weights.
 
-::: neojax.tensor.DenseTensor
+::: neojax.tensor.dense_tensor.DenseTensor
 
 ---
 
@@ -53,7 +53,7 @@ A standard un-factorized representation of Fourier weights.
 
 Represents the weights in a Tucker decomposition format, factorized into a core tensor and mode-specific factor matrices.
 
-::: neojax.tensor.TuckerTensor
+::: neojax.tensor.tucker_tensor.TuckerTensor
 
 ---
 
@@ -61,7 +61,7 @@ Represents the weights in a Tucker decomposition format, factorized into a core 
 
 Represents the weights in a Canonical Polyadic decomposition format (approximating the weight tensor as a sum of K rank-1 tensors).
 
-::: neojax.tensor.CPTensor
+::: neojax.tensor.cp_tensor.CPTensor
 
 ---
 
@@ -69,4 +69,4 @@ Represents the weights in a Canonical Polyadic decomposition format (approximati
 
 Represents the weights in a Tensor Train format, factorizing the tensor into a chain of low-dimensional tensors connected back-to-back.
 
-::: neojax.tensor.TTTensor
+::: neojax.tensor.tt_tensor.TTTensor

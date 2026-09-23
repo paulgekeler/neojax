@@ -70,13 +70,13 @@ out_eval = model(x, inference=True)
 
 ## Fourier Neural Operator (FNO)
 
-::: neojax.models.FNO
+::: neojax.models.fno.FNO
 
 ---
 
 ## Tucker-factorized FNO (TFNO)
 
-::: neojax.models.TFNO
+::: neojax.models.tfno.TFNO
 
 ---
 
@@ -84,13 +84,13 @@ out_eval = model(x, inference=True)
 
 The Geometry-aware Fourier Neural Operator (Geo-FNO) learns a coordinate deformation (diffeomorphism map) to map general/unstructured physical domains into a regular latent grid space.
 
-::: neojax.models.GeoFNO
+::: neojax.models.geo_fno.GeoFNO
 
 ---
 
 ## U-shaped FNO (UNO)
 
-::: neojax.models.UNO
+::: neojax.models.uno.UNO
 
 ---
 
@@ -145,13 +145,13 @@ batch_preds = batch_model(u_batch, y_batch) # Shape: (32, 256, 1)
 
 ### General DeepONet
 
-::: neojax.models.DeepONet
+::: neojax.models.deeponet.DeepONet
 
 ---
 
 ### MLPDeepONet
 
-::: neojax.models.MLPDeepONet
+::: neojax.models.deeponet.MLPDeepONet
 
 ---
 
@@ -159,4 +159,4 @@ batch_preds = batch_model(u_batch, y_batch) # Shape: (32, 256, 1)
 
 When implementing custom models, inherit from `BaseNO` to inherit useful functionality such as convenient saving and loading of models, etc.
 
-::: neojax.models.BaseNO
+::: neojax.models.baseno.BaseNO

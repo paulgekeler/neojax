@@ -9,4 +9,4 @@ The documentation on [Datasets](datasets.md) and [Schemas](schemas.md) provides 
 !!! info
     Using `DataBundle` as a wrapper for your data/model inputs is entirely optional. All neojax models are designed to work with raw JAX arrays.
 
-::: neojax.data.DataBundle
+::: neojax.data.bundles.data_bundle.DataBundle

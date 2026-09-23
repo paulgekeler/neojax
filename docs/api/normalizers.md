@@ -55,26 +55,26 @@ pipeline = pipeline.compute_stats(data)
 
 ## Base Normalizer
 
-:::neojax.data.normalizers.BaseNormalizer
+:::neojax.data.normalizers.base_normalizer.BaseNormalizer
 
 ## Unit Gaussian Normalizer
 
-:::neojax.data.normalizers.UnitGaussianNormalizer
+:::neojax.data.normalizers.unit_gaussian_normalizer.UnitGaussianNormalizer
 
 ## Robust Normalizer
 
-::: neojax.data.normalizers.RobustNormalizer
+::: neojax.data.normalizers.robust_normalizer.RobustNormalizer
 
 ## Min/Max Normalizer
 
 *(Supports both `"scale"` and destructive `"clip"` modes)*
-::: neojax.data.normalizers.MinMaxNormalizer
+::: neojax.data.normalizers.min_max_normalizer.MinMaxNormalizer
 
 ## Physics Normalizer
 
 *(Non-dimensionalizes data using physical scales. See Scales Reference.)*
-::: neojax.data.normalizers.PhysicsNormalizer
+::: neojax.data.normalizers.physics_normalizer.PhysicsNormalizer
 
 ## Composed Normalizer
 
-::: neojax.data.normalizers.ComposedNormalizer
+::: neojax.data.normalizers.composed_normalizer.ComposedNormalizer

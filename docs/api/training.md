@@ -91,10 +91,10 @@ print(f"Resumed at step: {loaded_state.step}")
 
 ## Trainer Class
 
-::: neojax.training.Trainer
+::: neojax.training.trainer.Trainer
 
 ---
 
 ## TrainState PyTree
 
-::: neojax.training.TrainState
+::: neojax.training.trainer.TrainState

@@ -12,7 +12,7 @@ config_dict = {
     "global_settings": {
         "batch_size": <batch_size>,
         "output_dir": "<output_path>",
-        "seed": <rng_seed>
+        "seed": <rng_seed>,
     },
     # Then define each benchmark task (TaskConfig)
     "tasks": [

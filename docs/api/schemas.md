@@ -25,44 +25,44 @@ Typically, if you'd like to combine two or more schemas, it makes sense to wrap 
 
 ---
 
-::: neojax.data.schemas.IdentitySchema
+::: neojax.data.schemas.identity_schema.IdentitySchema
 
 ---
 
-::: neojax.data.schemas.FlattenTimeSchema
+::: neojax.data.schemas.flatten_time_schema.FlattenTimeSchema
 
 ---
 
-::: neojax.data.schemas.ConcatenateCoordsSchema
+::: neojax.data.schemas.concatenate_coords_schema.ConcatenateCoordsSchema
     options:
         members:
             - transform
 
 ---
 
-::: neojax.data.schemas.BundleReconstructSchema
+::: neojax.data.schemas.bundle_reconstruct_schema.BundleReconstructSchema
     options:
         members:
             - transform
 
 ---
 
-::: neojax.data.schemas.TimeToStationarySchema
+::: neojax.data.schemas.time_to_stationary_schema.TimeToStationarySchema
     options:
         members:
             - transform
 
 ---
 
-::: neojax.data.schemas.ConcatenateParamsSchema
+::: neojax.data.schemas.concatenate_params_schema.ConcatenateParamsSchema
     options:
         members:
             - transform
 
 ---
 
-::: neojax.data.schemas.ComposedSchema
+::: neojax.data.schemas.composed_schema.ComposedSchema
 
 ---
 
-::: neojax.data.schemas.BaseSchema
+::: neojax.data.schemas.base_schema.BaseSchema

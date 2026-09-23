@@ -26,8 +26,8 @@ graph TD
 
 ---
 
-::: neojax.data.datasets.BaseDataset
+::: neojax.data.datasets.base_dataset.BaseDataset
 
-::: neojax.data.datasets.BundleDataset
+::: neojax.data.datasets.bundle_dataset.BundleDataset
 
-::: neojax.data.datasets.RawDataset
+::: neojax.data.datasets.raw_dataset.RawDataset

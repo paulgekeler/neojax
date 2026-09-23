@@ -29,4 +29,4 @@ sequenceDiagram
 
 ---
 
-::: neojax.data.BundleProcessor
+::: neojax.data.processor.BundleProcessor

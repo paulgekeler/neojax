@@ -14,6 +14,7 @@ The following models and features are available:
 - **U-Net Fourier Neural Operator (UNO)**.
 - **Geometry-aware Fourier Neural Operator (GeoFNO)** for irregular geometries and mesh domains.
 - **Tucker-factorized FNO**.
+- **Recurrent Neural Operator**.
 - **Deep Operator Network (DeepONet)**.
 - **Training Orchestration Utilities** (`Trainer` and `TrainState`).
 - Grid-based positional embeddings (`GridEmbeddingNd`).

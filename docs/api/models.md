@@ -7,6 +7,7 @@ This page contains the API reference for all pre-built models in `neojax`. Curre
 - Deep Operator Networks (DeepONet)
 - U-shaped Neural Operator (UNO)
 - Geometry-aware FNO (GeoFNO)
+- Recurrent Neural Operator (RNO)
 
 ## Shared Model Functionality
 
@@ -91,6 +92,12 @@ The Geometry-aware Fourier Neural Operator (Geo-FNO) learns a coordinate deforma
 ## U-shaped FNO (UNO)
 
 ::: neojax.models.uno.UNO
+
+---
+
+## Recurrent Neural Operator (RNO)
+
+::: neojax.models.rno.RNO
 
 ---
 

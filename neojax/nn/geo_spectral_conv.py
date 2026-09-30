@@ -105,7 +105,9 @@ class GeoSpectralConvNd(eqx.Module):
 
         if self.conv.implementation == "reconstructed":
             dense_weights = self.conv.weights.to_dense()
-            weights = DenseTensor.from_weights(dense_weights, separable=self.conv.separable)
+            weights = DenseTensor.from_weights(
+                dense_weights, separable=self.conv.separable
+            )
         else:
             weights = self.conv.weights
 
@@ -117,7 +119,9 @@ class GeoSpectralConvNd(eqx.Module):
             u_ft_corner = jnp.dot(u, basis_in.T) / N
 
             # Reshape to match FNO weight contraction shapes
-            u_ft_corner = u_ft_corner.reshape((self.conv.in_channels,) + self.conv.modes)
+            u_ft_corner = u_ft_corner.reshape(
+                (self.conv.in_channels,) + self.conv.modes
+            )
 
             # Contract weight with Fourier coefficients
             out_ft_corner = weights(corner_idx, u_ft_corner)

@@ -10,16 +10,28 @@ from neojax.models.geo_fno import GeoFNO
 
 
 def _to_jax(tensor: Any) -> jnp.ndarray:
-    """Helper to convert a PyTorch tensor, numpy array or JAX array to a JAX array."""
+    """Helper to convert a PyTorch tensor, numpy array or JAX array to a JAX array.
+
+    Args:
+        tensor: Numpy, PyTorch or JAX array.
+
+    Returns:
+        Converted JAX array.
+    """
     if hasattr(tensor, "cpu"):
         tensor = tensor.cpu().detach().numpy()
     return jnp.array(tensor)
 
 
 class WeightUpdater:
-    """Helper to queue and apply parameter updates from a state dict to an Equinox model."""
+    """Helper to queue and apply parameter updates from a state dict to an Equinox model.
 
-    def __init__(self, model: Any, state_dict: dict[str, Any]) -> None:
+    Args:
+        model: Neojax model to initialize from PyTorch model.
+        state_dict: State dict of PyTorch model.
+    """
+
+    def __init__(self, model: eqx.Module, state_dict: dict[str, Any]) -> None:
         self.model = model
         self.state_dict = state_dict
         self.updates = []
@@ -46,7 +58,8 @@ class WeightUpdater:
             except Exception:
                 current_val = None
             if current_val is None:
-                return  # Skip if target parameter is None or not present
+                # Skip if target parameter is None or not present
+                return
 
             val = _to_jax(self.state_dict[key_name])
             if transpose_axes is not None:
@@ -55,8 +68,12 @@ class WeightUpdater:
                 val = jnp.squeeze(val, axis=squeeze_axes)
             self.updates.append((where_fn, val))
 
-    def apply(self) -> Any:
-        """Applies all queued updates to the model using eqx.tree_at and returns the updated model."""
+    def apply(self) -> eqx.Module:
+        """Applies all queued updates to the model using eqx.tree_at.
+
+        Returns:
+             The updated model.
+        """
         new_model = self.model
         for where_fn, val in self.updates:
             new_model = eqx.tree_at(where_fn, new_model, val)
@@ -78,37 +95,43 @@ def load_torch_weights_into_fno(model: FNO, state_dict: dict[str, Any]) -> FNO:
     """
     updater = WeightUpdater(model, state_dict)
 
-    # 1. Lifting
+    # Lifting
     updater.add(lambda m: m.lifting.weights[0], "fc0.weight")
     updater.add(lambda m: m.lifting.biases[0], "fc0.bias")
 
-    # 2. Fourier Layers
+    # Fourier Layers
     if model.fno_blocks is not None:
         n_layers = len(model.fno_blocks.fno_layers)
         for i in range(n_layers):
             # Conv weights: PyTorch [in, out, m1, m2] -> JAX [out, in, m1, m2]
             updater.add(
-                lambda m, idx=i: m.fno_blocks.fno_layers[idx].spectral_conv.weights.weights[0],
+                lambda m, idx=i: m.fno_blocks.fno_layers[
+                    idx
+                ].spectral_conv.weights.weights[0],
                 f"conv{i}.weights1",
-                transpose_axes=(1, 0, 2, 3)
+                transpose_axes=(1, 0, 2, 3),
             )
             updater.add(
-                lambda m, idx=i: m.fno_blocks.fno_layers[idx].spectral_conv.weights.weights[1],
+                lambda m, idx=i: m.fno_blocks.fno_layers[
+                    idx
+                ].spectral_conv.weights.weights[1],
                 f"conv{i}.weights2",
-                transpose_axes=(1, 0, 2, 3)
+                transpose_axes=(1, 0, 2, 3),
             )
             # Skip/w weights: PyTorch [out, in, 1, 1] -> JAX Conv1D [out, in, 1]
             updater.add(
-                lambda m, idx=i: m.fno_blocks.fno_layers[idx].local_operator.conv.weight,
+                lambda m, idx=i: (
+                    m.fno_blocks.fno_layers[idx].local_operator.conv.weight
+                ),
                 f"w{i}.weight",
-                squeeze_axes=-1
+                squeeze_axes=-1,
             )
             updater.add(
                 lambda m, idx=i: m.fno_blocks.fno_layers[idx].local_operator.conv.bias,
-                f"w{i}.bias"
+                f"w{i}.bias",
             )
 
-    # 3. Projection
+    # Projection
     updater.add(lambda m: m.projection.weights[0], "fc1.weight")
     updater.add(lambda m: m.projection.biases[0], "fc1.bias")
     updater.add(lambda m: m.projection.weights[1], "fc2.weight")
@@ -117,7 +140,9 @@ def load_torch_weights_into_fno(model: FNO, state_dict: dict[str, Any]) -> FNO:
     return updater.apply()
 
 
-def load_torch_weights_into_geo_fno(model: GeoFNO, state_dict: dict[str, Any]) -> GeoFNO:
+def load_torch_weights_into_geo_fno(
+    model: GeoFNO, state_dict: dict[str, Any]
+) -> GeoFNO:
     """Loads weights from a PyTorch Geo-FNO model state dict into a Neojax GeoFNO instance.
 
     Handles coordinate diffeomorphism (geomap) parameters and intermediate coordinate biases.
@@ -131,7 +156,7 @@ def load_torch_weights_into_geo_fno(model: GeoFNO, state_dict: dict[str, Any]) -
     """
     updater = WeightUpdater(model, state_dict)
 
-    # 1. GeoMap (IPHI)
+    # GeoMap (IPHI)
     updater.add(lambda m: m.geomap.lin0.weight, "model_iphi.fc0.weight")
     updater.add(lambda m: m.geomap.lin0.bias, "model_iphi.fc0.bias")
 
@@ -149,85 +174,90 @@ def load_torch_weights_into_geo_fno(model: GeoFNO, state_dict: dict[str, Any]) -
     updater.add(lambda m: m.geomap.lin3.weight, "model_iphi.fc3.weight")
     updater.add(lambda m: m.geomap.lin3.bias, "model_iphi.fc3.bias")
 
-    # 2. Lifting
+    # Lifting
     updater.add(lambda m: m.lifting.weights[0], "fc0.weight")
     updater.add(lambda m: m.lifting.biases[0], "fc0.bias")
 
-    # 3. Input Spectral Conv (conv0)
+    # Input Spectral Conv (conv0)
     updater.add(
         lambda m: m.conv_in.conv.weights.weights[0],
         "conv0.weights1",
-        transpose_axes=(1, 0, 2, 3)
+        transpose_axes=(1, 0, 2, 3),
     )
     updater.add(
         lambda m: m.conv_in.conv.weights.weights[1],
         "conv0.weights2",
-        transpose_axes=(1, 0, 2, 3)
+        transpose_axes=(1, 0, 2, 3),
     )
 
-    # 4. Intermediate FNO blocks and skips
+    # Intermediate FNO blocks and skips
     if model.fno_blocks is not None:
         n_blocks = len(model.fno_blocks.fno_layers)
         for i in range(n_blocks):
             # Conv weights: PyTorch [in, out, m1, m2] -> JAX [out, in, m1, m2]
             updater.add(
-                lambda m, idx=i: m.fno_blocks.fno_layers[idx].spectral_conv.weights.weights[0],
-                f"conv{i+1}.weights1",
-                transpose_axes=(1, 0, 2, 3)
+                lambda m, idx=i: m.fno_blocks.fno_layers[
+                    idx
+                ].spectral_conv.weights.weights[0],
+                f"conv{i + 1}.weights1",
+                transpose_axes=(1, 0, 2, 3),
             )
             updater.add(
-                lambda m, idx=i: m.fno_blocks.fno_layers[idx].spectral_conv.weights.weights[1],
-                f"conv{i+1}.weights2",
-                transpose_axes=(1, 0, 2, 3)
+                lambda m, idx=i: m.fno_blocks.fno_layers[
+                    idx
+                ].spectral_conv.weights.weights[1],
+                f"conv{i + 1}.weights2",
+                transpose_axes=(1, 0, 2, 3),
             )
             # Skip: w1, w2, w3 -> local_operator
             updater.add(
-                lambda m, idx=i: m.fno_blocks.fno_layers[idx].local_operator.conv.weight,
-                f"w{i+1}.weight",
-                squeeze_axes=-1
+                lambda m, idx=i: (
+                    m.fno_blocks.fno_layers[idx].local_operator.conv.weight
+                ),
+                f"w{i + 1}.weight",
+                squeeze_axes=-1,
             )
             updater.add(
                 lambda m, idx=i: m.fno_blocks.fno_layers[idx].local_operator.conv.bias,
-                f"w{i+1}.bias"
+                f"w{i + 1}.bias",
             )
 
-    # 5. Output Spectral Conv
+    # Output Spectral Conv
     updater.add(
         lambda m: m.conv_out.conv.weights.weights[0],
         "conv4.weights1",
-        transpose_axes=(1, 0, 2, 3)
+        transpose_axes=(1, 0, 2, 3),
     )
     updater.add(
         lambda m: m.conv_out.conv.weights.weights[1],
         "conv4.weights2",
-        transpose_axes=(1, 0, 2, 3)
+        transpose_axes=(1, 0, 2, 3),
     )
 
-    # 6. Coordinate Projectors (b0, b1, b2, b3, b4)
+    # Coordinate Projectors (b0, b1, b2, b3, b4)
     if model.coord_projectors is not None:
         # b0..b3 (nn.Conv2d) -> coord_projectors[0..3]
         for i in range(len(model.coord_projectors) - 1):
             updater.add(
                 lambda m, idx=i: m.coord_projectors[idx].weights[0],
                 f"b{i}.weight",
-                squeeze_axes=(-1, -2)
+                squeeze_axes=(-1, -2),
             )
             updater.add(
-                lambda m, idx=i: m.coord_projectors[idx].biases[0],
-                f"b{i}.bias"
+                lambda m, idx=i: m.coord_projectors[idx].biases[0], f"b{i}.bias"
             )
         # b4 (nn.Conv1d) -> coord_projectors[-1]
         updater.add(
             lambda m: m.coord_projectors[-1].weights[0],
-            f"b{len(model.coord_projectors)-1}.weight",
-            squeeze_axes=-1
+            f"b{len(model.coord_projectors) - 1}.weight",
+            squeeze_axes=-1,
         )
         updater.add(
             lambda m: m.coord_projectors[-1].biases[0],
-            f"b{len(model.coord_projectors)-1}.bias"
+            f"b{len(model.coord_projectors) - 1}.bias",
         )
 
-    # 7. Projection
+    # Projection
     updater.add(lambda m: m.projection.weights[0], "fc1.weight")
     updater.add(lambda m: m.projection.biases[0], "fc1.bias")
     updater.add(lambda m: m.projection.weights[1], "fc2.weight")

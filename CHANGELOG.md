@@ -2,6 +2,21 @@
 
 All notable changes to **neojax** will be documented in this file.
 
+## [Unreleased]
+
+## 2026-10-01
+
+### Added
+- Recurrent Neural Operator `RNO`
+- Add array broadcasting over PyTrees with `neojax.utils.tree_add_broadcast_to`
+
+### Changed
+- Fixed `PointwiseMLP` broadcasting issue with einsum: if input channels and first layer weight shape don't match, `__call__` raises now
+- Removed `jnp.repeat` on grid channels in `GridEmbeddingNd`. It now correctly appends one grid channel per spatial dimension.
+- Spectral-based models now size their first lifting `PointwiseMLP` layer according to the new `n_extra_channels` property of `GridEmbeddingNd`
+- Fix ci workflow failure caused by large arrays used in `test_resample.py`
+- Fix doc workflow by correctly declaring all third library hidden objects in hippogriffe `extra_public_objects` in `mkdocs.yaml`
+
 ## [Released]
 
 ## [0.3.0] -2026-09-22

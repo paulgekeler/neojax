@@ -9,7 +9,8 @@ class GridEmbeddingNd(eqx.Module):
     """Regular grid embedding for n-dim signals.
 
     Args:
-        in_channels: Number of input channels.
+        in_channels: Number of channels of the input signal.
+            The embedding appends one coordinate channel per spatial dimension.
         ndim: Number of spatial dimensions.
         grid_boundaries: Boundaries of regular grid per dimension
             ((low, high), ...) or None.
@@ -18,7 +19,7 @@ class GridEmbeddingNd(eqx.Module):
     ??? info "Internal Attributes"
         These fields store the internal layers state (and weights).
 
-        * **in_channels** (`int`): Number of input channels.
+        * **in_channels** (`int`): Number of channels of the input signal.
         * **grid_boundaries** (`tuple[tuple[int, int], ...]`): Boundaries of regular grid.
     """
 
@@ -36,6 +37,11 @@ class GridEmbeddingNd(eqx.Module):
             self.grid_boundaries = tuple([(0, 1)] * ndim)
         else:
             self.grid_boundaries = grid_boundaries
+
+    @property
+    def n_extra_channels(self) -> int:
+        """Number of channels appended to the input signal."""
+        return len(self.grid_boundaries)
 
     def _create_grid_nd(self, resolutions: tuple[int, ...]) -> Float[Array, "c ..."]:
         """Creates a n-dim bounded regular grid.
@@ -60,8 +66,7 @@ class GridEmbeddingNd(eqx.Module):
         for res, (start, end) in zip(resolutions, self.grid_boundaries, strict=True):
             grid_points_1d.append(jnp.linspace(start, end, res))
 
-        grid = jnp.stack(jnp.meshgrid(*grid_points_1d, indexing="ij"), axis=0)
-        return jnp.repeat(grid, self.in_channels, 0)
+        return jnp.stack(jnp.meshgrid(*grid_points_1d, indexing="ij"), axis=0)
 
     def __call__(self, x: Inexact[Array, "in_c ..."]) -> Inexact[Array, "out_c ..."]:
         """Generates n-dim regular grid and appends it to input signal.
@@ -70,7 +75,16 @@ class GridEmbeddingNd(eqx.Module):
             x: Input signal, shaped (channels, d1, ..., dN).
 
         Returns:
-            Concatenated signal and grid array (along channel dim).
+            Concatenated signal and grid array (along channel dim),
+            shaped (in_channels + ndim, d1, ..., dN).
+
+        Raises:
+            ValueError: If the number of input channels does not match `in_channels`.
         """
+        if x.shape[0] != self.in_channels:
+            raise ValueError(
+                f"Expected input with {self.in_channels} channels along axis 0, "
+                f"but got shape {x.shape}."
+            )
         grid = self._create_grid_nd(x.shape[1:])
         return jnp.concat([x, grid], axis=0)

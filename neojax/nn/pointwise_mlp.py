@@ -25,6 +25,12 @@ class PointwiseMLP(eqx.Module):
         dropout: Dropout probability applied after each layer (except the last).
             If 0, no dropout is applied. Defaults to 0.0.
 
+    Raises:
+        ValueError: If dropout probability is non-float or not in
+            the half-open interval [0,1).
+        ValueError: If too few or too many activation functions
+            are passed.
+
     ??? info "Internal Attributes"
         These fields store the internal layers state (and weights).
 
@@ -61,10 +67,10 @@ class PointwiseMLP(eqx.Module):
         activations: Callable | Sequence[Callable] = jax.nn.gelu,
         dropout: float = 0.0,
     ) -> None:
-        if not isinstance(dropout, (int, float)):
-            raise ValueError("dropout must be a float.")
+        if not isinstance(dropout, int | float):
+            raise ValueError("`dropout` probability must be a float.")
         if not (0.0 <= dropout < 1.0):
-            raise ValueError("dropout must be in [0.0, 1.0).")
+            raise ValueError("`dropout` probability must be in [0.0, 1.0).")
         self.dropout = float(dropout)
 
         if isinstance(activations, Callable):
@@ -111,7 +117,19 @@ class PointwiseMLP(eqx.Module):
 
         Returns:
             Output array.
+
+        Raises:
+            ValueError: If the size of the leading channel axis
+                does not match the MLP's input dimension.
         """
+        in_c = self.weights[0].shape[1]
+        if x.ndim < 1 or x.shape[0] != in_c:
+            # einsum would silently broadcast a size-1 channel axis to `in_c`.
+            raise ValueError(
+                f"Expected input with {in_c} channels along axis 0, "
+                f"but got shape {x.shape}."
+            )
+
         n_layers = len(self.weights)
         if key is not None and self.dropout > 0.0 and not inference:
             keys = jr.split(key, n_layers - 1)

@@ -44,3 +44,16 @@ class TestPointwiseMLP:
                 len(mlp_single.activations) == 2
                 and mlp_single.activations[1] is not None
             )
+
+    @pytest.mark.parametrize("shape", [(1,), (1, 5), (1, 4, 4), (8, 5), (32,), (3, 2)])
+    def test_channel_mismatch_raises(self, shape):
+        # Don't broadcast size-1 channel axes to `in_c`
+        mlp = PointwiseMLP(key=jr.key(0), layers=(16, 32, 8))
+        with pytest.raises(ValueError):
+            mlp(jnp.ones(shape))
+
+    def test_single_channel_input_works(self):
+        # Matching size-1 input dimension is still valid
+        mlp = PointwiseMLP(key=jr.key(0), layers=(1, 4, 2))
+        assert mlp(jnp.ones((1,))).shape == (2,)
+        assert mlp(jnp.ones((1, 5))).shape == (2, 5)

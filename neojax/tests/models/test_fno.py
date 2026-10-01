@@ -184,3 +184,17 @@ class TestFNO:
 
         out_drop = model(x, key=jr.key(2), inference=False)
         assert out_drop.shape == (out_c, 16, 16)
+
+    def test_positional_embedding_multi_channel(self):
+        # lifting layer should consider grid channels
+        model = FNO(
+            key=jr.key(0),
+            in_channels=3,
+            out_channels=2,
+            hidden_channels=8,
+            n_layers=1,
+            modes=(4, 4),
+            positional_embedding="grid",
+        )
+        assert model.lifting.weights[0].shape[1] == 3 + 2
+        assert model(jnp.ones((3, 16, 16))).shape == (2, 16, 16)

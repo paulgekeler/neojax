@@ -278,9 +278,12 @@ class UNO(BaseNO):
         else:
             self.padding = None
 
+        lift_in_channels = in_channels
+        if self.positional_embedding is not None:
+            lift_in_channels += self.positional_embedding.n_extra_channels
         lift_hidden_channels = int(hidden_channels * lift_channel_ratio)
         lifting_layers = (
-            [in_channels]
+            [lift_in_channels]
             + [lift_hidden_channels] * (n_lift_layers - 1)
             + [hidden_channels]
         )

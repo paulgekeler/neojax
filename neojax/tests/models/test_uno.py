@@ -183,6 +183,22 @@ class TestUNO:
         out = model(x)
         assert out.shape == (1, 16, 16)
 
+    def test_positional_embedding_multi_channel(self):
+        # lifting layer should consider grid channels
+        model = UNO(
+            key=jr.key(8),
+            in_channels=3,
+            out_channels=1,
+            hidden_channels=8,
+            uno_out_channels=[8, 16, 16, 8],
+            uno_modes=[[4, 4]] * 4,
+            uno_scalings=[[1, 1]] * 4,
+            n_fno_layers=4,
+            positional_embedding="grid",
+        )
+        assert model.lifting.weights[0].shape[1] == 3 + 2
+        assert model(jnp.ones((3, 16, 16))).shape == (1, 16, 16)
+
     def test_normalization_variants(self):
         """Test all normalization types."""
         key = jr.key(9)

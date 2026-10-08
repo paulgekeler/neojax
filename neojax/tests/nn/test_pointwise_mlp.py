@@ -57,3 +57,7 @@ class TestPointwiseMLP:
         mlp = PointwiseMLP(key=jr.key(0), layers=(1, 4, 2))
         assert mlp(jnp.ones((1,))).shape == (2,)
         assert mlp(jnp.ones((1, 5))).shape == (2, 5)
+
+    def test_no_bias(self):
+        mlp = PointwiseMLP(key=jr.key(0), layers=(1, 4, 2), use_bias=False)
+        assert all(b is None for b in mlp.biases)

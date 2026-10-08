@@ -22,8 +22,9 @@ class PointwiseMLP(eqx.Module):
             Otherwise, a final activation
             after the last layer can be passed.
             Default is GeLu activation for all hidden layers with no final activation.
+        use_bias: Whether to use bias. Default is `True`.
         dropout: Dropout probability applied after each layer (except the last).
-            If 0, no dropout is applied. Defaults to 0.0.
+            If `0.0`, no dropout is applied. Defaults to `0.0`.
 
     Raises:
         ValueError: If dropout probability is non-float or not in
@@ -35,7 +36,7 @@ class PointwiseMLP(eqx.Module):
         These fields store the internal layers state (and weights).
 
         * **weights** (`tuple[Float[Array, ...], ...]`): Learnable weights.
-        * **biases** (`tuple[Float[Array, ...], ...]`): Learnable biases.
+        * **biases** (`tuple[Float[Array, ...] | None, ...]`): Learnable biases if `use_bias` is `True`.
         * **activations** (`tuple[Callable, ...]`): Activation functions between layers.
         * **dropout** (`float`): Dropout probability.
 
@@ -53,10 +54,13 @@ class PointwiseMLP(eqx.Module):
         x = jnp.ones((64, 32, 32))
         out = mlp(x, key=key)
         ```
+
+    !!! tip
+        A single layer pointwise MLP is equivalent to a 1x1 convolution.
     """
 
     weights: tuple[Float[Array, "out_c in_c"], ...]
-    biases: tuple[Float[Array, "out_c"], ...]
+    biases: tuple[Float[Array, "out_c"] | None, ...]
     activations: tuple[Callable, ...]
     dropout: float = eqx.field(static=True)
 
@@ -65,6 +69,7 @@ class PointwiseMLP(eqx.Module):
         key: PRNGKeyArray,
         layers: Sequence[int],
         activations: Callable | Sequence[Callable] = jax.nn.gelu,
+        use_bias: bool = True,
         dropout: float = 0.0,
     ) -> None:
         if not isinstance(dropout, int | float):
@@ -96,10 +101,14 @@ class PointwiseMLP(eqx.Module):
             wkey, key = jr.split(key, 2)
             scale = 1.0 / jnp.sqrt(layers[i])
             weights.append(jr.normal(wkey, shape=(layers[i + 1], layers[i])) * scale)
-            biases.append(jnp.zeros((layers[i + 1],)))
+            if use_bias:
+                biases.append(jnp.zeros((layers[i + 1],)))
 
         self.weights = tuple(weights)
-        self.biases = tuple(biases)
+        if use_bias:
+            self.biases = tuple(biases)
+        else:
+            self.biases = tuple(None for _ in range(len(layers) - 1))
 
     def __call__(
         self,
@@ -140,7 +149,8 @@ class PointwiseMLP(eqx.Module):
             zip(self.weights, self.biases, self.activations, strict=True)
         ):
             x = jnp.einsum("i...,ji->j...", x, w)
-            x = x + b.reshape(-1, *([1] * (x.ndim - 1)))
+            if b is not None:
+                x = x + b.reshape(-1, *([1] * (x.ndim - 1)))
             if a is not None:
                 x = a(x)
 

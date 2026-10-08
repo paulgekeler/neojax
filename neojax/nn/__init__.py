@@ -5,6 +5,9 @@ from neojax.nn.fno_blocks import FNOBlock as FNOBlock
 from neojax.nn.fno_blocks import FNOBlocks as FNOBlocks
 from neojax.nn.geo_map import GeoMapNd as GeoMapNd
 from neojax.nn.geo_spectral_conv import GeoSpectralConvNd as GeoSpectralConvNd
+from neojax.nn.mg_conv import MgConv as MgConv
+from neojax.nn.mg_iter import MgIter as MgIter
+from neojax.nn.mg_restrict import MgRestrict as MgRestrict
 from neojax.nn.normalization import InstanceNorm as InstanceNorm
 from neojax.nn.pointwise_mlp import PointwiseMLP as PointwiseMLP
 from neojax.nn.positional_embedding import GridEmbeddingNd as GridEmbeddingNd
@@ -28,4 +31,7 @@ __all__ = [
     "make_skip_connection",
     "SpectralConvNd",
     "Resampler",
+    "MgConv",
+    "MgRestrict",
+    "MgIter",
 ]

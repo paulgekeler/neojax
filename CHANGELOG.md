@@ -4,9 +4,12 @@ All notable changes to **neojax** will be documented in this file.
 
 ## [Unreleased]
 
-## 2026-10-01
+## 2026-10-08
 
 ### Added
+- Multigrid Neural Operator `MgNO`
+  - `MgNO` components: `MgConv`, `MgRestrict`, `MgIter`
+- Minor changes to the documentation
 - Recurrent Neural Operator `RNO`
 - Add array broadcasting over PyTrees with `neojax.utils.tree_add_broadcast_to`
 

@@ -37,6 +37,7 @@ Only the following models and features are available:
 - **Tucker-factorized FNO**.
 - **Recurrent Neural Operator (RNO)**.
 - **Deep Operator Network (DeepONet)**.
+- **Multigrid Neural Operator (MgNO)**.
 - **Training Orchestration Utilities** (`Trainer` and `TrainState`).
 - Grid-based positional embeddings (`GridEmbeddingNd`).
 - (Relative) $L^{p}$-loss.

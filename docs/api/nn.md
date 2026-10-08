@@ -4,6 +4,8 @@ This page contains the API reference for the building blocks of Neural Operators
 
 The pre-built models (`FNO`, `TFNO`, ...) are built from these components. They can also be composed directly, using standard `equinox` composition, to construct custom neural operator architectures.
 
+---
+
 ## Spectral Convolution
 
 These layers evaluate the continuous integral operator in Fourier space. They perform the core global operations that make Fourier Neural Operators discretization-invariant.
@@ -11,6 +13,8 @@ These layers evaluate the continuous integral operator in Fourier space. They pe
 ::: neojax.nn.spectral_conv.SpectralConvNd
 
 ::: neojax.nn.geo_spectral_conv.GeoSpectralConvNd
+
+---
 
 ## FNO Blocks
 
@@ -20,11 +24,15 @@ The standard layer of the Fourier Neural Operator. An FNO Block computes the sum
 
 ::: neojax.nn.fno_blocks.FNOBlock
 
+---
+
 ## Pointwise MLP
 
 Applies a Multi-Layer Perceptron independently across the spatial grid points, operating solely on the channel dimension. These are used for lifting inputs to higher-dimensional latent spaces, projecting outputs, and channel-mixing within operator blocks.
 
 ::: neojax.nn.pointwise_mlp.PointwiseMLP
+
+---
 
 ## Domain Padding
 
@@ -32,30 +40,62 @@ Fast Fourier Transforms (FFT) assume periodic boundary conditions. When learning
 
 ::: neojax.nn.domain_padding.DomainPadding
 
+---
+
 ## Positional Embedding
 
 Appends grid coordinate features (e.g., $(x, y)$ positions) to the input tensors channel dimension.
 
 ::: neojax.nn.positional_embedding.GridEmbeddingNd
 
+---
+
 ## Skip Connections
 
 Local operators used alongside the global spectral convolutions. They process high-frequency, localized information and act as residual connections to stabilize training.
 
-*Note: For the standard identity skip connection, `neojax` directly uses `equinox.nn.Identity` for simplicity and seamless integration with the JAX/Equinox ecosystem.*
+*Note: For the standard identity skip connection, `neojax` directly uses `equinox.nn.Identity` for simplicity.*
 
 ::: neojax.nn.skip_connections.SoftGating
 
 ::: neojax.nn.skip_connections.Flattened1dConv
 
+---
+
 ## Resampler
 
-Resamples inputs using different interpolation methods. Useful for architecures like the UNO, where data needs to be explicitely up- and downsampled as it flows through the network. 
+Resamples inputs using different interpolation methods. Useful for architecures like the UNO, where data needs to be explicitly up- and downsampled as it flows through the network. 
 
 ::: neojax.nn.resample.Resampler
+
+---
 
 ## Coordinate Diffeomorphism Maps
 
 Used in geometry-aware operators (like `GeoFNO`) to learn a soft-diffeomorphism coordinate transformation from arbitrary physical grids/meshes to a regular latent grid.
 
 ::: neojax.nn.geo_map.GeoMapNd
+
+---
+
+## Multigrid Components
+
+Multgrid components are used in the Multigrid Neural Operator `MgNO` for the convolutional blocks
+in the multigrid-style V-cycle<br>(Pre-Smoothing $\rightarrow$ Restriction $\rightarrow$ Coarse Correction $\rightarrow$ Prolongation $\rightarrow$ Post-Smoothing).
+
+
+### Multigrid Convolution
+
+::: neojax.nn.mg_conv.MgConv
+
+---
+
+### Multigrid Iteration
+
+::: neojax.nn.mg_iter.MgIter
+
+---
+
+### Multigrid Restriction
+
+::: neojax.nn.mg_restrict.MgRestrict

@@ -6,27 +6,30 @@ Currently, **neojax** is in its early stages. Expect possible breaking changes.
 
 The following models and features are available:
 
-- **Fourier Neural Operator (FNO)**.
-  - Symmetrical domain padding (`DomainPadding`).
-  - Pointwise MLP (Channel-MLP) expansions for improved expressivity.
-  - Various skip connections (Linear, Soft-Gating, Identity).
-  - Normalization in FNO blocks.
-- **U-Net Fourier Neural Operator (UNO)**.
-- **Geometry-aware Fourier Neural Operator (GeoFNO)** for irregular geometries and mesh domains.
-- **Tucker-factorized FNO**.
-- **Recurrent Neural Operator**.
-- **Deep Operator Network (DeepONet)**.
-- **Training Orchestration Utilities** (`Trainer` and `TrainState`).
-- Grid-based positional embeddings (`GridEmbeddingNd`).
-- (Relative) $L^{p}$-loss.
-- General $W^{k,p}$ Sobolev loss.
-- Loss Compositions.
-- Data Normalization and Scaling.
-  - Various Normalizer classes.
-  - Physical scales to non-dimensionalize inputs.
-- **Dataset utilities (Data-agnostic, downloading utilities, etc.)**
-- **Data Pipelines (Schemas, Processors, DataBundle)**
-- **Benchmark Module (Model-/Data-agnostic even for non-neojax models)**
+??? info "Full feature list"
+    - **Fourier Neural Operator (FNO)**.
+      - Symmetrical domain padding (`DomainPadding`).
+      - Pointwise MLP (Channel-MLP) expansions for improved expressivity.
+      - Various skip connections (Linear, Soft-Gating, Identity).
+      - Normalization in FNO blocks.
+    - **U-Net Fourier Neural Operator (UNO)**.
+    - **Geometry-aware Fourier Neural Operator (GeoFNO)** for irregular geometries and mesh domains.
+    - **Tucker-factorized FNO**.
+    - **Recurrent Neural Operator (RNO)**.
+    - **Deep Operator Network (DeepONet)**.
+    - **Multigrid Neural Operator (MgNO)**.
+    - **Training Orchestration Utilities** (`Trainer` and `TrainState`).
+    - Grid-based positional embeddings (`GridEmbeddingNd`).
+    - (Relative) $L^{p}$-loss.
+    - General $W^{k,p}$ Sobolev loss.
+    - Loss Compositions.
+    - Data Normalization and Scaling.
+      - Various Normalizer classes.
+      - Physical scales to non-dimensionalize inputs.
+    - **Dataset utilities (Data-agnostic, downloading utilities, etc.)**.
+    - **Data Pipelines (Schemas, Processors, DataBundle)**.
+    - **Benchmark Module (Model-/Data-agnostic even for non-neojax models)**.
+
 
 It is designed to be fully compatible with all JAX features such as `vmap`, `jit`, and `grad`.
 

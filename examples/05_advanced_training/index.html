@@ -1,0 +1,1946 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="The documentation for the Neojax python library.">
+      
+      
+        <meta name="author" content="Paul Gekeler">
+      
+      
+        <link rel="canonical" href="https://paulgekeler.github.io/neojax/examples/05_advanced_training/">
+      
+      
+        <link rel="prev" href="../04_benchmarking_pipeline/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Advanced Training - Neojax</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../assets/_hippogriffe.css">
+    
+      <link rel="stylesheet" href="../../_assets/custom_css.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#example-5-advanced-training-with-composed-loss-and-the-trainer-class" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Neojax" class="md-header__button md-logo" aria-label="Neojax" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Neojax
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Advanced Training
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/paulgekeler/neojax" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    paulgekeler/neojax
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Neojax" class="md-nav__button md-logo" aria-label="Neojax" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Neojax
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/paulgekeler/neojax" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    paulgekeler/neojax
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmark_neojax_vs_neuraloperator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Neojax vs Neuraloperator Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/nn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Components
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/tensors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tensors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utilities
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_6" id="__nav_3_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Training
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/training/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/diagnostics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagnostics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_7" id="__nav_3_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Data
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datasets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/schemas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schemas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/processor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Processor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/normalizers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Normalizers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/scales/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scales
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/bundle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Bundle
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/download/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Downloading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/data_generation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Generation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_8" id="__nav_3_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PDE Benchmark
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    PDE Benchmark
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/benchmark/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarking
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/benchmark_config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmark Config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/evaluators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evaluators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01_basics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Basic Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../02_fno_burgers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training FNO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03_data_pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../04_benchmarking_pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarking
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Training
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Training
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#example-5-advanced-training-with-composed-loss-and-the-trainer-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 5: Advanced Training with Composed Loss and the Trainer Class
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Example 5: Advanced Training with Composed Loss and the Trainer Class">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mock-netcdf-fallback-generator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mock NetCDF Fallback Generator
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#download-and-load-wave_layer-dataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Download and Load wave_layer Dataset
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configure-normalizers-and-build-the-schema-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configure Normalizers and Build the Schema Pipeline
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#define-loss-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Define Loss Metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instantiate-geofno-and-trainer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instantiate GeoFNO and Trainer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#execute-training-loop-checkpoint-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Execute Training Loop &amp; Checkpoint State
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plot-training-progress-and-qualitative-predictions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plot Training Progress and Qualitative Predictions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+  <h1>Advanced Training</h1>
+
+<h3 id="example-5-advanced-training-with-composed-loss-and-the-trainer-class">Example 5: Advanced Training with Composed Loss and the Trainer Class<a class="headerlink" href="#example-5-advanced-training-with-composed-loss-and-the-trainer-class" title="Permanent link">¤</a></h3>
+<p><a class="md-button" href="../05_advanced_training.ipynb"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5 20h14v-2H5m14-9h-4V3H9v6H5l7 7z"/></svg></span> Download Notebook</a></p>
+<p>In this tutorial, we demonstrate how to set up an advanced training workflow in neojax using the built-in Trainer and TrainState orchestrators.</p>
+<p>To this end, we train a <code>GeoFNO</code> on the PDEGym Wave-Layer (2D wave equation) dataset.</p>
+<p>We will cover:</p>
+<ul>
+<li>Downloading the wave_layer dataset using the neojax downloader registry.</li>
+<li>Implementing a physics-informed PhysicsNormalizer (non-dimensionalization via CharacteristicLengthScale) and UnitGaussianNormalizer directly on physical coordinates and field values.</li>
+<li>Formulating a composed loss function featuring different weights for relative <span class="arithmatex">\(L^2\)</span> error and Sobolev <span class="arithmatex">\(H^1\)</span> gradient penalty.</li>
+<li>Executing a multi-epoch training loop, saving and reloading checkpoints, and plotting training statistics and predictions using matplotlib.</li>
+</ul>
+<p>Some of the components used in this example are purely for the sake of demonstration (e.g. PhysicsNormalizer isn't needed as the data was already generated on the unit square).</p>
+<p>To run this example, we first install and import the necessary python dependencies:</p>
+<div class="highlight"><pre><span></span><code>pip3<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;neojax-operators[ex,data]&quot;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Generator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">equinox</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">eqx</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.random</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jr</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">netCDF4</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nc</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">optax</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">jaxtyping</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array</span><span class="p">,</span> <span class="n">Float</span><span class="p">,</span> <span class="n">PRNGKeyArray</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">neojax.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">BundleProcessor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">neojax.data.bundles</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataBundle</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">neojax.data.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">BundleDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">neojax.data.download</span><span class="w"> </span><span class="kn">import</span> <span class="n">download_dataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">neojax.data.normalizers</span><span class="w"> </span><span class="kn">import</span> <span class="n">PhysicsNormalizer</span><span class="p">,</span> <span class="n">UnitGaussianNormalizer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">neojax.data.scales</span><span class="w"> </span><span class="kn">import</span> <span class="n">CharacteristicLengthScale</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">neojax.data.schemas</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ComposedSchema</span><span class="p">,</span>
+    <span class="n">ConcatenateParamsSchema</span><span class="p">,</span>
+    <span class="n">MeshInputSchema</span><span class="p">,</span>
+    <span class="n">TimeToStationarySchema</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">neojax.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">ComposedMetric</span><span class="p">,</span> <span class="n">RelativeLpMetric</span><span class="p">,</span> <span class="n">SobolevMetric</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">neojax.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">GeoFNO</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">neojax.training</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trainer</span><span class="p">,</span> <span class="n">TrainState</span>
+</code></pre></div>
+<h4 id="mock-netcdf-fallback-generator">Mock NetCDF Fallback Generator<a class="headerlink" href="#mock-netcdf-fallback-generator" title="Permanent link">¤</a></h4>
+<p>To ensure this tutorial notebook can execute in offline or sandboxed testing environments without making network queries, we provide a mock generator that mimics the PDEgym <code>Wave-Layer</code> dataset schema if the download fails.</p>
+<p>Like other PDEGym datasets, <code>wave_layer</code> ships no explicit coordinate variable and no explicit channel axis (the field has a single physical channel). The <code>solution</code> variable's dimensions are <code>(sample, time, x, y)</code>. We generate 21 time steps to match the real dataset, since the training pipeline below extracts two of them to form a stationary input/target pair.</p>
+<p>With this mock dataset the results below can obviously not be reproduced.</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">generate_mock_wave_layer_nc</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates a mock NetCDF dataset mirroring PDEgym&#39;s Wave-Layer schema.&quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">nc</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">createDimension</span><span class="p">(</span><span class="s2">&quot;sample&quot;</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">createDimension</span><span class="p">(</span><span class="s2">&quot;time&quot;</span><span class="p">,</span> <span class="mi">21</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">createDimension</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">createDimension</span><span class="p">(</span><span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+
+        <span class="c1"># Trajectories solution (sample=16, time=21, x=16, y=16); no explicit</span>
+        <span class="c1"># channel or coordinate variable, matching the real Wave-Layer files.</span>
+        <span class="n">solution</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">21</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">s_var</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">createVariable</span><span class="p">(</span><span class="s2">&quot;solution&quot;</span><span class="p">,</span> <span class="s2">&quot;f4&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;sample&quot;</span><span class="p">,</span> <span class="s2">&quot;time&quot;</span><span class="p">,</span> <span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">))</span>
+        <span class="n">s_var</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">solution</span>
+
+        <span class="c1"># Wave speed parameter field (sample=16, x=16, y=16); ships as a</span>
+        <span class="c1"># separate variable, matching the real Wave-Layer files.</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">c_var</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">createVariable</span><span class="p">(</span><span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="s2">&quot;f4&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;sample&quot;</span><span class="p">,</span> <span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">))</span>
+        <span class="n">c_var</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">c</span>
+</code></pre></div>
+<h4 id="download-and-load-wave_layer-dataset">Download and Load wave_layer Dataset<a class="headerlink" href="#download-and-load-wave_layer-dataset" title="Permanent link">¤</a></h4>
+<p>We query the registry to locate <code>wave_layer</code> and download it directly to a local scratch directory, falling back to mock data if offline.</p>
+<p>(To avoid high RAM usage, we remove two thirds of the dataset before loading it. Remove this if you have the RAM. This is a dodgy solution and <code>download_dataset</code> will expose an option to control dataset sizes in future versions.)</p>
+<p>For any dataset that doesn't explicitly provide coordinates, as is the case for the Wave-Layer dataset, even spacing over the domain is assumed and the coordinates are created as such.</p>
+<p>Creating <code>DataBundle</code> datasets requires passing a mapping from dataset variable names to the class fields of <code>DataBundle</code>. This mapping may specify concatenations of variables by passing a one-to-many mapping and the respective <code>concat_axes</code>. See the documentation for details.</p>
+<p><em>WARNING: Loading the BundleDataset loads one third of the dataset into RAM (~5.5GB).</em></p>
+<div class="highlight"><pre><span></span><code><span class="n">tmpdir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">TemporaryDirectory</span><span class="p">()</span>
+<span class="n">data_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">tmpdir</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Attempting to download wave_layer dataset from Hugging Face registry...&quot;</span><span class="p">)</span>
+    <span class="n">downloaded_files</span> <span class="o">=</span> <span class="n">download_dataset</span><span class="p">(</span><span class="s2">&quot;wave_layer&quot;</span><span class="p">,</span> <span class="n">target_dir</span><span class="o">=</span><span class="n">data_dir</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Successfully downloaded wave_layer dataset to: </span><span class="si">{</span><span class="n">data_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">data_dir</span><span class="o">.</span><span class="n">iterdir</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">is_file</span><span class="p">()</span> <span class="ow">and</span> <span class="n">f</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="sa">f</span><span class="s2">&quot;solution_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">.nc&quot;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)):</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span>
+    <span class="n">data_path</span> <span class="o">=</span> <span class="n">data_dir</span>
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not download dataset (</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">). Creating mock wave_layer NetCDF instead.&quot;</span><span class="p">)</span>
+    <span class="n">data_path</span> <span class="o">=</span> <span class="n">data_dir</span> <span class="o">/</span> <span class="s2">&quot;wave_layer_solution.nc&quot;</span>
+    <span class="n">generate_mock_wave_layer_nc</span><span class="p">(</span><span class="n">data_path</span><span class="p">)</span>
+
+<span class="c1"># Load NetCDF file into a DataBundle dataset.</span>
+<span class="c1"># We map the propagation speed c to the &quot;parameters&quot; field and the solution to the &quot;fields&quot;.</span>
+<span class="c1"># Because &quot;coords&quot; is not provided, an evenly spaced grid over the unit square is generated</span>
+<span class="c1"># automatically, and a singleton channel axis is inserted since &#39;solution&#39; has none of its own.</span>
+<span class="n">dataset</span> <span class="o">=</span> <span class="n">BundleDataset</span><span class="o">.</span><span class="n">from_pdegym</span><span class="p">(</span>
+    <span class="n">data_path</span><span class="p">,</span> <span class="n">field_mapping</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;fields&quot;</span><span class="p">:</span> <span class="s2">&quot;solution&quot;</span><span class="p">,</span> <span class="s2">&quot;parameters&quot;</span><span class="p">:</span> <span class="s2">&quot;c&quot;</span><span class="p">}</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;Loaded dataset. Coords shape: </span><span class="si">{</span><span class="n">dataset</span><span class="o">.</span><span class="n">coords</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">, Fields shape: </span><span class="si">{</span><span class="n">dataset</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><strong>Output:</strong>
+<div class="highlight"><pre><span></span><code>Attempting<span class="w"> </span>to<span class="w"> </span>download<span class="w"> </span>wave_layer<span class="w"> </span>dataset<span class="w"> </span>from<span class="w"> </span>Hugging<span class="w"> </span>Face<span class="w"> </span>registry...
+c_0.nc:<span class="w"> </span><span class="m">100</span>%<span class="p">|</span>██████████<span class="p">|</span><span class="w"> </span>690M/690M<span class="w"> </span><span class="o">[</span><span class="m">00</span>:09&lt;<span class="m">00</span>:00,<span class="w"> </span><span class="m">69</span>.5MB/s<span class="o">]</span>
+solution_0.nc:<span class="w"> </span><span class="m">100</span>%<span class="p">|</span>██████████<span class="p">|</span><span class="w"> </span><span class="m">4</span>.83G/4.83G<span class="w"> </span><span class="o">[</span><span class="m">00</span>:48&lt;<span class="m">00</span>:00,<span class="w"> </span><span class="m">98</span>.7MB/s<span class="o">]</span>
+solution_1.nc:<span class="w"> </span><span class="m">100</span>%<span class="p">|</span>██████████<span class="p">|</span><span class="w"> </span><span class="m">4</span>.83G/4.83G<span class="w"> </span><span class="o">[</span><span class="m">00</span>:47&lt;<span class="m">00</span>:00,<span class="w"> </span>103MB/s<span class="o">]</span>
+solution_2.nc:<span class="w"> </span><span class="m">100</span>%<span class="p">|</span>██████████<span class="p">|</span><span class="w"> </span><span class="m">4</span>.83G/4.83G<span class="w"> </span><span class="o">[</span><span class="m">00</span>:59&lt;<span class="m">00</span>:00,<span class="w"> </span><span class="m">81</span>.7MB/s<span class="o">]</span>
+Successfully<span class="w"> </span>downloaded<span class="w"> </span>wave_layer<span class="w"> </span>dataset<span class="w"> </span>to:<span class="w"> </span>/tmp/tmposqbdhlv
+Loaded<span class="w"> </span>dataset.<span class="w"> </span>Coords<span class="w"> </span>shape:<span class="w"> </span><span class="o">(</span><span class="m">2</span>,<span class="w"> </span><span class="m">128</span>,<span class="w"> </span><span class="m">128</span><span class="o">)</span>,<span class="w"> </span>Fields<span class="w"> </span>shape:<span class="w"> </span><span class="o">(</span><span class="m">3504</span>,<span class="w"> </span><span class="m">21</span>,<span class="w"> </span><span class="m">1</span>,<span class="w"> </span><span class="m">128</span>,<span class="w"> </span><span class="m">128</span><span class="o">)</span>
+/tmp/ipykernel_180/3009266032.py:22:<span class="w"> </span>UserWarning:<span class="w"> </span>No<span class="w"> </span><span class="s1">&#39;coords&#39;</span><span class="w"> </span>entry<span class="w"> </span><span class="k">in</span><span class="w"> </span>field_mapping<span class="p">;</span><span class="w"> </span>generating<span class="w"> </span>default<span class="w"> </span>coordinates<span class="w"> </span>as<span class="w"> </span>an<span class="w"> </span>evenly<span class="w"> </span>spaced<span class="w"> </span>grid<span class="w"> </span>over<span class="w"> </span>the<span class="w"> </span>unit<span class="w"> </span>hypercube<span class="w"> </span><span class="o">[</span><span class="m">0</span>,<span class="w"> </span><span class="m">1</span><span class="o">]</span>^2<span class="w"> </span>with<span class="w"> </span>spatial<span class="w"> </span>shape<span class="w"> </span><span class="o">(</span><span class="m">128</span>,<span class="w"> </span><span class="m">128</span><span class="o">)</span>.<span class="w"> </span>Pass<span class="w"> </span>an<span class="w"> </span>explicit<span class="w"> </span><span class="s1">&#39;coords&#39;</span><span class="w"> </span>mapping<span class="w"> </span>to<span class="w"> </span>use<span class="w"> </span>the<span class="w"> </span>dataset<span class="s1">&#39;s own physical domain.</span>
+<span class="s1">  dataset = BundleDataset.from_pdegym(</span>
+<span class="s1">/usr/local/lib/python3.13/dist-packages/neojax/data/datasets/bundle_dataset.py:307: UserWarning: &#39;</span>parameters<span class="s1">&#39; has 10512 samples but &#39;</span>fields<span class="s1">&#39; has 3504; truncating &#39;</span>parameters<span class="err">&#39;</span><span class="w"> </span>to<span class="w"> </span>the<span class="w"> </span>first<span class="w"> </span><span class="m">3504</span><span class="w"> </span>samples<span class="w"> </span>to<span class="w"> </span>match.<span class="w"> </span>This<span class="w"> </span>usually<span class="w"> </span>means<span class="w"> </span>the<span class="w"> </span>dataset<span class="w"> </span>was<span class="w"> </span>only<span class="w"> </span>partially<span class="w"> </span>downloaded<span class="w"> </span><span class="o">(</span>e.g.<span class="w"> </span>every<span class="w"> </span>parameter<span class="w"> </span>file<span class="w"> </span>but<span class="w"> </span>not<span class="w"> </span>every<span class="w"> </span>field<span class="w"> </span>file<span class="o">)</span><span class="w"> </span>--<span class="w"> </span>download<span class="w"> </span>the<span class="w"> </span>dataset<span class="w"> </span>completely,<span class="w"> </span>or<span class="w"> </span>pass<span class="w"> </span>matching<span class="w"> </span>subsets,<span class="w"> </span>to<span class="w"> </span>avoid<span class="w"> </span>this.
+<span class="w">  </span><span class="nv">mapped_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>enforce_consistent_batch_size<span class="o">(</span>mapped_data<span class="o">)</span>
+</code></pre></div></p>
+<h4 id="configure-normalizers-and-build-the-schema-pipeline">Configure Normalizers and Build the Schema Pipeline<a class="headerlink" href="#configure-normalizers-and-build-the-schema-pipeline" title="Permanent link">¤</a></h4>
+<p>We scale coordinate dimensions using a <code>PhysicsNormalizer</code> to enforce non-dimensional scaling, then pipe the fields through a standard <code>UnitGaussianNormalizer</code>. Both are orchestrated by a single <code>BundleProcessor</code>.</p>
+<p>Wave-Layer has <span class="arithmatex">\(t=21\)</span> uniformly spaced time steps, but <code>GeoFNO</code> solves stationary problems (one input state, one target state). <code>TimeToStationarySchema</code> extracts two time indices from every time-dependent array in a <code>DataBundle</code> — here <span class="arithmatex">\(t=0\)</span> as input and <span class="arithmatex">\(t=5\)</span> as the target.</p>
+<p>Both extracted slices arrive packed into a single <code>DataBundle</code> with a time axis of length 2. From here the pipeline has to <em>diverge</em>:</p>
+<ul>
+<li>The input slice gets the wave-speed field <code>c</code> concatenated onto its channel axis via <code>ConcatenateParamsSchema</code> (so the model is conditioned on the medium it's solving through).</li>
+<li>The target slice stays unchanged.</li>
+</ul>
+<p>Because <code>ComposedSchema</code> is strictly one bundle in, one bundle out, this branch point can't live inside it. <code>split_stationary_bundle</code> below is a plain function that performs the split, sitting between the shared prefix (<code>TimeToStationarySchema</code>) and the two independent downstream schemas.</p>
+<p>Each branch finishes with <code>MeshInputSchema</code>, which reshapes a <code>DataBundle</code> into the <code>{"u": ..., "x_in": ...}</code> mesh format <code>GeoFNO</code> expects. It flattens the (now singleton) time axis into channels and the spatial grid into a list of nodes, in one step.</p>
+<p>All of these schemas are agnostic to whether they're called on a single sample, a mini-batch, or the whole dataset, so the entire pipeline runs once per training batch via <code>prepare_stationary_batch</code>, rather than being precomputed for the full (multi-GB) dataset up front.</p>
+<div class="highlight"><pre><span></span><code><span class="n">physics_norm</span> <span class="o">=</span> <span class="n">PhysicsNormalizer</span><span class="p">(</span><span class="n">CharacteristicLengthScale</span><span class="p">(</span><span class="n">L_ref</span><span class="o">=</span><span class="mf">0.1</span><span class="p">))</span>
+<span class="n">unit_norm</span> <span class="o">=</span> <span class="n">UnitGaussianNormalizer</span><span class="p">()</span>
+<span class="n">processor</span> <span class="o">=</span> <span class="n">BundleProcessor</span><span class="p">(</span><span class="n">normalizers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;fields&quot;</span><span class="p">:</span> <span class="n">unit_norm</span><span class="p">,</span> <span class="s2">&quot;coords&quot;</span><span class="p">:</span> <span class="n">physics_norm</span><span class="p">})</span>
+
+<span class="c1"># Schema pipeline: shared prefix, then two diverging per-branch schemas</span>
+<span class="n">stationary_schema</span> <span class="o">=</span> <span class="n">TimeToStationarySchema</span><span class="p">(</span><span class="n">time_axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">time_slice_indices</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<span class="n">input_schema</span> <span class="o">=</span> <span class="n">ComposedSchema</span><span class="p">(</span>
+    <span class="p">[</span><span class="n">ConcatenateParamsSchema</span><span class="p">(</span><span class="n">channel_axis</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span> <span class="n">MeshInputSchema</span><span class="p">(</span><span class="n">time_axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">channel_axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)]</span>
+<span class="p">)</span>
+<span class="n">target_schema</span> <span class="o">=</span> <span class="n">MeshInputSchema</span><span class="p">(</span><span class="n">time_axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">channel_axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">split_stationary_bundle</span><span class="p">(</span>
+    <span class="n">bundle</span><span class="p">:</span> <span class="n">DataBundle</span><span class="p">,</span> <span class="n">time_axis</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">DataBundle</span><span class="p">,</span> <span class="n">DataBundle</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Splits a two-time-slice DataBundle into independent (input, target) bundles.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">select</span><span class="p">(</span><span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataBundle</span><span class="p">:</span>
+        <span class="n">idx_arr</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">idx</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">DataBundle</span><span class="p">(</span>
+            <span class="n">coords</span><span class="o">=</span><span class="n">bundle</span><span class="o">.</span><span class="n">coords</span><span class="p">,</span>
+            <span class="n">fields</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="n">bundle</span><span class="o">.</span><span class="n">fields</span><span class="p">,</span> <span class="n">idx_arr</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">time_axis</span><span class="p">),</span>
+            <span class="n">parameters</span><span class="o">=</span><span class="n">bundle</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span>
+            <span class="n">bc_masks</span><span class="o">=</span><span class="n">bundle</span><span class="o">.</span><span class="n">bc_masks</span><span class="p">,</span>
+            <span class="n">bc_values</span><span class="o">=</span><span class="p">(</span>
+                <span class="n">jnp</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="n">bundle</span><span class="o">.</span><span class="n">bc_values</span><span class="p">,</span> <span class="n">idx_arr</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">time_axis</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">bundle</span><span class="o">.</span><span class="n">bc_values</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">),</span>
+            <span class="n">edge_indices</span><span class="o">=</span><span class="n">bundle</span><span class="o">.</span><span class="n">edge_indices</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">select</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">select</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_batch</span><span class="p">(</span><span class="n">dataset</span><span class="p">:</span> <span class="n">BundleDataset</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="n">Array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataBundle</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetches a batch, keeping coords shared rather than duplicated per sample.&quot;&quot;&quot;</span>
+    <span class="n">batch</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">eqx</span><span class="o">.</span><span class="n">tree_at</span><span class="p">(</span><span class="k">lambda</span> <span class="n">b</span><span class="p">:</span> <span class="n">b</span><span class="o">.</span><span class="n">coords</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">dataset</span><span class="o">.</span><span class="n">coords</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">prepare_stationary_batch</span><span class="p">(</span>
+    <span class="n">processor</span><span class="p">:</span> <span class="n">BundleProcessor</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">BundleDataset</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="n">Array</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">Array</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Normalizes a batch and runs it through the schema pipeline to model-ready (x, y).&quot;&quot;&quot;</span>
+    <span class="n">batch</span> <span class="o">=</span> <span class="n">get_batch</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
+    <span class="n">stationary</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">stationary_schema</span><span class="p">)</span>
+    <span class="n">x_bundle</span><span class="p">,</span> <span class="n">y_bundle</span> <span class="o">=</span> <span class="n">split_stationary_bundle</span><span class="p">(</span><span class="n">stationary</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">input_schema</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">x_bundle</span><span class="p">)</span>  <span class="c1"># {&quot;u&quot;: (B, C+1, N), &quot;x_in&quot;: (N, d)}</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">target_schema</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">y_bundle</span><span class="p">)</span>  <span class="c1"># {&quot;u&quot;: (B, C, N),   &quot;x_in&quot;: (N, d)}</span>
+    <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">[</span><span class="s2">&quot;u&quot;</span><span class="p">]</span>
+
+
+<span class="c1"># Split into train/validation trajectories (90/10)</span>
+<span class="n">num_train</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mf">0.9</span><span class="p">)</span>
+
+<span class="n">train_dataset</span> <span class="o">=</span> <span class="n">BundleDataset</span><span class="p">(</span>
+    <span class="n">coords</span><span class="o">=</span><span class="n">dataset</span><span class="o">.</span><span class="n">coords</span><span class="p">,</span>
+    <span class="n">fields</span><span class="o">=</span><span class="n">dataset</span><span class="o">.</span><span class="n">fields</span><span class="p">[:</span><span class="n">num_train</span><span class="p">],</span>
+    <span class="n">parameters</span><span class="o">=</span><span class="n">dataset</span><span class="o">.</span><span class="n">parameters</span><span class="p">[:</span><span class="n">num_train</span><span class="p">]</span> <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">parameters</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">test_dataset</span> <span class="o">=</span> <span class="n">BundleDataset</span><span class="p">(</span>
+    <span class="n">coords</span><span class="o">=</span><span class="n">dataset</span><span class="o">.</span><span class="n">coords</span><span class="p">,</span>
+    <span class="n">fields</span><span class="o">=</span><span class="n">dataset</span><span class="o">.</span><span class="n">fields</span><span class="p">[</span><span class="n">num_train</span><span class="p">:],</span>
+    <span class="n">parameters</span><span class="o">=</span><span class="n">dataset</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">num_train</span><span class="p">:]</span> <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">parameters</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Fit normalizer statistics on the training split only</span>
+<span class="n">processor</span> <span class="o">=</span> <span class="n">processor</span><span class="o">.</span><span class="n">compute_stats</span><span class="p">(</span>
+    <span class="n">DataBundle</span><span class="p">(</span>
+        <span class="n">coords</span><span class="o">=</span><span class="n">dataset</span><span class="o">.</span><span class="n">coords</span><span class="p">,</span>
+        <span class="n">fields</span><span class="o">=</span><span class="n">train_dataset</span><span class="o">.</span><span class="n">fields</span><span class="p">,</span>
+        <span class="n">parameters</span><span class="o">=</span><span class="n">train_dataset</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Train samples: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">train_dataset</span><span class="p">)</span><span class="si">}</span><span class="s2">, Test samples: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">test_dataset</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Output:</strong>
+<div class="highlight"><pre><span></span><code>Train<span class="w"> </span>samples:<span class="w"> </span><span class="m">3153</span>,<span class="w"> </span>Test<span class="w"> </span>samples:<span class="w"> </span><span class="m">351</span>
+</code></pre></div></p>
+<h4 id="define-loss-metrics">Define Loss Metrics<a class="headerlink" href="#define-loss-metrics" title="Permanent link">¤</a></h4>
+<p>We create a composed loss combining relative <span class="arithmatex">\(L^2\)</span> error (with weight 0.9) and Sobolev <span class="arithmatex">\(H^1\)</span> penalty (with weight 0.1). We bind the flattened spatial grid coordinates statically in our functional loss to avoid copying the coordinates across batches.</p>
+<p>We use the stochastic first order version of the Sobolev metric, which requires us to pass a random key to the loss function.</p>
+<p>Note, that we wouldn't have to pass <code>method="stochastic"</code> in this case, because the input/output grids are large. The <code>"auto"</code> method also defaults to the <code>"stochastic"</code> mode here. We also choose to sample only 2 basis vectors. This makes the Sobolev gradient noisy, but it reduces computational cost.</p>
+<div class="highlight"><pre><span></span><code><span class="n">rel_l2_metric</span> <span class="o">=</span> <span class="n">RelativeLpMetric</span><span class="p">(</span><span class="n">p</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
+<span class="n">sobolev_metric</span> <span class="o">=</span> <span class="n">SobolevMetric</span><span class="p">(</span><span class="n">p</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;stochastic&quot;</span><span class="p">,</span> <span class="n">n_random_samples</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">composed_loss_metric</span> <span class="o">=</span> <span class="n">ComposedMetric</span><span class="p">(</span>
+    <span class="n">rel_l2_metric</span><span class="p">,</span> <span class="n">sobolev_metric</span><span class="p">,</span> <span class="n">composition_fn</span><span class="o">=</span><span class="k">lambda</span> <span class="n">rel_l2</span><span class="p">,</span> <span class="n">sobolev</span><span class="p">:</span> <span class="mf">0.9</span> <span class="o">*</span> <span class="n">rel_l2</span> <span class="o">+</span> <span class="mf">0.1</span> <span class="o">*</span> <span class="n">sobolev</span>
+<span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">loss_fn</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n">GeoFNO</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Array</span><span class="p">],</span> <span class="n">Array</span><span class="p">,</span> <span class="n">PRNGKeyArray</span><span class="p">],</span> <span class="n">training</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Float</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]]]:</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">sobolev_key</span> <span class="o">=</span> <span class="n">batch</span>
+
+    <span class="c1"># Wrapper binding the (shared, un-batched) mesh coordinates statically</span>
+    <span class="n">model_fn</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">u</span><span class="p">:</span> <span class="n">model</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">x_in</span><span class="o">=</span><span class="n">x</span><span class="p">[</span><span class="s2">&quot;x_in&quot;</span><span class="p">])</span>
+
+    <span class="c1"># Forward pass on all batch samples</span>
+    <span class="n">preds</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">vmap</span><span class="p">(</span><span class="n">model_fn</span><span class="p">)(</span><span class="n">x</span><span class="p">[</span><span class="s2">&quot;u&quot;</span><span class="p">])</span>
+
+    <span class="c1"># Composed metric computes derivatives w.r.t input x using model_fn</span>
+    <span class="c1"># We pass return_components to get the individual loss components as well</span>
+    <span class="n">loss</span><span class="p">,</span> <span class="p">(</span><span class="n">relative_l2_val</span><span class="p">,</span> <span class="n">sobolev_val</span><span class="p">)</span> <span class="o">=</span> <span class="n">composed_loss_metric</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">=</span><span class="n">model_fn</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">[</span><span class="s2">&quot;u&quot;</span><span class="p">],</span> <span class="n">target</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">pred</span><span class="o">=</span><span class="n">preds</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">sobolev_key</span><span class="p">,</span> <span class="n">return_components</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">loss</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;relative_l2&quot;</span><span class="p">:</span> <span class="n">relative_l2_val</span><span class="p">,</span> <span class="s2">&quot;sobolev&quot;</span><span class="p">:</span> <span class="n">sobolev_val</span><span class="p">}</span>
+</code></pre></div>
+<h4 id="instantiate-geofno-and-trainer">Instantiate GeoFNO and Trainer<a class="headerlink" href="#instantiate-geofno-and-trainer" title="Permanent link">¤</a></h4>
+<p>We configure the needed hyperparameters, instantiate the model and configure the optimizer and <code>Trainer</code> class.</p>
+<div class="highlight"><pre><span></span><code><span class="n">key</span> <span class="o">=</span> <span class="n">jr</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">model_key</span><span class="p">,</span> <span class="n">train_key</span> <span class="o">=</span> <span class="n">jr</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<span class="n">batch_size</span> <span class="o">=</span> <span class="mi">32</span>
+<span class="n">n_epochs</span> <span class="o">=</span> <span class="mi">200</span>
+<span class="n">total_steps</span> <span class="o">=</span> <span class="n">n_epochs</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">train_dataset</span><span class="p">)</span> <span class="o">//</span> <span class="n">batch_size</span><span class="p">)</span>
+
+<span class="n">model_hyperparams</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;in_channels&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="c1"># wave field + concatenated wave-speed parameter channel</span>
+    <span class="s2">&quot;out_channels&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">&quot;hidden_channels&quot;</span><span class="p">:</span> <span class="mi">32</span><span class="p">,</span>
+    <span class="s2">&quot;n_layers&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="s2">&quot;modes&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">24</span><span class="p">,</span> <span class="mi">24</span><span class="p">),</span>
+    <span class="s2">&quot;grid_resolution&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">),</span>
+<span class="p">}</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">GeoFNO</span><span class="p">(</span>
+    <span class="n">key</span><span class="o">=</span><span class="n">model_key</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">model_hyperparams</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">schedule</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">warmup_cosine_decay_schedule</span><span class="p">(</span>
+    <span class="n">init_value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">peak_value</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span>
+    <span class="n">warmup_steps</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="mf">0.05</span> <span class="o">*</span> <span class="n">total_steps</span><span class="p">),</span>
+    <span class="n">decay_steps</span><span class="o">=</span><span class="n">total_steps</span><span class="p">,</span>
+    <span class="n">end_value</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">adam</span><span class="p">(</span><span class="n">learning_rate</span><span class="o">=</span><span class="n">schedule</span><span class="p">)</span>
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">loss_fn</span><span class="o">=</span><span class="n">loss_fn</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="execute-training-loop-checkpoint-state">Execute Training Loop &amp; Checkpoint State<a class="headerlink" href="#execute-training-loop-checkpoint-state" title="Permanent link">¤</a></h4>
+<p>We run the loop for 200 epochs over shuffled mini-batches, logging loss values and weight trajectories, then verify checkpointing. Each mini-batch is turned into model-ready inputs via <code>prepare_stationary_batch</code>, applying the schema pipeline defined above.</p>
+<p>We quickly check if the model compiles...</p>
+<p><div class="highlight"><pre><span></span><code><span class="c1"># We check if the model compiles before starting an `expensive` training run</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pprint</span><span class="w"> </span><span class="kn">import</span> <span class="n">pprint</span>
+
+<span class="n">dummy_key</span> <span class="o">=</span> <span class="n">jr</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">dummy_input</span> <span class="o">=</span> <span class="n">jr</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">dummy_key</span><span class="p">,</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">))</span>
+
+<span class="n">success</span><span class="p">,</span> <span class="n">comp_summary</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">profile_compile</span><span class="p">(</span><span class="n">dummy_input</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Compiled: &quot;</span><span class="p">,</span> <span class="n">success</span><span class="p">)</span>
+<span class="n">pprint</span><span class="p">(</span><span class="n">comp_summary</span><span class="p">)</span>
+</code></pre></div>
+<strong>Output:</strong>
+<div class="highlight"><pre><span></span><code>Compiled:<span class="w">  </span>True
+<span class="o">{</span><span class="s1">&#39;compiled_cost_analysis&#39;</span>:<span class="w"> </span><span class="o">{</span><span class="s1">&#39;bytes accessed&#39;</span>:<span class="w"> </span><span class="m">58327580</span>.0,
+<span class="w">                            </span><span class="s1">&#39;bytes accessed0{}&#39;</span>:<span class="w"> </span><span class="m">24326148</span>.0,
+<span class="w">                            </span><span class="s1">&#39;bytes accessed1{}&#39;</span>:<span class="w"> </span><span class="m">24289664</span>.0,
+<span class="w">                            </span><span class="s1">&#39;bytes accessed2{}&#39;</span>:<span class="w"> </span><span class="m">2490466</span>.0,
+<span class="w">                            </span><span class="s1">&#39;bytes accessed3{}&#39;</span>:<span class="w"> </span><span class="m">104</span>.0,
+<span class="w">                            </span><span class="s1">&#39;bytes accessed4{}&#39;</span>:<span class="w"> </span><span class="m">40</span>.0,
+<span class="w">                            </span><span class="s1">&#39;bytes accessed5{}&#39;</span>:<span class="w"> </span><span class="m">1048576</span>.0,
+<span class="w">                            </span><span class="s1">&#39;bytes accessed6{}&#39;</span>:<span class="w"> </span><span class="m">1048576</span>.0,
+<span class="w">                            </span><span class="s1">&#39;bytes accessedout{0}&#39;</span>:<span class="w"> </span><span class="m">24576</span>.0,
+<span class="w">                            </span><span class="s1">&#39;bytes accessedout{1}&#39;</span>:<span class="w"> </span><span class="m">24576</span>.0,
+<span class="w">                            </span><span class="s1">&#39;bytes accessedout{}&#39;</span>:<span class="w"> </span><span class="m">24096808</span>.0,
+<span class="w">                            </span><span class="s1">&#39;flops&#39;</span>:<span class="w"> </span><span class="m">371843072</span>.0,
+<span class="w">                            </span><span class="s1">&#39;optimal_seconds&#39;</span>:<span class="w"> </span>-6.0,
+<span class="w">                            </span><span class="s1">&#39;transcendentals&#39;</span>:<span class="w"> </span><span class="m">1441793</span>.0,
+<span class="w">                            </span><span class="s1">&#39;utilization0{}&#39;</span>:<span class="w"> </span><span class="m">71</span>.0,
+<span class="w">                            </span><span class="s1">&#39;utilization1{}&#39;</span>:<span class="w"> </span><span class="m">43</span>.0,
+<span class="w">                            </span><span class="s1">&#39;utilization2{}&#39;</span>:<span class="w"> </span><span class="m">17</span>.0,
+<span class="w">                            </span><span class="s1">&#39;utilization3{}&#39;</span>:<span class="w"> </span><span class="m">11</span>.0,
+<span class="w">                            </span><span class="s1">&#39;utilization4{}&#39;</span>:<span class="w"> </span><span class="m">10</span>.0,
+<span class="w">                            </span><span class="s1">&#39;utilization5{}&#39;</span>:<span class="w"> </span><span class="m">1</span>.0,
+<span class="w">                            </span><span class="s1">&#39;utilization6{}&#39;</span>:<span class="w"> </span><span class="m">1</span>.0<span class="o">}</span>,
+<span class="w"> </span><span class="s1">&#39;exception&#39;</span>:<span class="w"> </span>None,
+<span class="w"> </span><span class="s1">&#39;lowering&#39;</span>:<span class="w"> </span><span class="s1">&#39;&#39;</span>,
+<span class="w"> </span><span class="s1">&#39;lowering_cost_analysis&#39;</span>:<span class="w"> </span>None<span class="o">}</span>
+</code></pre></div></p>
+<p>Now onto model training...</p>
+<p>We use the already jitted <code>eval_step</code> and <code>train_step</code> of the <code>Trainer</code> class and pass the individual metrics as auxiliary information through both methods.</p>
+<p>The rest is a pretty standard JAX training loop.</p>
+<p><strong>Warning: The computational graph is fairly complex (reverse-over-forward AD and GeoFNO latent-to-grid diffeomorphism). Training this model for 200 epochs took ~20 hours on a RTX A6000. It likely takes even longer on the standard Colab T4.</strong></p>
+<div class="highlight"><pre><span></span><code><span class="n">state</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">create_train_state</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;epoch&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
+
+<span class="n">losses</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">global_steps</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">print_progress_freq</span> <span class="o">=</span> <span class="mi">50</span>
+<span class="n">eval_step_freq</span> <span class="o">=</span> <span class="mi">50</span>
+<span class="n">best_loss</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">sample_batches</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n">PRNGKeyArray</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">drop_last</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">Array</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Yields shuffled index batches covering the dataset once.&quot;&quot;&quot;</span>
+    <span class="n">perm</span> <span class="o">=</span> <span class="n">jr</span><span class="o">.</span><span class="n">permutation</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">drop_last</span><span class="p">:</span>
+        <span class="n">n_batches</span> <span class="o">=</span> <span class="n">num_samples</span> <span class="o">//</span> <span class="n">batch_size</span>
+        <span class="n">num_samples</span> <span class="o">=</span> <span class="n">n_batches</span> <span class="o">*</span> <span class="n">batch_size</span>
+
+    <span class="k">for</span> <span class="n">start</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="n">perm</span><span class="p">[</span><span class="n">start</span> <span class="p">:</span> <span class="n">start</span> <span class="o">+</span> <span class="n">batch_size</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">run_eval</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">TrainState</span><span class="p">,</span> <span class="n">test_dataset</span><span class="p">:</span> <span class="n">BundleDataset</span><span class="p">,</span> <span class="n">epoch</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">global_step</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Runs one epoch over the test dataset.&quot;&quot;&quot;</span>
+    <span class="n">eval_key</span>  <span class="o">=</span> <span class="n">jr</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+    <span class="n">batch_key</span><span class="p">,</span> <span class="n">chain_key</span> <span class="o">=</span> <span class="n">jr</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">eval_key</span><span class="p">)</span>
+    <span class="n">n_batches</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">total_test_loss</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">total_h1_loss</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">total_rel_l2_loss</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">sample_batches</span><span class="p">(</span><span class="n">batch_key</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">test_dataset</span><span class="p">),</span> <span class="n">batch_size</span><span class="p">):</span>
+        <span class="n">skey</span><span class="p">,</span> <span class="n">chain_key</span> <span class="o">=</span> <span class="n">jr</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">chain_key</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">prepare_stationary_batch</span><span class="p">(</span><span class="n">processor</span><span class="p">,</span> <span class="n">test_dataset</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
+        <span class="n">eval_loss</span><span class="p">,</span> <span class="n">aux</span>  <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">eval_step</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">skey</span><span class="p">))</span>
+        <span class="n">total_test_loss</span> <span class="o">+=</span> <span class="n">eval_loss</span>
+        <span class="n">total_h1_loss</span> <span class="o">+=</span> <span class="n">aux</span><span class="p">[</span><span class="s2">&quot;sobolev&quot;</span><span class="p">]</span>
+        <span class="n">total_rel_l2_loss</span> <span class="o">+=</span> <span class="n">aux</span><span class="p">[</span><span class="s2">&quot;relative_l2&quot;</span><span class="p">]</span>
+        <span class="n">n_batches</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">avg_test_loss</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">total_test_loss</span> <span class="o">/</span> <span class="n">n_batches</span><span class="p">)</span>
+    <span class="n">avg_h1_loss</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">total_h1_loss</span> <span class="o">/</span> <span class="n">n_batches</span><span class="p">)</span>
+    <span class="n">avg_rel_l2_loss</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">total_rel_l2_loss</span> <span class="o">/</span> <span class="n">n_batches</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;[EVAL] - Epoch </span><span class="si">{</span><span class="n">epoch</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2"> | Step </span><span class="si">{</span><span class="n">global_step</span><span class="si">}</span><span class="s2"> | &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;Avg Test Loss: </span><span class="si">{</span><span class="n">avg_test_loss</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> | &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;Avg Test Rel L2 Loss: </span><span class="si">{</span><span class="n">avg_rel_l2_loss</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> | &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;Avg Test H1 Loss: </span><span class="si">{</span><span class="n">avg_h1_loss</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">avg_test_loss</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Running training for </span><span class="si">{</span><span class="n">n_epochs</span><span class="si">}</span><span class="s2"> epochs...&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_epochs</span><span class="p">):</span>
+    <span class="n">lkey</span><span class="p">,</span> <span class="n">sobolev_key</span><span class="p">,</span> <span class="n">key</span> <span class="o">=</span> <span class="n">jr</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">sample_batches</span><span class="p">(</span><span class="n">lkey</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">train_dataset</span><span class="p">),</span> <span class="n">batch_size</span><span class="p">):</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">prepare_stationary_batch</span><span class="p">(</span><span class="n">processor</span><span class="p">,</span> <span class="n">train_dataset</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
+        <span class="c1"># Ensure to update the random key in each iteration</span>
+        <span class="n">curr_sobolev_key</span><span class="p">,</span> <span class="n">sobolev_key</span> <span class="o">=</span> <span class="n">jr</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">sobolev_key</span><span class="p">)</span>
+        <span class="n">state</span><span class="p">,</span> <span class="n">loss_val</span><span class="p">,</span> <span class="n">aux</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">train_step</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">curr_sobolev_key</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">global_steps</span> <span class="o">%</span> <span class="n">print_progress_freq</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">global_steps</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">l2_loss</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">aux</span><span class="p">[</span><span class="s2">&quot;relative_l2&quot;</span><span class="p">])</span>
+            <span class="n">h1_loss</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">aux</span><span class="p">[</span><span class="s2">&quot;sobolev&quot;</span><span class="p">])</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">loss_val</span><span class="p">)</span>
+            <span class="n">losses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;[TRAIN] - Epoch </span><span class="si">{</span><span class="n">epoch</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2"> | Step </span><span class="si">{</span><span class="n">global_steps</span><span class="si">}</span><span class="s2"> | &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Training Loss: </span><span class="si">{</span><span class="n">loss</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> | &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Rel L2 Loss: </span><span class="si">{</span><span class="n">l2_loss</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> | H1 Loss: </span><span class="si">{</span><span class="n">h1_loss</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">global_steps</span> <span class="o">%</span> <span class="n">eval_step_freq</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">global_steps</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">avg_test_loss</span> <span class="o">=</span> <span class="n">run_eval</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">test_dataset</span><span class="p">,</span> <span class="n">epoch</span><span class="p">,</span> <span class="n">global_steps</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">avg_test_loss</span> <span class="o">&lt;</span> <span class="n">best_loss</span><span class="p">:</span>
+                <span class="n">checkpoint_pth</span> <span class="o">=</span> <span class="n">data_dir</span> <span class="o">/</span> <span class="s2">&quot;train_state_best.bin&quot;</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">checkpoint_pth</span><span class="p">,</span> <span class="n">model_hyperparams</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Saved best model checkpoint to disk.&quot;</span><span class="p">)</span>
+
+        <span class="n">global_steps</span> <span class="o">+=</span> <span class="mi">1</span>
+
+<span class="c1"># Checkpoint combined training state</span>
+<span class="n">checkpoint_file</span> <span class="o">=</span> <span class="n">data_dir</span> <span class="o">/</span> <span class="s2">&quot;train_state_final.bin&quot;</span>
+<span class="n">state</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">checkpoint_file</span><span class="p">,</span> <span class="n">model_hyperparams</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Saved final checkpoint to disk.&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Output:</strong>
+<div class="highlight"><pre><span></span><code>Running<span class="w"> </span>training<span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="m">200</span><span class="w"> </span>epochs...
+<span class="o">[</span>TRAIN<span class="o">]</span><span class="w"> </span>-<span class="w"> </span>Epoch<span class="w"> </span><span class="m">01</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Step<span class="w"> </span><span class="m">50</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Loss:<span class="w"> </span><span class="m">18</span>.1956<span class="w"> </span><span class="p">|</span><span class="w"> </span>Rel<span class="w"> </span>L2<span class="w"> </span>Loss:<span class="w"> </span><span class="m">18</span>.2244<span class="w"> </span><span class="p">|</span><span class="w"> </span>H1<span class="w"> </span>Loss:<span class="w"> </span><span class="m">17</span>.9363
+<span class="o">[</span>EVAL<span class="o">]</span><span class="w"> </span>-<span class="w"> </span>Epoch<span class="w"> </span><span class="m">01</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Step<span class="w"> </span><span class="m">50</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Avg<span class="w"> </span>Test<span class="w"> </span>Loss:<span class="w"> </span><span class="m">17</span>.6758<span class="w"> </span><span class="p">|</span><span class="w"> </span>Avg<span class="w"> </span>Test<span class="w"> </span>Rel<span class="w"> </span>L2<span class="w"> </span>Loss:<span class="w"> </span><span class="m">17</span>.6788<span class="w"> </span><span class="p">|</span><span class="w"> </span>Avg<span class="w"> </span>Test<span class="w"> </span>H1<span class="w"> </span>Loss:<span class="w"> </span><span class="m">17</span>.6493
+Saved<span class="w"> </span>best<span class="w"> </span>model<span class="w"> </span>checkpoint<span class="w"> </span>to<span class="w"> </span>disk.
+<span class="o">[</span>TRAIN<span class="o">]</span><span class="w"> </span>-<span class="w"> </span>Epoch<span class="w"> </span><span class="m">02</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Step<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Loss:<span class="w"> </span><span class="m">11</span>.3597<span class="w"> </span><span class="p">|</span><span class="w"> </span>Rel<span class="w"> </span>L2<span class="w"> </span>Loss:<span class="w"> </span><span class="m">11</span>.3912<span class="w"> </span><span class="p">|</span><span class="w"> </span>H1<span class="w"> </span>Loss:<span class="w"> </span><span class="m">11</span>.0770
+<span class="o">[</span>EVAL<span class="o">]</span><span class="w"> </span>-<span class="w"> </span>Epoch<span class="w"> </span><span class="m">02</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Step<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Avg<span class="w"> </span>Test<span class="w"> </span>Loss:<span class="w"> </span><span class="m">10</span>.6736<span class="w"> </span><span class="p">|</span><span class="w"> </span>Avg<span class="w"> </span>Test<span class="w"> </span>Rel<span class="w"> </span>L2<span class="w"> </span>Loss:<span class="w"> </span><span class="m">10</span>.6776<span class="w"> </span><span class="p">|</span><span class="w"> </span>Avg<span class="w"> </span>Test<span class="w"> </span>H1<span class="w"> </span>Loss:<span class="w"> </span><span class="m">10</span>.6370
+Saved<span class="w"> </span>best<span class="w"> </span>model<span class="w"> </span>checkpoint<span class="w"> </span>to<span class="w"> </span>disk.
+<span class="o">[</span>TRAIN<span class="o">]</span><span class="w"> </span>-<span class="w"> </span>Epoch<span class="w"> </span><span class="m">02</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Step<span class="w"> </span><span class="m">150</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Loss:<span class="w"> </span><span class="m">12</span>.1643<span class="w"> </span><span class="p">|</span><span class="w"> </span>Rel<span class="w"> </span>L2<span class="w"> </span>Loss:<span class="w"> </span><span class="m">12</span>.1998<span class="w"> </span><span class="p">|</span><span class="w"> </span>H1<span class="w"> </span>Loss:<span class="w"> </span><span class="m">11</span>.8451
+<span class="o">[</span>EVAL<span class="o">]</span><span class="w"> </span>-<span class="w"> </span>Epoch<span class="w"> </span><span class="m">02</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Step<span class="w"> </span><span class="m">150</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Avg<span class="w"> </span>Test<span class="w"> </span>Loss:<span class="w"> </span><span class="m">11</span>.3615<span class="w"> </span><span class="p">|</span><span class="w"> </span>Avg<span class="w"> </span>Test<span class="w"> </span>Rel<span class="w"> </span>L2<span class="w"> </span>Loss:<span class="w"> </span><span class="m">11</span>.3626<span class="w"> </span><span class="p">|</span><span class="w"> </span>Avg<span class="w"> </span>Test<span class="w"> </span>H1<span class="w"> </span>Loss:<span class="w"> </span><span class="m">11</span>.3517
+...
+<span class="o">[</span>TRAIN<span class="o">]</span><span class="w"> </span>-<span class="w"> </span>Epoch<span class="w"> </span><span class="m">198</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Step<span class="w"> </span><span class="m">19400</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.5992<span class="w"> </span><span class="p">|</span><span class="w"> </span>Rel<span class="w"> </span>L2<span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.5952<span class="w"> </span><span class="p">|</span><span class="w"> </span>H1<span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.6350
+<span class="o">[</span>EVAL<span class="o">]</span><span class="w"> </span>-<span class="w"> </span>Epoch<span class="w"> </span><span class="m">198</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Step<span class="w"> </span><span class="m">19400</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Avg<span class="w"> </span>Test<span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.6241<span class="w"> </span><span class="p">|</span><span class="w"> </span>Avg<span class="w"> </span>Test<span class="w"> </span>Rel<span class="w"> </span>L2<span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.6223<span class="w"> </span><span class="p">|</span><span class="w"> </span>Avg<span class="w"> </span>Test<span class="w"> </span>H1<span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.6401
+<span class="o">[</span>TRAIN<span class="o">]</span><span class="w"> </span>-<span class="w"> </span>Epoch<span class="w"> </span><span class="m">199</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Step<span class="w"> </span><span class="m">19450</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.6066<span class="w"> </span><span class="p">|</span><span class="w"> </span>Rel<span class="w"> </span>L2<span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.6055<span class="w"> </span><span class="p">|</span><span class="w"> </span>H1<span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.6167
+<span class="o">[</span>EVAL<span class="o">]</span><span class="w"> </span>-<span class="w"> </span>Epoch<span class="w"> </span><span class="m">199</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Step<span class="w"> </span><span class="m">19450</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Avg<span class="w"> </span>Test<span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.6243<span class="w"> </span><span class="p">|</span><span class="w"> </span>Avg<span class="w"> </span>Test<span class="w"> </span>Rel<span class="w"> </span>L2<span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.6225<span class="w"> </span><span class="p">|</span><span class="w"> </span>Avg<span class="w"> </span>Test<span class="w"> </span>H1<span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.6410
+<span class="o">[</span>TRAIN<span class="o">]</span><span class="w"> </span>-<span class="w"> </span>Epoch<span class="w"> </span><span class="m">199</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Step<span class="w"> </span><span class="m">19500</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.6286<span class="w"> </span><span class="p">|</span><span class="w"> </span>Rel<span class="w"> </span>L2<span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.6296<span class="w"> </span><span class="p">|</span><span class="w"> </span>H1<span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.6193
+<span class="o">[</span>EVAL<span class="o">]</span><span class="w"> </span>-<span class="w"> </span>Epoch<span class="w"> </span><span class="m">199</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Step<span class="w"> </span><span class="m">19500</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Avg<span class="w"> </span>Test<span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.6249<span class="w"> </span><span class="p">|</span><span class="w"> </span>Avg<span class="w"> </span>Test<span class="w"> </span>Rel<span class="w"> </span>L2<span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.6231<span class="w"> </span><span class="p">|</span><span class="w"> </span>Avg<span class="w"> </span>Test<span class="w"> </span>H1<span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.6413
+<span class="o">[</span>TRAIN<span class="o">]</span><span class="w"> </span>-<span class="w"> </span>Epoch<span class="w"> </span><span class="m">200</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Step<span class="w"> </span><span class="m">19550</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.5977<span class="w"> </span><span class="p">|</span><span class="w"> </span>Rel<span class="w"> </span>L2<span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.5955<span class="w"> </span><span class="p">|</span><span class="w"> </span>H1<span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.6179
+<span class="o">[</span>EVAL<span class="o">]</span><span class="w"> </span>-<span class="w"> </span>Epoch<span class="w"> </span><span class="m">200</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Step<span class="w"> </span><span class="m">19550</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Avg<span class="w"> </span>Test<span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.6241<span class="w"> </span><span class="p">|</span><span class="w"> </span>Avg<span class="w"> </span>Test<span class="w"> </span>Rel<span class="w"> </span>L2<span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.6222<span class="w"> </span><span class="p">|</span><span class="w"> </span>Avg<span class="w"> </span>Test<span class="w"> </span>H1<span class="w"> </span>Loss:<span class="w"> </span><span class="m">0</span>.6405
+Saved<span class="w"> </span>final<span class="w"> </span>checkpoint<span class="w"> </span>to<span class="w"> </span>disk.
+Saved<span class="w"> </span>plot<span class="w"> </span>to<span class="w"> </span>&lt;data_dir&gt;/training_summary.png
+</code></pre></div></p>
+<h4 id="plot-training-progress-and-qualitative-predictions">Plot Training Progress and Qualitative Predictions<a class="headerlink" href="#plot-training-progress-and-qualitative-predictions" title="Permanent link">¤</a></h4>
+<p>We plot the training loss curve and visualize model predictions on the (flattened) spatial grid.</p>
+<p>The model could clearly be improved further (increasing the number of modes for example) but it appears to have started to learn the underlying operator.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Evaluate model on first test sample</span>
+<span class="n">test_x</span><span class="p">,</span> <span class="n">test_y</span> <span class="o">=</span> <span class="n">prepare_stationary_batch</span><span class="p">(</span><span class="n">processor</span><span class="p">,</span> <span class="n">test_dataset</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">]))</span>
+<span class="n">model_fn</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">u</span><span class="p">:</span> <span class="n">state</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">x_in</span><span class="o">=</span><span class="n">test_x</span><span class="p">[</span><span class="s2">&quot;x_in&quot;</span><span class="p">])</span>
+<span class="n">test_pred</span> <span class="o">=</span> <span class="n">model_fn</span><span class="p">(</span><span class="n">test_x</span><span class="p">[</span><span class="s2">&quot;u&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">test_target</span> <span class="o">=</span> <span class="n">test_y</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">test_error</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">test_target</span> <span class="o">-</span> <span class="n">test_pred</span><span class="p">)</span>
+
+<span class="c1"># Set up matplotlib figure</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+
+<span class="c1"># Plot Training Loss</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">losses</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">losses</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;#4F46E5&quot;</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Training Loss&quot;</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Step&quot;</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Loss Value&quot;</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_yscale</span><span class="p">(</span><span class="s2">&quot;log&quot;</span><span class="p">)</span>
+
+<span class="c1"># Disable unused plots</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">&quot;off&quot;</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">&quot;off&quot;</span><span class="p">)</span>
+
+<span class="c1"># Scatter plot of the mesh node coordinates, colored by field values</span>
+<span class="n">x_coords</span> <span class="o">=</span> <span class="n">test_x</span><span class="p">[</span><span class="s2">&quot;x_in&quot;</span><span class="p">][:,</span> <span class="mi">0</span><span class="p">]</span>
+<span class="n">y_coords</span> <span class="o">=</span> <span class="n">test_x</span><span class="p">[</span><span class="s2">&quot;x_in&quot;</span><span class="p">][:,</span> <span class="mi">1</span><span class="p">]</span>
+
+<span class="c1"># Ground Truth</span>
+<span class="n">sc_gt</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x_coords</span><span class="p">,</span> <span class="n">y_coords</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">test_target</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;viridis&quot;</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Ground Truth Field&quot;</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;y&quot;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">sc_gt</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+
+<span class="c1"># Prediction</span>
+<span class="n">sc_pred</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x_coords</span><span class="p">,</span> <span class="n">y_coords</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">test_pred</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;viridis&quot;</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;GeoFNO Prediction&quot;</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;y&quot;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">sc_pred</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+
+<span class="c1"># Absolute Error</span>
+<span class="n">sc_err</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x_coords</span><span class="p">,</span> <span class="n">y_coords</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">test_error</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;plasma&quot;</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Pointwise Error&quot;</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;y&quot;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">sc_err</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">data_dir</span> <span class="o">/</span> <span class="s2">&quot;training_summary.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">150</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Saved plot to </span><span class="si">{</span><span class="n">data_dir</span><span class="si">}</span><span class="s2">/training_summary.png&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</code></pre></div>
+<p><img alt="Advanced training loss curves, learnable weights progression, and qualitative spatial predictions" src="../../images/05_advanced_training_plot.png" /></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "content.code.copy", "toc.integrate", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+      
+    
+  </body>
+</html>

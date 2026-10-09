@@ -1,7 +1,10 @@
 import jax.numpy as jnp
+import jax.random as jr
+import numpy as np
 import pytest
 
-from neojax.nn.positional_embedding import GridEmbeddingNd
+from neojax.nn.positional_embedding import GridEmbeddingNd, SinusoidalEmbedding
+from neojax.tests.conftest import assert_filter_jittable
 
 
 class TestGridEmbeddingNd:
@@ -54,3 +57,62 @@ class TestGridEmbeddingNd:
             emb(jnp.ones((1, 10, 10)))
         with pytest.raises(ValueError):
             emb(jnp.ones((3, 10, 10)))
+
+
+class TestSinusoidalEmbedding:
+    @pytest.mark.parametrize("embedding_type", ["transformer", "nerf"])
+    @pytest.mark.parametrize("d", [1, 2, 3])
+    def test_shapes(self, embedding_type, d):
+        emb = SinusoidalEmbedding(
+            in_channels=d, num_frequencies=4, embedding_type=embedding_type
+        )
+        assert emb.out_channels == 2 * 4 * d
+        x = jr.uniform(jr.key(0), (7, d))
+        assert emb(x).shape == (7, 2 * 4 * d)
+        # arbitrary leading dims
+        assert emb(x.reshape(7, 1, d)).shape == (7, 1, 2 * 4 * d)
+        assert_filter_jittable(emb, x)
+
+    def test_nerf_values(self):
+        emb = SinusoidalEmbedding(
+            in_channels=2, num_frequencies=3, embedding_type="nerf"
+        )
+        x = jnp.array([[0.1, 0.7], [0.3, 0.2]], dtype=jnp.float32)
+        expected = []
+        for p in x:
+            row = []
+            for coord in p:
+                for k in range(3):
+                    row += [
+                        jnp.sin(2.0**k * jnp.pi * coord),
+                        jnp.cos(2.0**k * jnp.pi * coord),
+                    ]
+            expected.append(row)
+        np.testing.assert_allclose(emb(jnp.array(x)), jnp.array(expected), atol=1e-5)
+
+    def test_transformer_values(self):
+        emb = SinusoidalEmbedding(
+            in_channels=1,
+            num_frequencies=4,
+            embedding_type="transformer",
+            max_positions=100,
+        )
+        x = jnp.array([[0.5], [2.0]], dtype=jnp.float32)
+        freqs = (1 / 100) ** (2.0 * jnp.arange(4) / 4)
+        expected = jnp.stack([jnp.sin(x * freqs), jnp.cos(x * freqs)], axis=-1).reshape(
+            2, 8
+        )
+        np.testing.assert_allclose(emb(jnp.array(x)), expected, atol=1e-5)
+
+    def test_invalid_arguments(self):
+        with pytest.raises(ValueError):
+            SinusoidalEmbedding(in_channels=0, num_frequencies=2)
+        with pytest.raises(ValueError):
+            SinusoidalEmbedding(in_channels=2, num_frequencies=0)
+        with pytest.raises(ValueError):
+            SinusoidalEmbedding(in_channels=2, num_frequencies=2, max_positions=0)
+
+    def test_channel_mismatch_raises(self):
+        emb = SinusoidalEmbedding(in_channels=2, num_frequencies=2)
+        with pytest.raises(ValueError):
+            emb(jnp.ones((5, 3)))

@@ -18,7 +18,7 @@ Comparing neural operator results across papers is difficult in practice, for a 
 * **`DataBundle`** gives every dataset the same interface for coordinates, time, discretized fields, physical parameters, and boundary values (see `neojax.data.bundles.data_bundle`).
 * **`BaseSchema`** decouples the dataset representation from model-specific input formats, so any JAX model (Equinox, Flax, or custom) can be benchmarked as long as a schema exists that maps `DataBundle` to its expected input.
 * Steady-state and time-dependent problems are evaluated through separate evaluators (see [Evaluators](evaluators.md)) with a consistent metric interface, so single-step and rollout results aren't conflated.
-* The dataset registry (see [Data Downloading](download.md)) fetches public datasets directly, removing per-paper simulation setup as a variable.
+* The dataset registry (see [Data Downloading](data/download.md)) fetches public datasets directly, removing per-paper simulation setup as a variable.
 
 For an example of a benchmarking setup, see [here](../examples/04_benchmarking_pipeline.md).
 
@@ -30,7 +30,7 @@ The registry contains **37 standardized PDE datasets** (including 20 **PDEgym** 
 
 You can choose any subset to benchmark with and add your own datasets on top if desired.
 
-See the [download](download.md) page for details.
+See the [download](data/download.md) page for details.
 
 ---
 

@@ -1,5 +1,12 @@
 # Datasets API
 
+!!! warning "Outdated Data Pipelines"
+    There are quite a few inconsistencies across `BundleDataset` and
+    the data pipelines in current **neojax** versions. The concept
+    needs a major overhaul (expect it to be happen soon), including
+    the newly added models and with improved end-to-end consistency.
+    You may want to avoid using the respective modules for now.
+
 `neojax` provides dataset classes for loading physical simulation and PDE data, in two formats:
 
 1. **`BundleDataset`**: Returns typed `DataBundle` objects, packaging fields, coordinates, boundary conditions, and parameters into a single structured PyTree. Use this to work with `Schemas` and `BundleProcessor` for normalization and reshaping.

@@ -1,5 +1,12 @@
 # Bundle Processor API
 
+!!! warning "Outdated Data Pipelines"
+    There are quite a few inconsistencies across `BundleProcessor` and
+    the data pipelines in current **neojax** versions. The concept
+    needs a major overhaul (expect it to be happen soon), including
+    the newly added models and with improved end-to-end consistency.
+    You may want to avoid using the respective modules for now.
+
 `BundleProcessor` sits between a dataset and a model. It combines `BaseNormalizer` instances with a `BaseSchema`, so that the glue code between a dataset and a model does not have to change when either one is swapped out. A `BundleProcessor` bundles two operations:
 
 1. **`transform`**: Normalizes a `DataBundle`'s fields, then applies a schema to produce the array (or PyTree) format the model expects.

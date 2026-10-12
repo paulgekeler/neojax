@@ -105,23 +105,87 @@ nav:
   - Home: index.md
   - Neojax vs Neuraloperator Benchmarks: benchmark_neojax_vs_neuraloperator.md
   - API Reference:
-      - Models: api/models.md
-      - Components: api/nn.md
-      - Tensors: api/tensors.md
-      - Metrics: api/metrics.md
+      - Models:
+        - General: api/models/general.md
+        - FNO: api/models/fno.md
+        - TFNO: api/models/tfno.md
+        - DeepONet: api/models/deeponet.md
+        - UNO: api/models/uno.md
+        - GeoFNO: api/models/geo_fno.md
+        - RNO: api/models/rno.md
+        - MgNO: api/models/mgno.md
+        - GiNO: api/models/gino.md
+        - BaseNO: api/models/baseno.md
+      - Components:
+        - General: api/nn/general.md
+        - Spectral Convolutions: api/nn/spectral_conv.md
+        - FNO Blocks: api/nn/fno_blocks.md
+        - Domain Padding: api/nn/domain_padding.md
+        - Positional Embeddings: api/nn/pos_embedding.md
+        - Skip Connections: api/nn/skip_connections.md
+        - Resampling: api/nn/resampling.md
+        - Coordinate Diffeomorphisms: api/nn/coord_diff_maps.md
+        - Multigrid Components: api/nn/multigrid_components.md
+        - Integral Transform: api/nn/integral_transform.md
+        - Neighbor Search: api/nn/neighbor_search.md
+        - Normalization: api/nn/normalization.md
+        - Pointwise MLP: api/nn/pointwise_mlp.md
+        - GNO Block: api/nn/gno_block.md
+        - Mollifier Functions: api/nn/mollifier_functions.md
+      - Tensors:
+        - General: api/tensors/general.md
+        - Dense Tensor: api/tensors/dense_tensor.md
+        - Tucker Tensor: api/tensors/tucker_tensor.md
+        - CP Tensor: api/tensors/cp_tensor.md
+        - Tensor Train Tensor: api/tensors/tt_tensor.md
+        - Base Tensor: api/tensors/base_tensor.md
+      - Metrics:
+        - General: api/metrics/general.md
+        - Lp-Metrics: api/metrics/lp_metrics.md
+        - Sobolev Metrics: api/metrics/sobolev_metrics.md
+        - Physical Metrics: api/metrics/physical_metrics.md
+        - Regression Metrics: api/metrics/regression_metrics.md
+        - Composing Metrics: api/metrics/composing_metrics.md
+        - Base Metric: api/metrics/base_metric.md
+        - Learnable Metric Weights: api/metrics/learnable_metric_weights.md
       - Utilities: api/utils.md
       - Training:
-        - Training: api/training.md
-        - Diagnostics: api/diagnostics.md
+        - Training: api/training/training.md
+        - Diagnostics: api/training/diagnostics.md
       - Data:
-        - Datasets: api/datasets.md
-        - Schemas: api/schemas.md
-        - Processor: api/processor.md
-        - Normalizers: api/normalizers.md
-        - Scales: api/scales.md
-        - Data Bundle: api/bundle.md
-        - Data Downloading: api/download.md
-        - Data Generation: api/data_generation.md
+        - Datasets: api/data/datasets.md
+        - Schemas:
+          - General: api/data/schemas/general.md
+          - Identity Schema: api/data/schemas/identity_schema.md
+          - Concatenate Coords Schema: api/data/schemas/concatenate_coords_schema.md
+          - Concatenate Params Schema: api/data/schemas/concatenate_params_schema.md
+          - Flatten Time Schema: api/data/schemas/flatten_time_schema.md
+          - Flatten to Points Schema: api/data/schemas/flatten_to_points_schema.md
+          - Graph Tuple Schema: api/data/schemas/graph_tuple_schema.md
+          - Mesh Schema: api/data/schemas/mesh_schema.md
+          - Time to Stationary Schema: api/data/schemas/time_to_stationary_schema.md
+          - Points to Grid Schema: api/data/schemas/points_to_grid_schema.md
+          - Bundle Reconstrcut Schema: api/data/schemas/bundle_reconstruct_schema.md
+          - Composed Schema: api/data/schemas/composed_schema.md
+          - Base Schema: api/data/schemas/base_schema.md
+        - Processor: api/data/processor.md
+        - Normalizers:
+          - General: api/data/normalizers/general.md
+          - Unit Gaussian Normalizer: api/data/normalizers/unit_gaussian_normalizer.md
+          - Robust Normalizer: api/data/normalizers/robust_normalizer.md
+          - Min-Max Normalizer: api/data/normalizers/min_max_normalizer.md
+          - Physics Normalizer: api/data/normalizers/physics_normalizer.md
+          - Composed Normalizer: api/data/normalizers/composed_normalizer.md
+          - Base Normalizer: api/data/normalizers/base_normalizer.md
+        - Scales:
+          - General: api/data/scales/general.md
+          - Physical Scale: api/data/scales/physical_scale.md
+          - Characteristic Length Scale: api/data/scales/characteristic_length_scale.md
+          - Reynolds Scale: api/data/scales/reynolds_scale.md
+          - Grid-based Scale: api/data/scales/grid_based_scale.md
+        - Data Bundle: api/data/bundle.md
+        - Data Downloading: api/data/download.md
+        - Data Generation: api/data/data_generation.md
       - PDE Benchmark:
         - Benchmarking: api/benchmark.md
         - Benchmark Config: api/benchmark_config.md

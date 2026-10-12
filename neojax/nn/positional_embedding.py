@@ -1,5 +1,7 @@
 """Implementation of general positional embeddings."""
 
+from typing import Literal
+
 import equinox as eqx
 import jax.numpy as jnp
 from jaxtyping import Array, Float, Inexact
@@ -88,3 +90,141 @@ class GridEmbeddingNd(eqx.Module):
             )
         grid = self._create_grid_nd(x.shape[1:])
         return jnp.concat([x, grid], axis=0)
+
+
+class SinusoidalEmbedding(eqx.Module):
+    r"""Sinusoidal embedding of point coordinates.
+
+    Lifts low-dimensional coordinates to a richer spectral representation
+    by encoding each coordinate as sines and cosines at multiple frequencies.
+    This helps coordinate-based networks, like the kernels of `GNOBlock`,
+    to resolve fine-scale variations.
+
+    For coordinate $p$ and frequency level $k \in \{0, \dots, L-1\}$ the
+    embedding contains the pair $(\sin(\omega_k p), \cos(\omega_k p))$ with
+
+    - `"transformer"`: $\omega_k = M^{-2k/L}$ with $M$ = `max_positions`,
+    - `"nerf"`: $\omega_k = 2^k \pi$.
+
+    The pairs are laid out per coordinate and then per frequency,
+    so the embedding of `d` coordinates has `2 * L * d` channels.
+
+    Args:
+        in_channels: Number of coordinates per point, i.e. the spatial dimension.
+        num_frequencies: Number of frequency levels $L$.
+        embedding_type: Type of embedding, `"transformer"` or `"nerf"`.
+            Default is `"transformer"`.
+        max_positions: Maximum number of positions $M$ of the `"transformer"`
+            embedding. Not used for `"nerf"`. Default is 10000.
+
+    Raises:
+        ValueError: If `in_channels` or `num_frequencies` are not positive integers.
+        ValueError: If `embedding_type` is invalid.
+        ValueError: If `max_positions` is not a positive number.
+
+    ??? info "Internal Attributes"
+        * **in_channels** (`int`): Number of coordinates per point.
+        * **num_frequencies** (`int`): Number of frequency levels.
+        * **embedding_type** (`Literal["transformer", "nerf"]`): Type of embedding.
+        * **max_positions** (`int`): Maximum number of positions
+            of the `"transformer"` embedding.
+
+    !!! info "Aliasing"
+        Make sure the highest frequency resolves the discretization.
+        E.g. for `"nerf"`, $2^{L-1} < N/2$ for $N$ sample points.
+
+    ??? cite
+
+        [Attention Is All You Need](https://arxiv.org/abs/1706.03762)
+
+        ```bibtex
+        @inproceedings{vaswani2017attention,
+            title={Attention is all you need},
+            author={Vaswani, Ashish and Shazeer, Noam and Parmar, Niki and
+                Uszkoreit, Jakob and Jones, Llion and Gomez, Aidan N and
+                Kaiser, {\L}ukasz and Polosukhin, Illia},
+            booktitle={Advances in Neural Information Processing Systems},
+            year={2017}
+        }
+        ```
+
+        [NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis](
+        https://arxiv.org/abs/2003.08934)
+
+        ```bibtex
+        @inproceedings{mildenhall2020nerf,
+            title={NeRF: Representing Scenes as Neural Radiance Fields
+                for View Synthesis},
+            author={Mildenhall, Ben and Srinivasan, Pratul P and Tancik, Matthew
+                and Barron, Jonathan T and Ramamoorthi, Ravi and Ng, Ren},
+            booktitle={European Conference on Computer Vision},
+            year={2020}
+        }
+        ```
+    """
+
+    in_channels: int = eqx.field(static=True)
+    num_frequencies: int = eqx.field(static=True)
+    embedding_type: Literal["transformer", "nerf"] = eqx.field(static=True)
+    max_positions: int = eqx.field(static=True)
+
+    def __init__(
+        self,
+        in_channels: int,
+        num_frequencies: int,
+        embedding_type: Literal["transformer", "nerf"] = "transformer",
+        max_positions: int = 10000,
+    ) -> None:
+        if not isinstance(in_channels, int) or in_channels <= 0:
+            raise ValueError("in_channels must be a positive integer.")
+        if not isinstance(num_frequencies, int) or num_frequencies <= 0:
+            raise ValueError("num_frequencies must be a positive integer.")
+        if embedding_type not in ["transformer", "nerf"]:
+            raise ValueError("embedding_type must be one of ['transformer', 'nerf'].")
+        if not max_positions > 0:
+            raise ValueError("max_positions must be positive.")
+        self.in_channels = in_channels
+        self.num_frequencies = num_frequencies
+        self.embedding_type = embedding_type
+        self.max_positions = max_positions
+
+    @property
+    def out_channels(self) -> int:
+        """Number of channels of the embedding."""
+        return 2 * self.num_frequencies * self.in_channels
+
+    def __call__(self, x: Float[Array, "... in_c"]) -> Float[Array, "... out_c"]:
+        """Embeds the coordinates.
+
+        Note that the coordinates are along the *last* axis,
+        which is the convention for point coordinates (as opposed to
+        channel-first signals).
+
+        Args:
+            x: Point coordinates shaped (..., in_channels),
+                e.g. (n_points, in_channels).
+
+        Returns:
+            The embedded coordinates shaped (..., 2 * num_frequencies * in_channels).
+
+        Raises:
+            ValueError: If the size of the last axis
+                does not match `in_channels`.
+        """
+        if x.ndim < 1 or x.shape[-1] != self.in_channels:
+            raise ValueError(
+                f"Expected coordinates with {self.in_channels} channels along "
+                f"the last axis, but got shape {x.shape}."
+            )
+
+        levels = jnp.arange(self.num_frequencies)
+        if self.embedding_type == "nerf":
+            freqs = 2.0**levels * jnp.pi
+        else:
+            freqs = (1.0 / self.max_positions) ** (2.0 * levels / self.num_frequencies)
+
+        angles = x[..., None] * freqs  # (..., in_c, L)
+        emb = jnp.stack(
+            [jnp.sin(angles), jnp.cos(angles)], axis=-1
+        )  # (..., in_c, L, 2)
+        return emb.reshape(*x.shape[:-1], self.out_channels)

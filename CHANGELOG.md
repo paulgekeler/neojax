@@ -4,9 +4,11 @@ All notable changes to **neojax** will be documented in this file.
 
 ## [Unreleased]
 
-## 2026-10-08
+## 2026-10-09
 
 ### Added
+- Geometry Informed Neural Operator `GiNO`
+  - `GiNO` components: `IntegralTransform`, `GNOBlock`, mollifier functions (`bump`, `quartic`, ...), neighbor search (`radius_neighbor_search`), `SinusoidalEmbedding` nerf- and transformer-style, 
 - Multigrid Neural Operator `MgNO`
   - `MgNO` components: `MgConv`, `MgRestrict`, `MgIter`
 - Minor changes to the documentation
@@ -14,6 +16,7 @@ All notable changes to **neojax** will be documented in this file.
 - Add array broadcasting over PyTrees with `neojax.utils.tree_add_broadcast_to`
 
 ### Changed
+- `PointwiseMLP` now accepts `use_bias` to disable the bias
 - Fixed `PointwiseMLP` broadcasting issue with einsum: if input channels and first layer weight shape don't match, `__call__` raises now
 - Removed `jnp.repeat` on grid channels in `GridEmbeddingNd`. It now correctly appends one grid channel per spatial dimension.
 - Spectral-based models now size their first lifting `PointwiseMLP` layer according to the new `n_extra_channels` property of `GridEmbeddingNd`

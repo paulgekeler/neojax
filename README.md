@@ -12,11 +12,11 @@ It is designed to be fully compatible with all JAX features such as `vmap`, `jit
 
 One of several model architecture **neojax** implements is...
 
-### Example: 2D wave propagation with spatially varying speed (GeoFNO)
+### GeoFNO: 2D wave propagation with spatially varying speed
 
 <img src="docs/images/geofno_readme.png" width="700">
 
-Trained in [`docs/examples/05_advanced_training.ipynb`](docs/examples/05_advanced_training.ipynb) — 
+Trained (partially) in [`docs/examples/05_advanced_training.ipynb`](docs/examples/05_advanced_training.ipynb) — 
 predicts wave fields over heterogeneous media with a single forward pass.
 
 ### Available Features
@@ -38,6 +38,7 @@ Only the following models and features are available:
 - **Recurrent Neural Operator (RNO)**.
 - **Deep Operator Network (DeepONet)**.
 - **Multigrid Neural Operator (MgNO)**.
+- **Geometry Informed Neural Operator (GiNO)**.
 - **Training Orchestration Utilities** (`Trainer` and `TrainState`).
 - Grid-based positional embeddings (`GridEmbeddingNd`).
 - (Relative) $L^{p}$-loss.
@@ -100,7 +101,7 @@ For a more detailed introduction refer to the examples in the documentation.
 | 2D Navier-Stokes (128×128) | 1.2x / 1.1x |
 
 <details>
-<summary>Benchmark plot (1D Burgers, A100)</summary>
+<summary>Benchmark plot (1D Burgers, NVIDIA A100)</summary>
 
 <img src="docs/images/performance_readme.png" width="700">
 

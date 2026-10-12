@@ -13,7 +13,7 @@ class InstanceNorm(eqx.Module):
 
     Computes
     $$
-    \hat{x_{b,c,\mathbf{d}}} = \frac{x_{b,c,\mathbf{d}} - \mu_{b,c}}{\sqrt{\sigma_{b,c}^2 + \eps}}
+    \hat{x_{b,c,\mathbf{d}}} = \frac{x_{b,c,\mathbf{d}} - \mu_{b,c}}{\sqrt{\sigma_{b,c}^2 + \epsilon}}
     $$
     where the mean and variance are over the spatial dimensions only.
     Optionally applies the transform $\gamma_c \hat{x}_{b,c,\mathbf{d}} + \beta_c$

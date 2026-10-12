@@ -120,8 +120,7 @@ JAX is widely used in Scientific Machine Learning (SciML) for its functional tra
 In upcoming releases more models and components will be added in roughly the following order:
 
 1. LocalNO, SFNO, RNO, and others
-2. Graph Neural Operators
-3. Debugging utilities
+2. Debugging utilities
 
 And much more to come!
 

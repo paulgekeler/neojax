@@ -18,6 +18,7 @@ The following models and features are available:
     - **Recurrent Neural Operator (RNO)**.
     - **Deep Operator Network (DeepONet)**.
     - **Multigrid Neural Operator (MgNO)**.
+    - **Geometry Informed Neural Operator (GiNO)**.
     - **Training Orchestration Utilities** (`Trainer` and `TrainState`).
     - Grid-based positional embeddings (`GridEmbeddingNd`).
     - (Relative) $L^{p}$-loss.

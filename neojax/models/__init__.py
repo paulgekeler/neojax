@@ -9,6 +9,7 @@ from neojax.models.gino import GiNO as GiNO
 from neojax.models.mgno import MgNO as MgNO
 from neojax.models.rno import RNO as RNO
 from neojax.models.tfno import TFNO as TFNO
+from neojax.models.transolver import Transolver as Transolver
 from neojax.models.uno import UNO as UNO
 
 __all__ = [
@@ -22,4 +23,5 @@ __all__ = [
     "RNO",
     "MgNO",
     "GiNO",
+    "Transolver",
 ]

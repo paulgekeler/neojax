@@ -16,15 +16,23 @@ from neojax.nn.mollifier_functions import make_weighting_fn as make_weighting_fn
 from neojax.nn.mollifier_functions import octic_cutoff as octic_cutoff
 from neojax.nn.mollifier_functions import quadr_cutoff as quadr_cutoff
 from neojax.nn.mollifier_functions import quartic_cutoff as quartic_cutoff
+from neojax.nn.neighbor_search import Neighbors as Neighbors
+from neojax.nn.neighbor_search import radius_neighbor_search as radius_neighbor_search
+from neojax.nn.normalization import ChannelLayerNorm as ChannelLayerNorm
 from neojax.nn.normalization import InstanceNorm as InstanceNorm
+from neojax.nn.physics_attention import PhysicsAttention as PhysicsAttention
 from neojax.nn.pointwise_mlp import PointwiseMLP as PointwiseMLP
 from neojax.nn.positional_embedding import GridEmbeddingNd as GridEmbeddingNd
+from neojax.nn.positional_embedding import (
+    ReferenceGridEmbeddingNd as ReferenceGridEmbeddingNd,
+)
 from neojax.nn.positional_embedding import SinusoidalEmbedding as SinusoidalEmbedding
 from neojax.nn.resample import Resampler as Resampler
 from neojax.nn.skip_connections import Flattened1dConv as Flattened1dConv
 from neojax.nn.skip_connections import SoftGating as SoftGating
 from neojax.nn.skip_connections import make_skip_connection as make_skip_connection
 from neojax.nn.spectral_conv import SpectralConvNd as SpectralConvNd
+from neojax.nn.transolver_block import TransolverBlock as TransolverBlock
 
 __all__ = [
     "DomainPadding",
@@ -33,9 +41,11 @@ __all__ = [
     "GeoMapNd",
     "GeoSpectralConvNd",
     "InstanceNorm",
+    "ChannelLayerNorm",
     "PointwiseMLP",
     "GridEmbeddingNd",
     "SinusoidalEmbedding",
+    "ReferenceGridEmbeddingNd",
     "Flattened1dConv",
     "SoftGating",
     "make_skip_connection",
@@ -52,4 +62,8 @@ __all__ = [
     "quadr_cutoff",
     "quartic_cutoff",
     "octic_cutoff",
+    "TransolverBlock",
+    "PhysicsAttention",
+    "Neighbors",
+    "radius_neighbor_search",
 ]

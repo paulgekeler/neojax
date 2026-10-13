@@ -230,12 +230,12 @@ class SinusoidalEmbedding(eqx.Module):
         return emb.reshape(*x.shape[:-1], self.out_channels)
 
 
-class ReferenceGridEmbedding(eqx.Module):
+class ReferenceGridEmbeddingNd(eqx.Module):
     r"""Reference-grid distance embedding for n-dim coordinates.
 
     Embeds every point $x \in \mathbb{R}^d$ by its Euclidean distances to the
     nodes $\{r_j\}_{j=1}^{\text{ref}^d}$ of a small, fixed, regular reference grid
-    (a.k.a. "unified position" embedding in Transolver), i.e.
+    (a.k.a. "unified position" embedding in `Transolver`), i.e.
     $$
     e_j(x) = \lVert x - r_j \rVert_2, \quad j = 1, \dots, \text{ref}^d.
     $$

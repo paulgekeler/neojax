@@ -5,7 +5,7 @@ import pytest
 
 from neojax.nn.positional_embedding import (
     GridEmbeddingNd,
-    ReferenceGridEmbedding,
+    ReferenceGridEmbeddingNd,
     SinusoidalEmbedding,
 )
 from neojax.tests.conftest import assert_filter_jittable
@@ -122,43 +122,43 @@ class TestSinusoidalEmbedding:
             emb(jnp.ones((5, 3)))
 
 
-class TestReferenceGridEmbedding:
+class TestReferenceGridEmbeddingNd:
     @pytest.mark.parametrize(
         "ndim,ref,spatial",
         [(1, 4, (12,)), (2, 3, (5, 6)), (3, 2, (4, 3, 2))],
     )
     def test_dimensions(self, ndim, ref, spatial):
-        emb = ReferenceGridEmbedding(ndim=ndim, ref=ref)
+        emb = ReferenceGridEmbeddingNd(ndim=ndim, ref=ref)
         assert emb.n_features == ref**ndim
         coords = emb.regular_grid(spatial)
         assert coords.shape == (ndim, *spatial)
         assert emb(coords).shape == (ref**ndim, *spatial)
 
     def test_point_list_matches_grid(self):
-        emb = ReferenceGridEmbedding(ndim=2, ref=3)
+        emb = ReferenceGridEmbeddingNd(ndim=2, ref=3)
         grid = emb.regular_grid((4, 5))
         as_points = grid.reshape(2, -1)
         assert jnp.allclose(emb(grid).reshape(9, -1), emb(as_points))
 
     def test_distances(self):
-        emb = ReferenceGridEmbedding(ndim=2, ref=2)
+        emb = ReferenceGridEmbeddingNd(ndim=2, ref=2)
         # Reference nodes are the unit square corners (ij ordering)
         out = emb(jnp.array([[0.0], [0.0]]))
         assert jnp.allclose(out[:, 0], jnp.array([0.0, 1.0, 1.0, jnp.sqrt(2.0)]))
 
     def test_grid_boundaries(self):
-        emb = ReferenceGridEmbedding(ndim=1, ref=2, grid_boundaries=((0, 4),))
+        emb = ReferenceGridEmbeddingNd(ndim=1, ref=2, grid_boundaries=((0, 4),))
         out = emb(jnp.array([[1.0]]))
         assert jnp.allclose(out[:, 0], jnp.array([1.0, 3.0]))
 
     def test_raises(self):
         with pytest.raises(ValueError):
-            ReferenceGridEmbedding(ndim=0)
+            ReferenceGridEmbeddingNd(ndim=0)
         with pytest.raises(ValueError):
-            ReferenceGridEmbedding(ndim=2, ref=0)
+            ReferenceGridEmbeddingNd(ndim=2, ref=0)
         with pytest.raises(ValueError):
-            ReferenceGridEmbedding(ndim=2, grid_boundaries=((0, 1),))
-        emb = ReferenceGridEmbedding(ndim=2)
+            ReferenceGridEmbeddingNd(ndim=2, grid_boundaries=((0, 1),))
+        emb = ReferenceGridEmbeddingNd(ndim=2)
         with pytest.raises(ValueError):
             emb(jnp.ones((3, 4)))
         with pytest.raises(ValueError):

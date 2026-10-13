@@ -19,8 +19,9 @@ The following models and features are available:
     - **Deep Operator Network (DeepONet)**.
     - **Multigrid Neural Operator (MgNO)**.
     - **Geometry Informed Neural Operator (GiNO)**.
+    - **Transolver Neural Operator**.
     - **Training Orchestration Utilities** (`Trainer` and `TrainState`).
-    - Grid-based positional embeddings (`GridEmbeddingNd`).
+    - Positional embeddings (`GridEmbeddingNd`, `SinusoidalEmbedding`, `ReferenceGridEmbeddingNd`).
     - (Relative) $L^{p}$-loss.
     - General $W^{k,p}$ Sobolev loss.
     - Loss Compositions.

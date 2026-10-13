@@ -84,3 +84,59 @@ class InstanceNorm(eqx.Module):
         if self.use_bias:
             out = out + self.bias
         return out
+
+
+class ChannelLayerNorm(eqx.Module):
+    r"""Layer normalization over the channel axis of a channel-first signal.
+
+    Wraps `eqx.nn.LayerNorm`, which normalizes the trailing axis of an unbatched
+    input, and applies it independently at every spatial location of a
+    channel-first array, i.e.
+
+    $$
+    \hat{x}_{c,\mathbf{d}} = \gamma_c
+    \frac{x_{c,\mathbf{d}} - \mu_{\mathbf{d}}}{\sqrt{\sigma_{\mathbf{d}}^2 + \epsilon}} + \beta_c,
+    $$
+
+    where the mean and variance are over the channel axis only.
+
+    Args:
+        channels: Number of channels of the input signal.
+        eps: A small value added to the variance for numerical stability.
+            Defaults to `1e-5`.
+        use_weight: Whether to include a learnable affine weight.
+            Defaults to `True`.
+        use_bias: Whether to include a learnable affine bias.
+            Defaults to `True`.
+
+    ??? info "Internal Attributes"
+        These fields store the internal layers state (and weights).
+
+        * **norm** (`eqx.nn.LayerNorm`): The wrapped layer normalization.
+    """
+
+    norm: eqx.nn.LayerNorm
+
+    def __init__(
+        self,
+        channels: int,
+        eps: float = 1e-5,
+        use_weight: bool = True,
+        use_bias: bool = True,
+    ) -> None:
+        self.norm = eqx.nn.LayerNorm(
+            channels, eps=eps, use_weight=use_weight, use_bias=use_bias
+        )
+
+    def __call__(self, x: Inexact[Array, "c ..."]) -> Inexact[Array, "c ..."]:
+        """Compute layer norm over the channel axis.
+
+        Args:
+            x: Input array shaped (channels, d1, ..., dN).
+
+        Returns:
+            Normalized array of the same shape.
+        """
+        flat = x.reshape(x.shape[0], -1)
+        out = jax.vmap(self.norm, in_axes=1, out_axes=1)(flat)
+        return out.reshape(x.shape)

@@ -4,9 +4,12 @@ All notable changes to **neojax** will be documented in this file.
 
 ## [Unreleased]
 
-## 2026-10-09
+## 2026-10-13
 
 ### Added
+- `Transolver` Neural Operator (Transformer with `PhysicsAttention`)
+  - `Transolver` components: `PhysicsAttention`, `ReferenceGridEmbeddingNd`, `ChannelLayerNorm`, `TransolverBlock`
+- Restructured documentation to not show the exposed components of the submodules in the navigation bar
 - Geometry Informed Neural Operator `GiNO`
   - `GiNO` components: `IntegralTransform`, `GNOBlock`, mollifier functions (`bump`, `quartic`, ...), neighbor search (`radius_neighbor_search`), `SinusoidalEmbedding` nerf- and transformer-style, 
 - Multigrid Neural Operator `MgNO`

@@ -115,6 +115,7 @@ nav:
         - RNO: api/models/rno.md
         - MgNO: api/models/mgno.md
         - GiNO: api/models/gino.md
+        - Transolver: api/models/transolver.md
         - BaseNO: api/models/baseno.md
       - Components:
         - General: api/nn/general.md
@@ -132,6 +133,8 @@ nav:
         - Pointwise MLP: api/nn/pointwise_mlp.md
         - GNO Block: api/nn/gno_block.md
         - Mollifier Functions: api/nn/mollifier_functions.md
+        - Transolver Block: api/nn/transolver_block.md
+        - Physics Attention: api/nn/physics_attention.md
       - Tensors:
         - General: api/tensors/general.md
         - Dense Tensor: api/tensors/dense_tensor.md

@@ -228,3 +228,115 @@ class SinusoidalEmbedding(eqx.Module):
             [jnp.sin(angles), jnp.cos(angles)], axis=-1
         )  # (..., in_c, L, 2)
         return emb.reshape(*x.shape[:-1], self.out_channels)
+
+
+class ReferenceGridEmbeddingNd(eqx.Module):
+    r"""Reference-grid distance embedding for n-dim coordinates.
+
+    Embeds every point $x \in \mathbb{R}^d$ by its Euclidean distances to the
+    nodes $\{r_j\}_{j=1}^{\text{ref}^d}$ of a small, fixed, regular reference grid
+    (a.k.a. "unified position" embedding in `Transolver`), i.e.
+    $$
+    e_j(x) = \lVert x - r_j \rVert_2, \quad j = 1, \dots, \text{ref}^d.
+    $$
+    The embedding is well-defined for structured grids and unstructured meshes alike.
+
+    Args:
+        ndim: Number of spatial dimensions (coordinate dimension).
+        ref: Number of reference grid nodes per dimension.
+            The embedding has `ref ** ndim` features. Default is 8.
+        grid_boundaries: Boundaries of the reference grid per dimension
+            ((low, high), ...) or None.
+            Default is None which is a ((0, 1), ...) bounded grid.
+
+    Raises:
+        ValueError: If `ndim` or `ref` is not positive.
+        ValueError: If the number of grid boundaries doesn't match `ndim`.
+
+    ??? info "Internal Attributes"
+        * **ndim** (`int`): Number of spatial dimensions.
+        * **ref** (`int`): Number of reference grid nodes per dimension.
+        * **grid_boundaries** (`tuple[tuple[int | float, int | float], ...]`): Boundaries of the reference grid.
+    """
+
+    ndim: int = eqx.field(static=True)
+    ref: int = eqx.field(static=True)
+    grid_boundaries: tuple[tuple[int | float, int | float], ...] = eqx.field(
+        static=True
+    )
+
+    def __init__(
+        self,
+        ndim: int,
+        ref: int = 8,
+        grid_boundaries: tuple[tuple[int | float, int | float], ...] | None = None,
+    ) -> None:
+        if ndim <= 0:
+            raise ValueError("`ndim` must be a positive integer.")
+        if ref <= 0:
+            raise ValueError("`ref` must be a positive integer.")
+        if grid_boundaries is None:
+            grid_boundaries = tuple([(0.0, 1.0)] * ndim)
+        elif len(grid_boundaries) != ndim:
+            raise ValueError(
+                f"Mismatch of num grid boundaries {len(grid_boundaries)} "
+                f"and ndim {ndim}."
+            )
+        self.ndim = ndim
+        self.ref = ref
+        self.grid_boundaries = tuple(grid_boundaries)
+
+    @property
+    def n_features(self) -> int:
+        """Number of embedding features per point (`ref ** ndim`)."""
+        return self.ref**self.ndim
+
+    def regular_grid(self, resolutions: tuple[int, ...]) -> Float[Array, "d ..."]:
+        """Creates a n-dim regular grid of coordinates on the grid boundaries.
+
+        Args:
+            resolutions: Dimensions (d1, ..., dN) without coordinate axis.
+
+        Returns:
+            Regular grid of coordinates (d, d1, ..., dN).
+
+        Raises:
+            ValueError: If the number of resolutions doesn't match `ndim`.
+        """
+        if len(resolutions) != self.ndim:
+            raise ValueError(
+                f"Mismatch of num resolutions {len(resolutions)} and ndim {self.ndim}."
+            )
+        axes = [
+            jnp.linspace(start, end, res)
+            for res, (start, end) in zip(resolutions, self.grid_boundaries, strict=True)
+        ]
+        return jnp.stack(jnp.meshgrid(*axes, indexing="ij"), axis=0)
+
+    def __call__(self, coords: Float[Array, "d ..."]) -> Float[Array, "g ..."]:
+        """Embeds coordinates by their distances to the reference grid nodes.
+
+        Args:
+            coords: Coordinates shaped (d, d1, ..., dN) or (d, N).
+
+        Returns:
+            Distance features shaped (ref ** d, d1, ..., dN) or (ref ** d, N).
+
+        Raises:
+            ValueError: If the size of the leading axis doesn't match `ndim`.
+        """
+        if coords.shape[0] != self.ndim:
+            raise ValueError(
+                f"Expected coordinates with {self.ndim} components along axis 0, "
+                f"but got shape {coords.shape}."
+            )
+        axes = [
+            jnp.linspace(start, end, self.ref) for start, end in self.grid_boundaries
+        ]
+        nodes = jnp.stack(jnp.meshgrid(*axes, indexing="ij"), axis=-1).reshape(
+            -1, self.ndim
+        )  # (g, d)
+        points = coords.reshape(self.ndim, -1).T  # (n, d)
+        diff = points[None, :, :] - nodes[:, None, :]  # (g, n, d)
+        dist = jnp.sqrt(jnp.sum(jnp.square(diff), axis=-1))  # (g, n)
+        return dist.reshape(nodes.shape[0], *coords.shape[1:])

@@ -4,3 +4,7 @@
     options:
         members:
             - __call__
+
+---
+
+::: neojax.nn.normalization.ChannelLayerNorm

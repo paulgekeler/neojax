@@ -2,11 +2,16 @@
 
 All notable changes to **neojax** will be documented in this file.
 
-## [Unreleased]
+## [Released]
 
-## 2026-10-13
+## [0.4.0] -2026-10-27
 
 ### Added
+- `apply_layer` function in `neojax.models.utils` (also added the respective submodule): Needed to seemlessly pass inputs through layers which may or may not be stateful. If stateful (`model.is_stateful()`), passes the state to the respective layer, otherwise returns state as is.
+- `CNO` Neural Operator (classic variant of the reference with alias-free filtered activations) for n-dim inputs.
+- `CNO` components: `CNOConvBlock`, `CNOResidualBlock`, `CNOLiftProjectBlock`, `FilteredLReLU`, `KaiserFIRFilter` (matches `scipy.signal.firwin` behaviour).
+- `FilteredLReLU` is the pure JAX version of StyleGAN3's CUDA version. Assembles a static filter with `KaiserFIRFilter` that is then compiled into the XLA graph.
+- `scipy` as a dev dependency to check `KaiserFIRFilter` matches `scipy.signal.firwin`.
 - `Transolver` Neural Operator (Transformer with `PhysicsAttention`)
   - `Transolver` components: `PhysicsAttention`, `ReferenceGridEmbeddingNd`, `ChannelLayerNorm`, `TransolverBlock`
 - Restructured documentation to not show the exposed components of the submodules in the navigation bar
@@ -25,8 +30,6 @@ All notable changes to **neojax** will be documented in this file.
 - Spectral-based models now size their first lifting `PointwiseMLP` layer according to the new `n_extra_channels` property of `GridEmbeddingNd`
 - Fix ci workflow failure caused by large arrays used in `test_resample.py`
 - Fix doc workflow by correctly declaring all third library hidden objects in hippogriffe `extra_public_objects` in `mkdocs.yaml`
-
-## [Released]
 
 ## [0.3.0] -2026-09-22
 

@@ -50,6 +50,7 @@ dev = [
     "pydantic",
     "orbax-checkpoint",
     "pyyaml",
+    "scipy",
     "pre-commit",
 ]
 

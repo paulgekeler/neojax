@@ -1,12 +1,17 @@
 """Neural network layers and blocks for neural operators."""
 
+from neojax.nn.cno_blocks import CNOConvBlock as CNOConvBlock
+from neojax.nn.cno_blocks import CNOLiftProjectBlock as CNOLiftProjectBlock
+from neojax.nn.cno_blocks import CNOResidualBlock as CNOResidualBlock
 from neojax.nn.domain_padding import DomainPadding as DomainPadding
+from neojax.nn.filtered_lrelu import FilteredLReLU as FilteredLReLU
 from neojax.nn.fno_blocks import FNOBlock as FNOBlock
 from neojax.nn.fno_blocks import FNOBlocks as FNOBlocks
 from neojax.nn.geo_map import GeoMapNd as GeoMapNd
 from neojax.nn.geo_spectral_conv import GeoSpectralConvNd as GeoSpectralConvNd
 from neojax.nn.gno_block import GNOBlock as GNOBlock
 from neojax.nn.integral_transform import IntegralTransform as IntegralTransform
+from neojax.nn.kaiser_fir_filter import KaiserFIRFilter as KaiserFIRFilter
 from neojax.nn.mg_conv import MgConv as MgConv
 from neojax.nn.mg_iter import MgIter as MgIter
 from neojax.nn.mg_restrict import MgRestrict as MgRestrict
@@ -66,4 +71,9 @@ __all__ = [
     "PhysicsAttention",
     "Neighbors",
     "radius_neighbor_search",
+    "KaiserFIRFilter",
+    "FilteredLReLU",
+    "CNOConvBlock",
+    "CNOResidualBlock",
+    "CNOLiftProjectBlock",
 ]

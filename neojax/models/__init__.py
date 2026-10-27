@@ -1,6 +1,7 @@
 """Models for neural operators."""
 
 from neojax.models.baseno import BaseNO as BaseNO
+from neojax.models.cno import CNO as CNO
 from neojax.models.deeponet import DeepONet as DeepONet
 from neojax.models.deeponet import MLPDeepONet as MLPDeepONet
 from neojax.models.fno import FNO as FNO
@@ -24,4 +25,5 @@ __all__ = [
     "MgNO",
     "GiNO",
     "Transolver",
+    "CNO",
 ]

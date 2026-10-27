@@ -20,6 +20,7 @@ The following models and features are available:
     - **Multigrid Neural Operator (MgNO)**.
     - **Geometry Informed Neural Operator (GiNO)**.
     - **Transolver Neural Operator**.
+    - **Convolutional Neural Operator (CNO)**.
     - **Training Orchestration Utilities** (`Trainer` and `TrainState`).
     - Positional embeddings (`GridEmbeddingNd`, `SinusoidalEmbedding`, `ReferenceGridEmbeddingNd`).
     - (Relative) $L^{p}$-loss.

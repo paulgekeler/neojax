@@ -21,6 +21,12 @@ To provide a clean, modern API, `neojax` enforces the following standard across 
 - Any parameters containing the word `...local_operator...` refer to the local operator.
 - Any parameters containing the word `...residual...` refer to Resnet-style residual connections around components.
 
+### Stateful Layers
+
+Some layers (e.g. batch normalization, as in `CNO`) carry states, like running statistics. Following [Equinox](https://docs.kidger.site/equinox/api/nn/stateful/), such models are created with `eqx.nn.make_with_state` and are called as `out, state = model(x, state)`, inside of a `jax.vmap` with a matching `axis_name`. `model.is_stateful()` tells whether a model (or layer) is stateful. Models can use `apply_layer` to call layers that may or may not be stateful uniformly:
+
+::: neojax.models.utils.apply_layer
+
 ### Stochastic Layers & PRNG Key Management
 
 In `neojax`, models that use stochastic layers (such as dropout) require a JAX PRNG key to generate random masks during training. Because JAX is purely functional, key propagation must be handled explicitly:

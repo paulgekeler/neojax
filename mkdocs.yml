@@ -116,6 +116,7 @@ nav:
         - MgNO: api/models/mgno.md
         - GiNO: api/models/gino.md
         - Transolver: api/models/transolver.md
+        - CNO: api/models/cno.md
         - BaseNO: api/models/baseno.md
       - Components:
         - General: api/nn/general.md
@@ -135,6 +136,9 @@ nav:
         - Mollifier Functions: api/nn/mollifier_functions.md
         - Transolver Block: api/nn/transolver_block.md
         - Physics Attention: api/nn/physics_attention.md
+        - Kaiser FIR Filter: api/nn/kaiser_fir_filter.md
+        - Filtered Leaky ReLU: api/nn/filtered_lrelu.md
+        - CNO Blocks: api/nn/cno_blocks.md
       - Tensors:
         - General: api/tensors/general.md
         - Dense Tensor: api/tensors/dense_tensor.md

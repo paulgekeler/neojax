@@ -1,5 +1,6 @@
 """Globally available test suites and functions."""
 
+import gc
 from collections.abc import Callable
 from typing import Any
 
@@ -15,6 +16,22 @@ install_import_hook(
     modules=["neojax"],
     typechecker="beartype.beartype",
 )
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _clear_jax_caches_per_module():
+    """Frees JAX compilation caches once all tests of a module have run.
+
+    `eqx.filter_jit` keeps every function it wraps alive inside JAX's jit cache,
+    so compiled programs from throwaway test functions are never garbage collected
+    and memory grows over the whole session.
+
+    This increases the total test time by around 25%.
+    """
+    yield
+    eqx.clear_caches()
+    jax.clear_caches()
+    gc.collect()
 
 
 def assert_jittable(func: Callable[..., Any], *args: Any, **kwargs: Any) -> None:

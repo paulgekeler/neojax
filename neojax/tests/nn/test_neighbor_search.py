@@ -4,7 +4,11 @@ import jax.random as jr
 import numpy as np
 import pytest
 
-from neojax.nn.neighbor_search import Neighbors, radius_neighbor_search
+from neojax.nn.neighbor_search import (
+    Neighbors,
+    neighbor_truncation,
+    radius_neighbor_search,
+)
 from neojax.tests.conftest import assert_filter_jittable
 
 
@@ -129,3 +133,22 @@ class TestRadiusNeighborSearch:
             radius_neighbor_search(data, queries, 0.1, max_neighbors=0)
         with pytest.raises(ValueError, match="chunk_size"):
             radius_neighbor_search(data, queries, 0.1, max_neighbors=2, chunk_size=0)
+
+
+class TestNeighborTruncation:
+    def test_fraction_of_full_lists(self):
+        mask = jnp.array([[True, True], [True, False], [False, False], [True, True]])
+        nb = Neighbors(
+            index=jnp.zeros((4, 2), dtype=jnp.int32),
+            mask=mask,
+            sq_dist=jnp.zeros((4, 2)),
+        )
+        np.testing.assert_allclose(neighbor_truncation(nb), 0.5)
+
+    def test_detects_truncation_of_radius_search(self):
+        data = jr.uniform(jr.key(0), (60, 2))
+        queries = data[:10]
+        tight = radius_neighbor_search(data, queries, 0.5, max_neighbors=2)
+        loose = radius_neighbor_search(data, queries, 0.5, max_neighbors=60)
+        assert float(neighbor_truncation(tight)) == 1.0
+        assert float(neighbor_truncation(loose)) == 0.0

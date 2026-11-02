@@ -2,10 +2,12 @@ import jax.numpy as jnp
 import jax.random as jr
 import numpy as np
 import pytest
+from jaxtyping import TypeCheckError
 
 from neojax.nn.positional_embedding import (
     GridEmbeddingNd,
     ReferenceGridEmbeddingNd,
+    RotaryEmbedding,
     SinusoidalEmbedding,
 )
 from neojax.tests.conftest import assert_filter_jittable
@@ -108,6 +110,42 @@ class TestSinusoidalEmbedding:
         )
         np.testing.assert_allclose(emb(jnp.array(x)), expected, atol=1e-5)
 
+    def test_linear_values(self):
+        emb = SinusoidalEmbedding(
+            in_channels=2, num_frequencies=3, embedding_type="linear"
+        )
+        x = jnp.array([[0.1, 0.7], [0.3, 0.2]], dtype=jnp.float32)
+        expected = []
+        for p in x:
+            row = []
+            for coord in p:
+                for k in range(3):
+                    row += [
+                        jnp.sin((k + 1) * jnp.pi * coord),
+                        jnp.cos((k + 1) * jnp.pi * coord),
+                    ]
+            expected.append(row)
+        np.testing.assert_allclose(emb(jnp.array(x)), jnp.array(expected), atol=1e-5)
+
+    def test_linear_matches_gaot_node_position_encoding_up_to_sign(self):
+        # GAOT: phi = pi * (x + 1), angles = k * phi for k = 1..L
+        num_freq = 4
+        emb = SinusoidalEmbedding(
+            in_channels=2, num_frequencies=num_freq, embedding_type="linear"
+        )
+        x = jr.uniform(jr.key(0), (9, 2), minval=-1.0, maxval=1.0)
+        phi = jnp.pi * (x + 1.0)
+        k = jnp.arange(1, num_freq + 1)
+        angles = k[None, :, None] * phi[:, None, :]  # (n, freq, dim)
+        reference = jnp.concatenate([jnp.sin(angles), jnp.cos(angles)], axis=2)
+        reference = reference.reshape(9, -1)
+        # same multiset of channels per point up to sign
+        np.testing.assert_allclose(
+            jnp.sort(jnp.abs(emb(x)), axis=-1),
+            jnp.sort(jnp.abs(reference), axis=-1),
+            atol=1e-4,
+        )
+
     def test_invalid_arguments(self):
         with pytest.raises(ValueError):
             SinusoidalEmbedding(in_channels=0, num_frequencies=2)
@@ -115,6 +153,10 @@ class TestSinusoidalEmbedding:
             SinusoidalEmbedding(in_channels=2, num_frequencies=0)
         with pytest.raises(ValueError):
             SinusoidalEmbedding(in_channels=2, num_frequencies=2, max_positions=0)
+        with pytest.raises((ValueError, TypeCheckError)):
+            SinusoidalEmbedding(
+                in_channels=2, num_frequencies=2, embedding_type="invalid"
+            )
 
     def test_channel_mismatch_raises(self):
         emb = SinusoidalEmbedding(in_channels=2, num_frequencies=2)
@@ -163,3 +205,56 @@ class TestReferenceGridEmbeddingNd:
             emb(jnp.ones((3, 4)))
         with pytest.raises(ValueError):
             emb.regular_grid((4,))
+
+
+class TestRotaryEmbedding:
+    def test_matches_manual_rotation(self):
+        dim, t, theta = 4, 5, 100.0
+        rope = RotaryEmbedding(dim, theta=theta)
+        x = jr.normal(jr.key(0), (dim, t))
+        out = np.asarray(rope(x))
+        xn = np.asarray(x)
+        for pos in range(t):
+            for i in range(dim // 2):
+                angle = pos * theta ** (-2.0 * i / dim)
+                c, s = np.cos(angle), np.sin(angle)
+                a, b = xn[2 * i, pos], xn[2 * i + 1, pos]
+                np.testing.assert_allclose(out[2 * i, pos], a * c - b * s, atol=1e-5)
+                np.testing.assert_allclose(
+                    out[2 * i + 1, pos], a * s + b * c, atol=1e-5
+                )
+
+    def test_position_zero_is_unchanged_and_norm_preserved(self):
+        rope = RotaryEmbedding(8)
+        x = jr.normal(jr.key(1), (3, 8, 6))  # (heads, dim, t)
+        out = rope(x)
+        np.testing.assert_allclose(out[..., 0], x[..., 0], atol=1e-6)
+        np.testing.assert_allclose(
+            jnp.linalg.norm(out, axis=-2), jnp.linalg.norm(x, axis=-2), rtol=1e-5
+        )
+
+    def test_inner_products_depend_on_relative_position_only(self):
+        rope = RotaryEmbedding(8)
+        q = jr.normal(jr.key(2), (8, 1))
+        k = jr.normal(jr.key(3), (8, 1))
+        q_all = rope(jnp.broadcast_to(q, (8, 7)))
+        k_all = rope(jnp.broadcast_to(k, (8, 7)))
+        scores = np.asarray(q_all.T @ k_all)  # (query pos, key pos)
+        for offset in range(-3, 4):
+            diag = np.diagonal(scores, offset=offset)
+            np.testing.assert_allclose(diag, diag[0], atol=1e-4)
+        # and it does depend on the offset
+        assert abs(scores[0, 0] - scores[0, 3]) > 1e-3
+
+    def test_jittable_and_dtype(self):
+        rope = RotaryEmbedding(4)
+        x = jr.normal(jr.key(4), (2, 4, 5))
+        assert_filter_jittable(rope, x)
+        assert rope(x.astype(jnp.bfloat16)).dtype == jnp.bfloat16
+
+    def test_invalid_arguments_raise(self):
+        for kwargs in [{"dim": 0}, {"dim": 3}, {"dim": 4, "theta": 0.0}]:
+            with pytest.raises(ValueError):
+                RotaryEmbedding(**kwargs)
+        with pytest.raises(ValueError):
+            RotaryEmbedding(4)(jnp.ones((6, 5)))

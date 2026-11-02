@@ -104,7 +104,8 @@ class SinusoidalEmbedding(eqx.Module):
     embedding contains the pair $(\sin(\omega_k p), \cos(\omega_k p))$ with
 
     - `"transformer"`: $\omega_k = M^{-2k/L}$ with $M$ = `max_positions`,
-    - `"nerf"`: $\omega_k = 2^k \pi$.
+    - `"nerf"`: $\omega_k = 2^k \pi$,
+    - `"linear"`: $\omega_k = (k + 1) \pi$.
 
     The pairs are laid out per coordinate and then per frequency,
     so the embedding of `d` coordinates has `2 * L * d` channels.
@@ -112,10 +113,10 @@ class SinusoidalEmbedding(eqx.Module):
     Args:
         in_channels: Number of coordinates per point, i.e. the spatial dimension.
         num_frequencies: Number of frequency levels $L$.
-        embedding_type: Type of embedding, `"transformer"` or `"nerf"`.
+        embedding_type: Type of embedding, `"transformer"`, `"nerf"` or `"linear"`.
             Default is `"transformer"`.
         max_positions: Maximum number of positions $M$ of the `"transformer"`
-            embedding. Not used for `"nerf"`. Default is 10000.
+            embedding. Not used for `"nerf"` and `"linear"`. Default is 10000.
 
     Raises:
         ValueError: If `in_channels` or `num_frequencies` are not positive integers.
@@ -125,13 +126,20 @@ class SinusoidalEmbedding(eqx.Module):
     ??? info "Internal Attributes"
         * **in_channels** (`int`): Number of coordinates per point.
         * **num_frequencies** (`int`): Number of frequency levels.
-        * **embedding_type** (`Literal["transformer", "nerf"]`): Type of embedding.
+        * **embedding_type** (`Literal["transformer", "nerf", "linear"]`): Type of embedding.
         * **max_positions** (`int`): Maximum number of positions
             of the `"transformer"` embedding.
 
     !!! info "Aliasing"
         Make sure the highest frequency resolves the discretization.
         E.g. for `"nerf"`, $2^{L-1} < N/2$ for $N$ sample points.
+
+    !!! info "The `"linear"` embedding and GAOT"
+        The node position encoding of the reference GAOT implementation computes
+        $\sin(k \pi (x + 1))$ and $\cos(k \pi (x + 1))$ for $k = 1, \dots, L$. As
+        $\sin(k \pi (x + 1)) = (-1)^k \sin(k \pi x)$ (likewise for the cosine),
+        this is the `"linear"` embedding up to the sign of some channels and the
+        channel order, which a learned network absorbs.
 
     ??? cite
 
@@ -165,22 +173,24 @@ class SinusoidalEmbedding(eqx.Module):
 
     in_channels: int = eqx.field(static=True)
     num_frequencies: int = eqx.field(static=True)
-    embedding_type: Literal["transformer", "nerf"] = eqx.field(static=True)
+    embedding_type: Literal["transformer", "nerf", "linear"] = eqx.field(static=True)
     max_positions: int = eqx.field(static=True)
 
     def __init__(
         self,
         in_channels: int,
         num_frequencies: int,
-        embedding_type: Literal["transformer", "nerf"] = "transformer",
+        embedding_type: Literal["transformer", "nerf", "linear"] = "transformer",
         max_positions: int = 10000,
     ) -> None:
         if not isinstance(in_channels, int) or in_channels <= 0:
             raise ValueError("in_channels must be a positive integer.")
         if not isinstance(num_frequencies, int) or num_frequencies <= 0:
             raise ValueError("num_frequencies must be a positive integer.")
-        if embedding_type not in ["transformer", "nerf"]:
-            raise ValueError("embedding_type must be one of ['transformer', 'nerf'].")
+        if embedding_type not in ["transformer", "nerf", "linear"]:
+            raise ValueError(
+                "embedding_type must be one of ['transformer', 'nerf', 'linear']."
+            )
         if not max_positions > 0:
             raise ValueError("max_positions must be positive.")
         self.in_channels = in_channels
@@ -220,6 +230,8 @@ class SinusoidalEmbedding(eqx.Module):
         levels = jnp.arange(self.num_frequencies)
         if self.embedding_type == "nerf":
             freqs = 2.0**levels * jnp.pi
+        elif self.embedding_type == "linear":
+            freqs = (levels + 1.0) * jnp.pi
         else:
             freqs = (1.0 / self.max_positions) ** (2.0 * levels / self.num_frequencies)
 
@@ -340,3 +352,88 @@ class ReferenceGridEmbeddingNd(eqx.Module):
         diff = points[None, :, :] - nodes[:, None, :]  # (g, n, d)
         dist = jnp.sqrt(jnp.sum(jnp.square(diff), axis=-1))  # (g, n)
         return dist.reshape(nodes.shape[0], *coords.shape[1:])
+
+
+class RotaryEmbedding(eqx.Module):
+    r"""Rotary position embedding (RoPE) of the queries and keys of an attention.
+
+    Rotates consecutive pairs of features $(x_{2i}, x_{2i+1})$ at sequence position $t$
+    by the angle $t \, \theta^{-2i/d}$, where $d$ is the feature dimension `dim` and
+    $\theta$ = `theta`. The inner product of two rotated vectors then depends
+    only on the *relative* distance of their positions.
+
+    The position is the index along the last axis of the input. Higher dimensional
+    positions (e.g. of image patches) have to be flattened first, in which case the
+    embedding encodes the one-dimensional distance in the flattened order.
+
+    Args:
+        dim: Number of features that are rotated, i.e. the size of the second to last
+            axis of the input. Must be even.
+        theta: Base of the geometric progression of the rotation frequencies.
+            Default is 10000.
+
+    Raises:
+        ValueError: If `dim` is not a positive even integer.
+        ValueError: If `theta` is not positive.
+
+    ??? info "Internal Attributes"
+        * **dim** (`int`): Number of rotated features.
+        * **theta** (`float`): Base of the rotation frequencies.
+
+    ??? cite
+
+        [RoFormer: Enhanced Transformer with Rotary Position Embedding](
+        https://arxiv.org/abs/2104.09864)
+
+        ```bibtex
+        @article{su2024roformer,
+            title={Roformer: Enhanced transformer with rotary position embedding},
+            author={Su, Jianlin and Ahmed, Murtadha and Lu, Yu and Pan, Shengfeng
+                and Bo, Wen and Liu, Yunfeng},
+            journal={Neurocomputing},
+            volume={568},
+            pages={127063},
+            year={2024}
+        }
+        ```
+    """
+
+    dim: int = eqx.field(static=True)
+    theta: float = eqx.field(static=True)
+
+    def __init__(self, dim: int, theta: float = 10000.0) -> None:
+        if not isinstance(dim, int) or dim <= 0 or dim % 2 != 0:
+            raise ValueError("dim must be a positive even integer.")
+        if not theta > 0:
+            raise ValueError("theta must be positive.")
+        self.dim = dim
+        self.theta = float(theta)
+
+    def __call__(self, x: Float[Array, "... d t"]) -> Float[Array, "... d t"]:
+        """Rotates the features by their position.
+
+        Args:
+            x: Queries or keys shaped (..., dim, sequence_length), e.g.
+                (heads, head_dim, sequence_length).
+
+        Returns:
+            The rotated array of the same shape.
+
+        Raises:
+            ValueError: If the second to last axis does not have `dim` features.
+        """
+        if x.ndim < 2 or x.shape[-2] != self.dim:
+            raise ValueError(
+                f"Expected input with {self.dim} features along axis -2, "
+                f"but got shape {x.shape}."
+            )
+        seq_len = x.shape[-1]
+        inv_freq = self.theta ** (-jnp.arange(0, self.dim, 2) / self.dim)  # (dim/2,)
+        angles = inv_freq[:, None] * jnp.arange(seq_len)[None, :]  # (dim/2, t)
+        # both elements of a pair are rotated by the same angle
+        cos = jnp.repeat(jnp.cos(angles), 2, axis=0).astype(x.dtype)
+        sin = jnp.repeat(jnp.sin(angles), 2, axis=0).astype(x.dtype)
+
+        pairs = x.reshape(*x.shape[:-2], self.dim // 2, 2, seq_len)
+        rotated = jnp.stack([-pairs[..., 1, :], pairs[..., 0, :]], axis=-2)
+        return x * cos + rotated.reshape(x.shape) * sin

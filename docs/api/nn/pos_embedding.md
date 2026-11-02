@@ -11,3 +11,7 @@ Appends grid coordinate features (e.g., $(x, y)$ positions) to the input tensors
 ---
 
 ::: neojax.nn.positional_embedding.ReferenceGridEmbeddingNd
+
+---
+
+::: neojax.nn.positional_embedding.RotaryEmbedding

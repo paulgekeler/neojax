@@ -9,6 +9,7 @@ import jax.numpy as jnp
 import jax.tree_util as jtu
 from jaxtyping import Array, Float
 
+from neojax.nn.neighbor_attention import NeighborAttention
 from neojax.nn.neighbor_search import Neighbors
 from neojax.nn.pointwise_mlp import PointwiseMLP
 
@@ -38,6 +39,11 @@ class IntegralTransform(eqx.Module):
     the mollified GNO. This makes the output differentiable in the query
     position $x$.
 
+    With an `attention` the kernel values of the neighbors are reweighed by
+    attention weights $\alpha(x, y)$ that are normalized over the neighborhood,
+    i.e. the layer computes $\int \alpha(x, y) \, k(x, y) \, f(y) \, dy$,
+    the Attentional Graph Neural Operator.
+
     Args:
         channel_mlp: The `PointwiseMLP` parametrizing the kernel. Its input
             channels must be the sum of the channels of $y$ and $x$ (and of
@@ -47,7 +53,8 @@ class IntegralTransform(eqx.Module):
         transform_type: Integral transform to compute. Default is `"linear"`.
         reduction: How to aggregate over a neighborhood, by summing (`"sum"`)
             or averaging (`"mean"`). Default is `"sum"`. An empty neighborhood
-            yields zero for both. Forced to `"sum"` if `weighting_fn` is given.
+            yields zero for both. Forced to `"sum"` if `weighting_fn`
+            or `attention` is given.
         weighting_fn: Optional function mapping the squared distances between
             $x$ and its neighbors to weights by which the kernel values are
             multiplied. This is the mollifier of the mollified GNO,
@@ -60,6 +67,11 @@ class IntegralTransform(eqx.Module):
             The kernel `channel_mlp` is evaluated on (num pairs) = `m * k` pairs,
             which can be prohibitively large in memory for wide kernels,
             so this trades speed for memory. Default is `None`.
+        attention: Optional `NeighborAttention` computing the attention weights
+            $\alpha(x, y)$ of the neighbors from the (embedded) coordinates
+            passed to `__call__`. The weights sum to one over the valid neighbors,
+            so the mean reduction is replaced by the `"sum"` reduction.
+            Default is `None`.
 
     Raises:
         ValueError: If `transform_type` or `reduction` is invalid.
@@ -71,6 +83,7 @@ class IntegralTransform(eqx.Module):
         * **reduction** (`str`): Reduction over neighborhoods.
         * **weighting_fn** (`Callable | None`): Weighting function of the squared distances.
         * **query_chunk_size** (`int | None`): Number of output points per chunk.
+        * **attention** (`NeighborAttention | None`): Attention weights of the neighbors.
 
     !!! warning "Sum or mean with a `weighting_fn`"
         Weights near the boundary of a neighborhood are close to zero, but
@@ -94,6 +107,7 @@ class IntegralTransform(eqx.Module):
         eqx.field(static=True)
     )
     query_chunk_size: int | None = eqx.field(static=True)
+    attention: NeighborAttention | None
 
     def __init__(
         self,
@@ -105,6 +119,7 @@ class IntegralTransform(eqx.Module):
         weighting_fn: Callable[[Float[Array, "..."]], Float[Array, "..."]]
         | None = None,
         query_chunk_size: int | None = None,
+        attention: NeighborAttention | None = None,
     ) -> None:
         if transform_type not in [
             "linear_kernelonly",
@@ -125,9 +140,12 @@ class IntegralTransform(eqx.Module):
 
         self.channel_mlp = channel_mlp
         self.transform_type = transform_type
-        self.reduction = "sum" if weighting_fn is not None else reduction
+        self.reduction = (
+            "sum" if weighting_fn is not None or attention is not None else reduction
+        )
         self.weighting_fn = weighting_fn
         self.query_chunk_size = query_chunk_size
+        self.attention = attention
 
     def __call__(
         self,
@@ -162,6 +180,8 @@ class IntegralTransform(eqx.Module):
             ValueError: If the `"linear"` or `"nonlinear"` transforms
                 are used and the kernel output channels do not match the
                 channels of `f_y`.
+            ValueError: If an `attention` is set and its coordinate
+                channels do not match the channels of `x`.
         """
         nonlinear = self.transform_type in ["nonlinear", "nonlinear_kernelonly"]
         if self.transform_type == "linear_kernelonly":
@@ -182,6 +202,12 @@ class IntegralTransform(eqx.Module):
                     f"but outputs {kernel_out_c}."
                 )
 
+        if self.attention is not None and self.attention.in_channels != x.shape[-1]:
+            raise ValueError(
+                f"The attention takes {self.attention.in_channels} coordinate "
+                f"channels, but the coordinates have {x.shape[-1]}."
+            )
+
         def transform_chunk(
             x_chunk: Float[Array, "c e_x"], nb: Neighbors
         ) -> Float[Array, "out_c c"]:
@@ -199,6 +225,8 @@ class IntegralTransform(eqx.Module):
             kernel = self.channel_mlp(jnp.concatenate(features, axis=0))
             if multiply_f:
                 kernel = kernel * f_nb
+            if self.attention is not None:
+                kernel = kernel * self.attention(x_rep, y_nb, nb.mask)[None]
             if quadrature_weights is not None:
                 kernel = kernel * quadrature_weights[nb.index][None]
             if self.weighting_fn is not None:

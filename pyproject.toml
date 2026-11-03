@@ -33,7 +33,7 @@ dependencies = [
   "jax",
   "jaxlib",
   "equinox",
-    "numpy",
+  "numpy",
 ]
 
 [project.optional-dependencies]

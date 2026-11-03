@@ -4,6 +4,20 @@ All notable changes to **neojax** will be documented in this file.
 
 ## [Released]
 
+## [0.5.0] -2026-11-03
+
+### Added
+- `GAOT` Geometry Aware Operator Transformer and its components.
+  - `GAOT` components: `MAGNOBlock`, `NeighborAttention`, `GeometricEmbedding`, `edge_drop`, `MultiHeadAttention` (grouped-query, optional rotary embeddings), `TransformerBlock`, `SwiGLU`, `UViT`, `patchify`/`unpatchify`, `RMSNorm`, `RotaryEmbedding`.
+  - `neighbor_truncation`: fraction of queries whose padded neighbor list is full (and may thus have been truncated).
+  - `SinusoidalEmbedding` has a new `"linear"` embedding type (the node position encoding of GAOT).
+- `conftest.py` utility `assert_reduced_precision_close_to_full`, which compares the outputs of a callable when run in reduced/lower and full precision
+
+### Changes
+- `IntegralTransform` takes an optional `attention` (`NeighborAttention`) that reweighs the neighbors (Attentional GNO). `GNOBlock` exposes it with `attention_type` and `attention_dim`, and accepts `"linear"` as `pos_embedding_type`. The defaults are unchanged.
+- Updated roadmap in `README`.
+- Parallel testing session support with `nox`.
+
 ## [0.4.0] -2026-10-27
 
 ### Added

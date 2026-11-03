@@ -117,6 +117,7 @@ nav:
         - GiNO: api/models/gino.md
         - Transolver: api/models/transolver.md
         - CNO: api/models/cno.md
+        - GAOT: api/models/gaot.md
         - BaseNO: api/models/baseno.md
       - Components:
         - General: api/nn/general.md
@@ -139,6 +140,13 @@ nav:
         - Kaiser FIR Filter: api/nn/kaiser_fir_filter.md
         - Filtered Leaky ReLU: api/nn/filtered_lrelu.md
         - CNO Blocks: api/nn/cno_blocks.md
+        - Neighbor Attention: api/nn/neighbor_attention.md
+        - Geometric Embedding: api/nn/geometric_embedding.md
+        - MAGNO Block: api/nn/magno.md
+        - Multi-Head Attention: api/nn/attention.md
+        - Transformer Block: api/nn/transformer_block.md
+        - U-ViT: api/nn/uvit.md
+        - Patching: api/nn/patching.md
       - Tensors:
         - General: api/tensors/general.md
         - Dense Tensor: api/tensors/dense_tensor.md

@@ -21,8 +21,9 @@ The following models and features are available:
     - **Geometry Informed Neural Operator (GiNO)**.
     - **Transolver Neural Operator**.
     - **Convolutional Neural Operator (CNO)**.
+    - **Geometry Aware Operator Transformer (GAOT)**.
     - **Training Orchestration Utilities** (`Trainer` and `TrainState`).
-    - Positional embeddings (`GridEmbeddingNd`, `SinusoidalEmbedding`, `ReferenceGridEmbeddingNd`).
+    - Positional embeddings (`GridEmbeddingNd`, `SinusoidalEmbedding`, `ReferenceGridEmbeddingNd`, `RotaryEmbedding`).
     - (Relative) $L^{p}$-loss.
     - General $W^{k,p}$ Sobolev loss.
     - Loss Compositions.

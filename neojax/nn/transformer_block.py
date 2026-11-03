@@ -123,6 +123,22 @@ class TransformerBlock(eqx.Module):
 
     ??? cite
 
+        [Attention is all you need](https://proceedings.neurips.cc/
+        paper_files/paper/2017/file/
+        3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf?src_trk=em66c5166b7bad47.12959706424423622)
+
+        ```bibtex
+        @article{vaswani2017attention,
+            title={Attention is all you need},
+            author={Vaswani, Ashish and Shazeer,
+            Noam and Parmar, Niki and Uszkoreit, Jakob and Jones,
+            Llion and Gomez, Aidan N and Kaiser, {\L}ukasz and Polosukhin, Illia},
+            journal={Advances in neural information processing systems},
+            volume={30},
+            year={2017}
+        }
+        ```
+
         [Geometry Aware Operator Transformer as an Efficient and
         Accurate Neural Surrogate for PDEs on Arbitrary Domains](
         https://arxiv.org/abs/2505.18781)

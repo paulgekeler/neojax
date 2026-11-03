@@ -140,3 +140,80 @@ class ChannelLayerNorm(eqx.Module):
         flat = x.reshape(x.shape[0], -1)
         out = jax.vmap(self.norm, in_axes=1, out_axes=1)(flat)
         return out.reshape(x.shape)
+
+
+class RMSNorm(eqx.Module):
+    r"""Root mean square layer normalization over the channel axis.
+
+    Normalizes a channel-first signal at every spatial location by the root
+    mean square of its channels, i.e.
+    $$
+    \hat{x}_{c,\mathbf{d}} = \gamma_c
+    \frac{x_{c,\mathbf{d}}}{\sqrt{\frac{1}{C} \sum_{c'} x_{c',\mathbf{d}}^2 + \epsilon}}.
+    $$
+    In contrast to `ChannelLayerNorm` the mean is not subtracted and there is no bias.
+    The normalization is computed at least in `float32` precision and cast back
+    to the dtype of the input.
+
+    Args:
+        channels: Number of channels of the input signal.
+        eps: A small value added to the mean square for numerical stability.
+            Defaults to `1e-6`.
+
+    Raises:
+        ValueError: If `channels` is not a positive integer.
+
+    ??? info "Internal Attributes"
+        These fields store the internal layers state (and weights).
+
+        * **weight** (`Float[Array, "c"]`): The learnable per-channel scale $\gamma$.
+        * **channels** (`int`): The number of channels.
+        * **eps** (`float`): The numerical stability value.
+
+    ??? cite
+
+        [Root Mean Square Layer Normalization](https://arxiv.org/abs/1910.07467)
+
+        ```bibtex
+        @inproceedings{zhang2019root,
+            title={Root Mean Square Layer Normalization},
+            author={Zhang, Biao and Sennrich, Rico},
+            booktitle={Advances in Neural Information Processing Systems},
+            year={2019}
+        }
+        ```
+    """
+
+    weight: Float[Array, "c"]
+    channels: int = eqx.field(static=True)
+    eps: float = eqx.field(static=True)
+
+    def __init__(self, channels: int, eps: float = 1e-6) -> None:
+        if not isinstance(channels, int) or channels <= 0:
+            raise ValueError("channels must be a positive integer.")
+        self.channels = channels
+        self.eps = eps
+        self.weight = jnp.ones((channels,))
+
+    def __call__(self, x: Inexact[Array, "c ..."]) -> Inexact[Array, "c ..."]:
+        """Compute RMS norm.
+
+        Args:
+            x: Input array shaped (channels, d1, ..., dN).
+
+        Returns:
+            Normalized array of the same shape.
+
+        Raises:
+            ValueError: If the size of the leading axis does not match `channels`.
+        """
+        if x.shape[0] != self.channels:
+            raise ValueError(
+                f"Expected input with {self.channels} channels along axis 0, "
+                f"but got shape {x.shape}."
+            )
+        compute_dtype = jnp.promote_types(x.dtype, jnp.float32)
+        x32 = x.astype(compute_dtype)
+        out = x32 * jax.lax.rsqrt(jnp.mean(x32**2, axis=0, keepdims=True) + self.eps)
+        weight = self.weight.astype(compute_dtype).reshape(-1, *([1] * (x.ndim - 1)))
+        return (out * weight).astype(x.dtype)

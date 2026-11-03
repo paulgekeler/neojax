@@ -3,6 +3,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import numpy as np
 import pytest
+from jaxtyping import TypeCheckError
 
 from neojax.nn.gno_block import GNOBlock
 from neojax.nn.mollifier_functions import make_weighting_fn
@@ -45,7 +46,9 @@ def make_block():
 @pytest.mark.usefixtures("make_data")
 class TestGNOBlock:
     @pytest.mark.parametrize("d", [1, 2, 3])
-    @pytest.mark.parametrize("pos_embedding_type", ["transformer", "nerf", None])
+    @pytest.mark.parametrize(
+        "pos_embedding_type", ["transformer", "nerf", "linear", None]
+    )
     @pytest.mark.parametrize(
         "transform_type",
         ["linear_kernelonly", "linear", "nonlinear_kernelonly", "nonlinear"],
@@ -233,3 +236,58 @@ class TestMollifiedGNOBlock:
             atol=1e-6,
         )
         assert not np.allclose(out, block(y, x, f_y))
+
+    @pytest.mark.parametrize("attention_type", ["cosine", "dot_product"])
+    @pytest.mark.parametrize("pos_embedding_type", ["linear", None])
+    def test_attention(self, attention_type, pos_embedding_type, make_data):
+        y, x, f_y = make_data(2)
+        kwargs = dict(
+            key=jr.key(1),
+            in_channels=C,
+            out_channels=C,
+            coord_dim=2,
+            radius=0.4,
+            max_neighbors=16,
+            reduction="mean",
+            pos_embedding_type=pos_embedding_type,
+            pos_embedding_channels=3,
+            channel_mlp_hidden_layers=(8,),
+            attention_dim=8,
+        )
+        block = GNOBlock(**kwargs, attention_type=attention_type)
+        plain = GNOBlock(**kwargs)
+        embedded_dim = 2 if pos_embedding_type is None else 2 * 3 * 2
+        assert block.integral_transform.attention.in_channels == embedded_dim
+        assert block.integral_transform.reduction == "sum"
+        assert plain.integral_transform.attention is None
+        assert plain.integral_transform.reduction == "mean"
+
+        out = block(y, x, f_y)
+        assert out.shape == (C, M)
+        assert bool(jnp.all(jnp.isfinite(out)))
+        assert not np.allclose(out, plain(y, x, f_y))
+        assert_filter_jittable(block, y, x, f_y)
+
+    def test_attention_does_not_change_kernel_init(self):
+        kwargs = dict(
+            key=jr.key(1), in_channels=C, out_channels=C, coord_dim=2, radius=0.4
+        )
+        plain = GNOBlock(**kwargs)
+        reference_mlp = PointwiseMLP(
+            key=jr.key(1), layers=(plain.kernel_in_channels, 128, 256, 128, C)
+        )
+        for a, b in zip(
+            plain.integral_transform.channel_mlp.weights,
+            reference_mlp.weights,
+            strict=True,
+        ):
+            np.testing.assert_array_equal(a, b)
+
+    def test_invalid_attention_raises(self):
+        kwargs = dict(
+            key=jr.key(1), in_channels=C, out_channels=C, coord_dim=2, radius=0.4
+        )
+        with pytest.raises((ValueError, TypeCheckError)):
+            GNOBlock(**kwargs, attention_type="invalid")
+        with pytest.raises((ValueError, TypeCheckError)):
+            GNOBlock(**kwargs, attention_type="cosine", attention_dim=0)

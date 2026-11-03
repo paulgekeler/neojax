@@ -3,7 +3,7 @@
 import nox
 
 
-@nox.session(python=["3.11", "3.12", "3.13"])
+@nox.session(python=["3.11", "3.12", "3.13"], allow_parallel=True)
 def tests(session):
     session.run_install(
         "uv",

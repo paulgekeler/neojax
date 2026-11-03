@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "neojax-operators"
-version = "0.4.0"
+version = "0.5.0"
 description = "Neural Operators in JAX"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -33,7 +33,7 @@ dependencies = [
   "jax",
   "jaxlib",
   "equinox",
-    "numpy",
+  "numpy",
 ]
 
 [project.optional-dependencies]

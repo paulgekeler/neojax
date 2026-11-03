@@ -1,15 +1,16 @@
 """Globally available test suites and functions."""
 
 import gc
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import Any
 
 import equinox as eqx
 import jax
+import jax.numpy as jnp
 import jax.tree_util as jtu
 import numpy as np
 import pytest
-from jaxtyping import PyTree, install_import_hook
+from jaxtyping import DTypeLike, PyTree, install_import_hook
 
 # setting up beartype with jaxtyping here
 install_import_hook(
@@ -209,3 +210,76 @@ def create_assert_primitive_in_jaxpr(
             prim_in_eqns = True
             break
     assert prim_in_eqns, "Given primitive not in jaxpression"
+
+
+def assert_reduced_precision_close_to_full(
+    func: Callable[[Any], Any],
+    filter_kwarg_names: Sequence[str],
+    reduced_dtype: DTypeLike,
+    full_dtype: DTypeLike = jnp.float32,
+    rtol: float | None = None,
+    atol: float | None = None,
+    rtol_factor: float = 1.0,
+    **kwargs: Any,
+):
+    """Assert running `func` with reduced precision equals full precision run.
+
+    Runs the given function once with the given full precision reference dtype
+    and once with the reduced precision dtype (typically bfloat16/float16)
+    and checks if the outputs match within given tolerances.
+
+    Can be used to check whether precision affects numerical
+    operations or if the implemented dtype casting logic for reduced precision
+    works as expected.
+
+    Args:
+        func: The function with the operations to profile.
+        filter_kwarg_names: Any `func` (keyword) argument names of full precision
+            inputs to not cast to the dtype. Non-inexact dtypes are already ignored
+            by `equinox.is_inexact_array`.
+        reduced_dtype: Reduced precision dtype to test.
+        full_dtype: Full precision reference dtype. Default is `jnp.float32`.
+        rtol: Relative tolerance or `None`. Default is `None`, which uses
+            `rtol = jnp.finfo(reduced_dtype).eps * rtol_factor`.
+        atol: Absolute tolerance or `None`. Default is `None`, which uses
+            `atol = rtol_factor * rtol * <max_per_ref_result_leaf>`, where
+            `<max_per_ref_result_leaf>` is the maximum per output leaf.
+        rtol_factor: Multiplicative factor for `rtol`. Adjust as needed.
+        kwargs: Any (keyword) arguments to pass to `func`.
+    """
+
+    def _cast_inexact(tree, dtype):
+        return jtu.tree_map(
+            lambda a: a.astype(dtype) if eqx.is_inexact_array(a) else a, tree
+        )
+
+    def _call(_dtype, **inputs):
+        return func(
+            **{
+                name: val if name in filter_kwarg_names else _cast_inexact(val, _dtype)
+                for name, val in inputs.items()
+            }
+        )
+
+    red_result = _cast_inexact(_call(reduced_dtype, **kwargs), full_dtype)
+
+    # round reference to reduced dtype, then upcast (don't include quantization error)
+    rounded_inputs = {
+        name: val if name in filter_kwarg_names else _cast_inexact(val, reduced_dtype)
+        for name, val in kwargs.items()
+    }
+    ref_result = _cast_inexact(_call(full_dtype, **rounded_inputs), full_dtype)
+
+    if rtol is None:
+        rtol = float(jnp.finfo(reduced_dtype).eps)
+    rtol = rtol_factor * rtol
+
+    if atol is None:
+        atol = jtu.tree_map(lambda l: rtol * float(jnp.abs(l).max()), ref_result)
+    else:
+        atol = jtu.tree_map(lambda _: atol, ref_result)
+
+    np_allclose = lambda act, des, atol: np.testing.assert_allclose(
+        act, des, rtol=rtol, atol=atol
+    )
+    jtu.tree_map(np_allclose, red_result, ref_result, atol)

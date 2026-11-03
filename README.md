@@ -41,8 +41,9 @@ Only the following models and features are available:
 - **Geometry Informed Neural Operator (GiNO)**.
 - **Transolver Neural Operator**.
 - **Convolutional Neural Operator (CNO)**.
+- **Geometry Aware Operator Transformer (GAOT)**.
 - **Training Orchestration Utilities** (`Trainer` and `TrainState`).
-- Positional embeddings (`GridEmbeddingNd`, `SinusoidalEmbedding`, `ReferenceGridEmbeddingNd`).
+- Positional embeddings (`GridEmbeddingNd`, `SinusoidalEmbedding`, `ReferenceGridEmbeddingNd`, `RotaryEmbedding`).
 - (Relative) $L^{p}$-loss.
 - General $W^{k,p}$ Sobolev loss.
 - Loss Compositions.
@@ -119,10 +120,13 @@ JAX is widely used in Scientific Machine Learning (SciML) for its functional tra
 
 
 ### Roadplan
-In upcoming releases more models and components will be added in roughly the following order:
+In upcoming releases more models and components will be added. There are also important fixes and improvements to make. Changes will be made in roughly the following order:
 
-1. LocalNO, SFNO, RNO, and others
-2. Debugging utilities
+1. Fixing current design flaws in the data pipelines
+2. Foundational models
+3. More example notebooks (multi-gpu training, training graph-based models)
+4. LocalNO, SFNO and remaining models from `neuraloperator`
+5. Debugging utilities (inspecting intermediate layer outputs, ...)
 
 And much more to come!
 
@@ -135,7 +139,7 @@ If you use **neojax** in your research, please cite it using the following BibTe
 ```bibtex
 @software{neojax,
   author = {Paul Gekeler},
-  title = {neojax: Neural Operators in Jax},
+  title = {neojax: Neural Operators in JAX},
   year = {2026},
   url = {https://github.com/paulgekeler/neojax}
 }

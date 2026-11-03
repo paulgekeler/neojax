@@ -8,3 +8,7 @@
 ---
 
 ::: neojax.nn.normalization.ChannelLayerNorm
+
+---
+
+::: neojax.nn.normalization.RMSNorm

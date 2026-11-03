@@ -5,6 +5,7 @@ from neojax.models.cno import CNO as CNO
 from neojax.models.deeponet import DeepONet as DeepONet
 from neojax.models.deeponet import MLPDeepONet as MLPDeepONet
 from neojax.models.fno import FNO as FNO
+from neojax.models.gaot import GAOT as GAOT
 from neojax.models.geo_fno import GeoFNO as GeoFNO
 from neojax.models.gino import GiNO as GiNO
 from neojax.models.mgno import MgNO as MgNO
@@ -26,4 +27,5 @@ __all__ = [
     "GiNO",
     "Transolver",
     "CNO",
+    "GAOT",
 ]

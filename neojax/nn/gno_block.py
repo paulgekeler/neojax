@@ -6,9 +6,11 @@ from typing import Literal
 import equinox as eqx
 import jax
 import jax.numpy as jnp
+import jax.random as jr
 from jaxtyping import Array, Float, PRNGKeyArray
 
 from neojax.nn.integral_transform import IntegralTransform
+from neojax.nn.neighbor_attention import NeighborAttention
 from neojax.nn.neighbor_search import Neighbors, radius_neighbor_search
 from neojax.nn.pointwise_mlp import PointwiseMLP
 from neojax.nn.positional_embedding import SinusoidalEmbedding
@@ -26,6 +28,12 @@ class GNOBlock(eqx.Module):
     The points can be optionally embedded with a `SinusoidalEmbedding`
     before they enter the kernel network.
     The neighbors are always searched with the raw coordinates.
+
+    With an `attention_type` the kernel values of the neighbors are reweighed by
+    normalized attention weights, which makes the block an Attentional Graph
+    Neural Operator (AGNO). The attention acts on the (embedded) coordinates
+    that the kernel network sees and replaces the `"mean"` reduction
+    by the `"sum"` reduction, see `IntegralTransform`.
 
     With a `weighting_fn` the block is a mollified GNO. The hard ball is
     replaced by a smooth weight, so the output is differentiable in the query
@@ -50,7 +58,7 @@ class GNOBlock(eqx.Module):
             between the points and their neighbors, see `make_weighting_fn`.
             Forces the `"sum"` reduction. Default is `None`.
         pos_embedding_type: Type of the `SinusoidalEmbedding` of the points,
-            `"transformer"` or `"nerf"`. `None` disables the embedding.
+            `"transformer"`, `"nerf"` or `"linear"`. `None` disables the embedding.
             Default is `"transformer"`.
         pos_embedding_channels: Number of frequencies of the
             embedding per coordinate. Default is 32.
@@ -68,6 +76,11 @@ class GNOBlock(eqx.Module):
         query_chunk_size: Number of output points to process at a time
             in the neighbor search and the transform to limit peak memory.
             Default is `None`, all points at once.
+        attention_type: Type of the `NeighborAttention` of the neighbors,
+            `"cosine"` or `"dot_product"`. `None` disables the attention.
+            Default is `None`.
+        attention_dim: Dimension of the query and key projections of the
+            `"dot_product"` attention. Default is 64.
 
     Raises:
         ValueError: If `in_channels`, `out_channels`, `coord_dim`,
@@ -76,6 +89,8 @@ class GNOBlock(eqx.Module):
         ValueError: If `transform_type` is `"linear"` or `"nonlinear"`
             and `in_channels` differs from `out_channels`.
         ValueError: If `channel_mlp` has the wrong number of input or output channels.
+        ValueError: If `attention_type` is invalid or `attention_dim`
+            is not a positive integer.
 
     ??? info "Internal Attributes"
         * **pos_embedding** (`SinusoidalEmbedding | None`): Embedding of the points.
@@ -117,13 +132,16 @@ class GNOBlock(eqx.Module):
         reduction: Literal["sum", "mean"] = "sum",
         weighting_fn: Callable[[Float[Array, "..."]], Float[Array, "..."]]
         | None = None,
-        pos_embedding_type: Literal["transformer", "nerf"] | None = "transformer",
+        pos_embedding_type: Literal["transformer", "nerf", "linear"]
+        | None = "transformer",
         pos_embedding_channels: int = 32,
         pos_embedding_max_positions: int = 10000,
         channel_mlp_hidden_layers: Sequence[int] = (128, 256, 128),
         activation: Callable = jax.nn.gelu,
         channel_mlp: PointwiseMLP | None = None,
         query_chunk_size: int | None = None,
+        attention_type: Literal["cosine", "dot_product"] | None = None,
+        attention_dim: int = 64,
     ) -> None:
         for name, value in [
             ("in_channels", in_channels),
@@ -165,6 +183,17 @@ class GNOBlock(eqx.Module):
         if transform_type in ["nonlinear", "nonlinear_kernelonly"]:
             kernel_in_channels += in_channels
 
+        attention = None
+        if attention_type is not None:
+            # only split if used: keeps the kernel init of non-attentional blocks
+            key, attention_key = jr.split(key)
+            attention = NeighborAttention(
+                key=attention_key,
+                in_channels=embedded_dim,
+                attention_type=attention_type,
+                attention_dim=attention_dim,
+            )
+
         if channel_mlp is None:
             channel_mlp = PointwiseMLP(
                 key=key,
@@ -191,6 +220,7 @@ class GNOBlock(eqx.Module):
             reduction=reduction,
             weighting_fn=weighting_fn,
             query_chunk_size=query_chunk_size,
+            attention=attention,
         )
 
     @property

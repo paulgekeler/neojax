@@ -1,8 +1,13 @@
+import equinox as eqx
 import jax
 import jax.numpy as jnp
+import jax.random as jr
 import jax.tree_util as jtu
+import numpy as np
+import pytest
 
-from neojax.nn.normalization import ChannelLayerNorm, InstanceNorm
+from neojax.nn.normalization import ChannelLayerNorm, InstanceNorm, RMSNorm
+from neojax.tests.conftest import assert_filter_jittable
 
 
 class TestInstanceNorm:
@@ -79,3 +84,53 @@ class TestChannelLayerNorm:
         assert norm.norm.weight is None
         assert norm.norm.bias is None
         assert norm(jnp.ones((4, 3))).shape == (4, 3)
+
+
+class TestRMSNorm:
+    @pytest.mark.parametrize("shape", [(5, 7), (5, 4, 3), (5, 3, 4, 2)])
+    def test_matches_manual(self, shape):
+        x = jr.normal(jr.key(0), shape) * 3.0 + 1.0
+        norm = RMSNorm(shape[0], eps=1e-6)
+        out = norm(x)
+        xn = np.asarray(x)
+        expected = xn / np.sqrt((xn**2).mean(axis=0, keepdims=True) + 1e-6)
+        np.testing.assert_allclose(out, expected, rtol=1e-5, atol=1e-6)
+        # mean square over the channels is one at every location
+        np.testing.assert_allclose((np.asarray(out) ** 2).mean(axis=0), 1.0, atol=1e-4)
+
+    def test_weight_scales_channels(self):
+        norm = RMSNorm(3)
+        norm = eqx.tree_at(lambda n: n.weight, norm, jnp.array([1.0, 2.0, 3.0]))
+        x = jr.normal(jr.key(1), (3, 6))
+        np.testing.assert_allclose(
+            norm(x), RMSNorm(3)(x) * jnp.array([1.0, 2.0, 3.0])[:, None], rtol=1e-5
+        )
+
+    def test_scale_invariant(self):
+        x = jr.normal(jr.key(2), (4, 9))
+        norm = RMSNorm(4)
+        np.testing.assert_allclose(norm(x), norm(10.0 * x), rtol=1e-4, atol=1e-5)
+
+    def test_low_precision_is_computed_in_float32(self):
+        x = jr.normal(jr.key(3), (8, 5)).astype(jnp.bfloat16)
+        out = RMSNorm(8)(x)
+        assert out.dtype == jnp.bfloat16
+        np.testing.assert_allclose(
+            np.asarray(out, dtype=np.float32),
+            np.asarray(RMSNorm(8)(x.astype(jnp.float32))),
+            rtol=2e-2,
+            atol=2e-2,
+        )
+
+    def test_jittable_and_grad(self):
+        x = jr.normal(jr.key(4), (4, 6))
+        norm = RMSNorm(4)
+        assert_filter_jittable(norm, x)
+        g = eqx.filter_grad(lambda n: jnp.sum(n(x) ** 2))(norm)
+        assert bool(jnp.all(jnp.isfinite(g.weight)))
+
+    def test_invalid_input_raises(self):
+        with pytest.raises(ValueError):
+            RMSNorm(0)
+        with pytest.raises(ValueError):
+            RMSNorm(4)(jnp.ones((3, 5)))

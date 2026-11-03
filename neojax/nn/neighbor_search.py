@@ -69,7 +69,6 @@ def radius_neighbor_search(
     !!! info "Complexity"
         The search is exact but brute force, $\mathcal{O}(m \cdot n)$ in compute
         and $\mathcal{O}(c \cdot n)$ in memory for chunk size $c$.
-        This is typically fine for the problem sizes considered.
 
     !!! info "Choosing `max_neighbors`"
         Neighbors beyond `max_neighbors` are dropped silently.
@@ -109,3 +108,21 @@ def radius_neighbor_search(
         sq_dist = sq_dist.reshape(-1, k)[:m]
 
     return Neighbors(index=index, mask=mask, sq_dist=sq_dist)
+
+
+def neighbor_truncation(neighbors: Neighbors) -> Float[Array, ""]:
+    """Fraction of queries whose neighbor list is full.
+
+    A query with a full list (every entry is a neighbor) may have had
+    neighbors beyond the nearest `max_neighbors` dropped by
+    `radius_neighbor_search`. The fraction is thus an upper bound
+    on the fraction of truncated neighborhoods. If it is not close to zero,
+    increase `max_neighbors`.
+
+    Args:
+        neighbors: The padded neighbor lists, shaped (m, k).
+
+    Returns:
+        The fraction of queries at capacity, a scalar in [0, 1].
+    """
+    return jnp.mean(jnp.all(neighbors.mask, axis=-1).astype(jnp.float32))

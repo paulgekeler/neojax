@@ -7,6 +7,7 @@ import pytest
 
 from neojax.nn.integral_transform import IntegralTransform
 from neojax.nn.mollifier_functions import make_weighting_fn
+from neojax.nn.neighbor_attention import NeighborAttention
 from neojax.nn.neighbor_search import radius_neighbor_search
 from neojax.nn.pointwise_mlp import PointwiseMLP
 from neojax.tests.conftest import assert_filter_jittable
@@ -234,4 +235,93 @@ class TestIntegralTransform:
     def test_channel_mismatch_for_linear_raises(self, setup, make_transform):
         it = make_transform(setup["key"], "linear", out_c=F_C + 1)
         with pytest.raises(ValueError):
+            it(setup["y"], setup["x"], setup["neighbors"], setup["f_y"])
+
+    @pytest.mark.parametrize("attention_type", ["cosine", "dot_product"])
+    def test_attention_matches_manual(self, setup, attention_type, make_transform):
+        attention = NeighborAttention(jr.key(21), D, attention_type, attention_dim=6)
+        it = make_transform(
+            setup["key"], "linear", reduction="mean", attention=attention
+        )
+        assert it.reduction == "sum"
+        out = it(setup["y"], setup["x"], setup["neighbors"], setup["f_y"])
+
+        y, x, f_y = (np.asarray(setup[n]) for n in ("y", "x", "f_y"))
+        index = np.asarray(setup["neighbors"].index)
+        mask = np.asarray(setup["neighbors"].mask)
+        expected = np.zeros((F_C, M))
+        for i in range(M):
+            js = index[i][mask[i]]
+            if js.size == 0:
+                continue
+            if attention_type == "cosine":
+                logits = np.array(
+                    [
+                        x[i] @ y[j] / (np.linalg.norm(x[i]) * np.linalg.norm(y[j]))
+                        for j in js
+                    ]
+                )
+            else:
+                wq, bq = (
+                    np.asarray(a[0])
+                    for a in (attention.query_proj.weights, attention.query_proj.biases)
+                )
+                wk, bk = (
+                    np.asarray(a[0])
+                    for a in (attention.key_proj.weights, attention.key_proj.biases)
+                )
+                logits = np.array(
+                    [((wq @ x[i] + bq) @ (wk @ y[j] + bk)) / np.sqrt(6) for j in js]
+                )
+            alpha = np.exp(logits - logits.max())
+            alpha /= alpha.sum()
+            for a, j in zip(alpha, js, strict=True):
+                feats = jnp.array(np.concatenate([y[j], x[i]]))[:, None]
+                k = np.asarray(it.channel_mlp(feats))[:, 0]
+                expected[:, i] += a * k * f_y[:, j]
+        np.testing.assert_allclose(out, expected, rtol=1e-4, atol=1e-5)
+        assert_filter_jittable(
+            it, setup["y"], setup["x"], setup["neighbors"], setup["f_y"]
+        )
+
+    def test_attention_with_quadrature_and_weighting_fn(self, setup, make_transform):
+        attention = NeighborAttention(jr.key(21), D)
+        weighting_fn = make_weighting_fn("half_cos", sq_radius=RADIUS**2)
+        it = make_transform(
+            setup["key"], "linear", attention=attention, weighting_fn=weighting_fn
+        )
+        plain = make_transform(setup["key"], "linear", weighting_fn=weighting_fn)
+        args = (setup["y"], setup["x"], setup["neighbors"], setup["f_y"])
+        delta = jr.uniform(jr.key(11), (N,)) + 0.5
+        out = it(*args, quadrature_weights=delta)
+        assert out.shape == (F_C, M)
+        assert bool(jnp.all(jnp.isfinite(out)))
+        # attention weights sum to one, so attention changes the result
+        assert not np.allclose(out, plain(*args, quadrature_weights=delta))
+
+    @pytest.mark.parametrize("chunk", [1, 4, 100])
+    def test_attention_chunked_equals_unchunked(self, setup, chunk, make_transform):
+        attention = NeighborAttention(jr.key(21), D, "dot_product")
+        full = make_transform(setup["key"], "nonlinear", attention=attention)
+        chunked = IntegralTransform(
+            full.channel_mlp,
+            "nonlinear",
+            query_chunk_size=chunk,
+            attention=attention,
+        )
+        args = (setup["y"], setup["x"], setup["neighbors"], setup["f_y"])
+        np.testing.assert_allclose(full(*args), chunked(*args), rtol=1e-5, atol=1e-6)
+
+    def test_attention_empty_neighborhood_is_zero(self, setup, make_transform):
+        attention = NeighborAttention(jr.key(21), D)
+        it = make_transform(setup["key"], "linear", attention=attention)
+        x_far = jnp.array([[10.0, 10.0]])
+        neighbors = radius_neighbor_search(setup["y"], x_far, RADIUS, K)
+        out = it(setup["y"], x_far, neighbors, setup["f_y"])
+        np.testing.assert_array_equal(out, jnp.zeros((F_C, 1)))
+
+    def test_attention_channel_mismatch_raises(self, setup, make_transform):
+        attention = NeighborAttention(jr.key(21), D + 1)
+        it = make_transform(setup["key"], "linear", attention=attention)
+        with pytest.raises(ValueError, match="attention"):
             it(setup["y"], setup["x"], setup["neighbors"], setup["f_y"])

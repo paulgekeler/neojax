@@ -3,7 +3,9 @@ import jax
 import jax.numpy as jnp
 import pytest
 
-from neojax.metrics.lp_metrics import LpMetric
+from neojax.metrics.base_metric import BaseMetric
+from neojax.metrics.lp_metrics import LpMetric, RelativeLpMetric
+from neojax.metrics.regression_metrics import MSEMetric, R2Metric, RMSEMetric
 
 
 class TestBaseMetricWeightReparameterization:
@@ -45,3 +47,53 @@ class TestBaseMetricWeightReparameterization:
         leaves = jax.tree_util.tree_leaves(metric)
         assert len(leaves) == 1
         assert jnp.allclose(leaves[0], metric.raw_weight)
+
+
+class AddModel(eqx.Module):
+    def __call__(self, u, offset):
+        return 2.0 * u + offset
+
+
+class TestPytreeModelInputs:
+    @pytest.fixture
+    def data(self):
+        u = jax.random.normal(jax.random.key(0), (3, 2, 5))
+        offset = jax.random.normal(jax.random.key(1), (3, 2, 5))
+        target = jax.random.normal(jax.random.key(2), (3, 2, 5))
+        return u, offset, target
+
+    def test_vmap_model_conventions(self, data):
+        u, offset, _ = data
+        expected = 2.0 * u + offset
+        model = AddModel()
+        assert jnp.allclose(
+            BaseMetric.vmap_model(model, {"u": u, "offset": offset}), expected
+        )
+        assert jnp.allclose(BaseMetric.vmap_model(model, (u, offset)), expected)
+        assert jnp.allclose(BaseMetric.vmap_model(model, [u, offset]), expected)
+        assert jnp.allclose(BaseMetric.vmap_model(lambda v: 2.0 * v, u), 2.0 * u)
+
+    def test_vmap_model_shares_unbatched_leaves(self, data):
+        u, _, _ = data
+        out = BaseMetric.vmap_model(
+            lambda u, scale, shift, none: scale * u + shift,
+            {"u": u, "scale": 2.0, "shift": jnp.array(0.5), "none": None},
+        )
+        assert jnp.allclose(out, 2.0 * u + 0.5)
+
+    @pytest.mark.parametrize(
+        "metric",
+        [
+            LpMetric(p=2.0),
+            RelativeLpMetric(p=2.0),
+            MSEMetric(),
+            RMSEMetric(),
+            R2Metric(),
+        ],
+    )
+    def test_metrics_evaluate_model_on_dict_input(self, metric, data):
+        u, offset, target = data
+        pred = 2.0 * u + offset
+        from_model = metric(AddModel(), x={"u": u, "offset": offset}, target=target)
+        from_pred = metric(target=target, pred=pred)
+        assert jnp.allclose(from_model, from_pred)

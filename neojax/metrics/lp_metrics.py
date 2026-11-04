@@ -63,7 +63,7 @@ class LpMetric(BaseMetric):
         model: eqx.Module | None = None,
         *,
         target: Float[Array, "b c ..."],
-        x: PyTree[Float[Array, "b ..."]] | None = None,
+        x: PyTree[Any] | None = None,
         pred: Float[Array, "b c ..."] | None = None,
         **kwargs: Any,
     ) -> Float[Array, ""]:
@@ -72,9 +72,10 @@ class LpMetric(BaseMetric):
         Args:
             model: The model being trained. Optional if `pred` is given.
             target: Ground truth array shaped (batch, c, d1, ..., dN).
-            x: Model input array shaped (batch, in_c, d1, ..., dN).
+            x: The model input. An array shaped (batch, in_c, d1, ..., dN) or
+                a pytree of batched inputs.
             pred: Model prediction array.
-                If None, the metric computes `vmap(model)(x)`.
+                If None, the metric evaluates the model on the batch `x`.
 
         Returns:
             Scalar metric.
@@ -87,7 +88,7 @@ class LpMetric(BaseMetric):
                 raise ValueError(
                     "LpMetric requires either 'pred' or both 'model' and 'x'."
                 )
-            pred = jax.vmap(model)(x)
+            pred = self.vmap_model(model, x)
 
         if self.is_p_inf:
 
@@ -154,7 +155,7 @@ class RelativeLpMetric(BaseMetric):
         model: eqx.Module | None = None,
         *,
         target: Float[Array, "b c ..."],
-        x: PyTree[Float[Array, "b ..."]] | None = None,
+        x: PyTree[Any] | None = None,
         pred: Float[Array, "b c ..."] | None = None,
         **kwargs: Any,
     ) -> Float[Array, ""]:
@@ -163,9 +164,10 @@ class RelativeLpMetric(BaseMetric):
         Args:
             model: The model being trained. Optional if `pred` is given.
             target: Ground truth array shaped (batch, c, d1, ..., dN).
-            x: Model input array shaped (batch, in_c, d1, ..., dN).
+            x: The model input. An array shaped (batch, in_c, d1, ..., dN) or
+                a pytree of batched inputs.
             pred: Model prediction array.
-                If None, the metric computes `vmap(model)(x)`.
+                If None, the metric evaluates the model on the batch `x`.
 
         Returns:
             Scalar metric.
@@ -178,7 +180,7 @@ class RelativeLpMetric(BaseMetric):
                 raise ValueError(
                     "RelativeLpMetric requires either 'pred' or both 'model' and 'x'."
                 )
-            pred = jax.vmap(model)(x)
+            pred = self.vmap_model(model, x)
 
         if self.is_p_inf:
 

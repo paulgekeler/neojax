@@ -5,7 +5,7 @@ from typing import Any, final
 import equinox as eqx
 import jax
 import jax.numpy as jnp
-from jaxtyping import Array, Float
+from jaxtyping import Array, Float, PyTree
 from typing_extensions import override
 
 from neojax.metrics.base_metric import BaseMetric
@@ -53,7 +53,7 @@ class MSEMetric(BaseMetric):
         model: eqx.Module | None = None,
         *,
         target: Float[Array, "b c ..."],
-        x: Float[Array, "b in_c ..."] | None = None,
+        x: PyTree[Any] | None = None,
         pred: Float[Array, "b c ..."] | None = None,
         **kwargs: Any,
     ) -> Float[Array, ""]:
@@ -62,9 +62,10 @@ class MSEMetric(BaseMetric):
         Args:
             model: The model being trained. Optional if `pred` is given.
             target: Ground truth array shaped (batch, c, d1, ..., dN).
-            x: Model input array shaped (batch, in_c, d1, ..., dN).
+            x: The model input. An array shaped (batch, in_c, d1, ..., dN) or
+                a pytree of batched inputs.
             pred: Model prediction array.
-                If None, the metric computes `vmap(model)(x)`.
+                If None, the metric evaluates the model on the batch `x`.
 
         Returns:
             Scalar metric.
@@ -77,7 +78,7 @@ class MSEMetric(BaseMetric):
                 raise ValueError(
                     "MSEMetric requires either 'pred' or both 'model' and 'x'."
                 )
-            pred = jax.vmap(model)(x)
+            pred = self.vmap_model(model, x)
 
         def single_metric(p_i, t_i):
             return jnp.mean(jnp.square(t_i - p_i))
@@ -129,7 +130,7 @@ class RMSEMetric(BaseMetric):
         model: eqx.Module | None = None,
         *,
         target: Float[Array, "b c ..."],
-        x: Float[Array, "b in_c ..."] | None = None,
+        x: PyTree[Any] | None = None,
         pred: Float[Array, "b c ..."] | None = None,
         **kwargs: Any,
     ) -> Float[Array, ""]:
@@ -138,9 +139,10 @@ class RMSEMetric(BaseMetric):
         Args:
             model: The model being trained. Optional if `pred` is given.
             target: Ground truth array shaped (batch, c, d1, ..., dN).
-            x: Model input array shaped (batch, in_c, d1, ..., dN).
+            x: The model input. An array shaped (batch, in_c, d1, ..., dN) or
+                a pytree of batched inputs.
             pred: Model prediction array.
-                If None, the metric computes `vmap(model)(x)`.
+                If None, the metric evaluates the model on the batch `x`.
 
         Returns:
             Scalar metric.
@@ -153,7 +155,7 @@ class RMSEMetric(BaseMetric):
                 raise ValueError(
                     "RMSEMetric requires either 'pred' or both 'model' and 'x'."
                 )
-            pred = jax.vmap(model)(x)
+            pred = self.vmap_model(model, x)
 
         def single_metric(p_i, t_i):
             return jnp.sqrt(jnp.mean(jnp.square(t_i - p_i)) + 1e-7)
@@ -206,7 +208,7 @@ class R2Metric(BaseMetric):
         model: eqx.Module | None = None,
         *,
         target: Float[Array, "b c ..."],
-        x: Float[Array, "b in_c ..."] | None = None,
+        x: PyTree[Any] | None = None,
         pred: Float[Array, "b c ..."] | None = None,
         **kwargs: Any,
     ) -> Float[Array, ""]:
@@ -215,9 +217,10 @@ class R2Metric(BaseMetric):
         Args:
             model: The model being trained. Optional if `pred` is given.
             target: Ground truth array shaped (batch, c, d1, ..., dN).
-            x: Model input array shaped (batch, in_c, d1, ..., dN).
+            x: The model input. An array shaped (batch, in_c, d1, ..., dN) or
+                a pytree of batched inputs.
             pred: Model prediction array.
-                If None, the metric computes `vmap(model)(x)`.
+                If None, the metric evaluates the model on the batch `x`.
 
         Returns:
             Scalar metric.
@@ -230,7 +233,7 @@ class R2Metric(BaseMetric):
                 raise ValueError(
                     "R2Metric requires either 'pred' or both 'model' and 'x'."
                 )
-            pred = jax.vmap(model)(x)
+            pred = self.vmap_model(model, x)
 
         def single_metric(p_i, t_i):
             mean_t = jnp.mean(t_i)

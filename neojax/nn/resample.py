@@ -1,3 +1,17 @@
+# Copyright 2026 Paul Gekeler
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Implementation of resampling for n-dimensional interpolation."""
 
 import itertools
@@ -76,7 +90,7 @@ class Resampler(eqx.Module):
     ) -> None:
         self.input_shape = input_shape
         sdims = len(input_shape) - 1
-        if isinstance(res_scale, (int, float)):
+        if isinstance(res_scale, (int | float)):
             if axes is None:
                 # offset axes because of vmap
                 self.axes = tuple(range(sdims - 1))
@@ -183,7 +197,6 @@ class Resampler(eqx.Module):
         )
 
         def single_resample(xs, out):
-
             x_fft = jnp.fft.rfftn(xs, norm="forward", axes=self.axes)
             modes = [
                 min(i, j)

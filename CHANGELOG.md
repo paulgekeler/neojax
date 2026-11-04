@@ -11,6 +11,9 @@ All notable changes to **neojax** will be documented in this file.
 
 
 ### Changes
+- All future versions of neojax are published under Apache-2.0 license instead of MIT.
+  - This makes copying code blocks from other libraries with the same license easier (e.g. segment-ops from `jraph`).
+  - All python files now include the required license header and a `pre-commit` hook checks and adds it.
 - As part of the jet rules patch, `RNO` is the only model that still raises a `KeyError`.
 - Sobolev metric changes:
   - Tests now include verification that the jet patch works and `RNO` still raises.

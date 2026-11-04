@@ -80,6 +80,26 @@ from the project root (or run `nox -j 3` to run the three supported Python versi
 
 Make sure all tests pass before submitting your changes. It is highly recommended to write new tests for any new features or bug fixes.
 
+## Licensing & File Headers
+
+neojax is licensed under the [Apache License 2.0](LICENSE). Every Python file carries the header from [.license-header.txt](.license-header.txt). A [pre-commit](https://pre-commit.com) hook adds it automatically, so you do not have to write it by hand. Enable the hooks once with
+
+```bash
+pre-commit install
+```
+
+and the header is inserted into any Python file you commit that does not have it yet (the commit is aborted once so you can review and re-add the changed files).
+
+### Third-party code
+
+If you copy code from another project (e.g. `jraph`), keep the original license header and copyright notice of that file, mark your changes, and only copy code under a license compatible with Apache 2.0 (Apache 2.0, MIT, BSD). Add the line
+
+```python
+# Third-party license header
+```
+
+at the very top of the copied file, above the original header. The hook skips files containing this line, so the neojax header is not added on top of the original one. Please also mention the copied code and its source in [NOTICE](NOTICE).
+
 ## Git Commit Guidelines
 
 To maintain a clean and understandable project history, please follow these guidelines when making commits:

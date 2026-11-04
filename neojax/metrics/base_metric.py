@@ -1,6 +1,7 @@
 """Implementation of an abstract base metric class."""
 
 from abc import abstractmethod
+from collections.abc import Callable
 from typing import Any
 
 import equinox as eqx
@@ -70,13 +71,57 @@ class BaseMetric(eqx.Module):
             return jax.nn.softplus(self.raw_weight)
         return self.raw_weight
 
+    @staticmethod
+    def batch_axes(x: PyTree[Any]) -> PyTree[int | None]:
+        """Axes along which a batched model input is mapped (`jax.vmap`'s `in_axes`).
+
+        Array leaves with at least one dimension are mapped over their leading batch
+        dimension. `None`, Python scalars and zero-dimensional arrays (e.g. PRNG keys)
+        are not mapped, so every sample receives them unchanged.
+
+        Args:
+            x: Batched model input.
+
+        Returns:
+            A pytree matching the structure of `x` with `0` or `None` as leaves.
+        """
+        return jax.tree.map(
+            lambda leaf: 0 if eqx.is_array(leaf) and jnp.ndim(leaf) > 0 else None, x
+        )
+
+    @staticmethod
+    def vmap_model(
+        model: Callable[..., Any], x: PyTree[Any]
+    ) -> PyTree[Float[Array, "b ..."]]:
+        """Evaluates `model` on a batch of inputs.
+
+        Follows the calling convention of the neojax evaluators. A `dict` is passed
+        to the model as keyword arguments (`model(**x_i)`), a `tuple` or `list` as
+        positional arguments (`model(*x_i)`) and anything else as the single
+        positional argument (`model(x_i)`). The batch dimension is described by
+        `batch_axes`.
+
+        Args:
+            model: The model, evaluated on single samples.
+            x: Batched model input.
+
+        Returns:
+            The batched model output.
+        """
+        axes = BaseMetric.batch_axes(x)
+        if isinstance(x, dict):
+            return jax.vmap(lambda x_i: model(**x_i), in_axes=(axes,))(x)
+        if isinstance(x, tuple | list):
+            return jax.vmap(lambda x_i: model(*x_i), in_axes=(axes,))(x)
+        return jax.vmap(model, in_axes=(axes,))(x)
+
     @abstractmethod
     def __call__(
         self,
         model: eqx.Module | None = None,
         *,
         target: Float[Array, "b c ..."],
-        x: PyTree[Float[Array, "b ..."]] | None = None,
+        x: PyTree[Any] | None = None,
         pred: Float[Array, "b c ..."] | None = None,
         **kwargs: Any,
     ) -> Float[Array, ""]:
@@ -86,7 +131,8 @@ class BaseMetric(eqx.Module):
             model: The neural operator model being evaluated. Default is None.
                 Required for operator-dependent metrics (e.g., Sobolev metrics).
             target: Ground truth array of shape (batch, channels, *spatial).
-            x: Input array to the model of shape (batch, in_channels, *spatial).
+            x: Input to the model. An array of shape (batch, in_channels, *spatial)
+                or a pytree of batched inputs.
                 Required for operator-dependent metrics.
             pred: Optional pre-computed model prediction array of shape
                 (batch, channels, *spatial). If not provided, the metric will

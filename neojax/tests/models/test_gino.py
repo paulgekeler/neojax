@@ -39,7 +39,7 @@ def make_model():
 @pytest.fixture
 def make_inputs():
     def f(coord_dim=2, latent_feature_channels=None, seed=0):
-        k1, k2, k3, k4, k5 = jr.split(jr.key(seed), 5)
+        k1, k2, k3, k4 = jr.split(jr.key(seed), 4)
         axes = [jnp.linspace(0.0, 1.0, GRID)] * coord_dim
         return {
             "u": jr.normal(k1, (IN_C, N)),

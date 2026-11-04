@@ -6,7 +6,7 @@ from typing import Any, Literal, final
 import equinox as eqx
 import jax
 import jax.numpy as jnp
-from jaxtyping import Array, Float, Int
+from jaxtyping import Array, Float, Int, PyTree
 from typing_extensions import override
 
 from neojax.metrics.base_metric import BaseMetric
@@ -63,7 +63,7 @@ class BoundaryConsistencyMetric(BaseMetric):
         model: eqx.Module | None = None,
         *,
         target: Float[Array, "b c ..."] | None = None,
-        x: Float[Array, "b in_c ..."] | None = None,
+        x: PyTree[Any] | None = None,
         pred: Float[Array, "b c ..."] | None = None,
         bc_masks: Int[Array, "b c_bc ..."] | None = None,
         bc_values: Float[Array, "b t c_bc ..."] | None = None,
@@ -74,9 +74,10 @@ class BoundaryConsistencyMetric(BaseMetric):
         Args:
             model: The model being trained. Optional if `pred` is given.
             target: Unused in boundary consistency metric.
-            x: Model input array shaped (batch, in_c, d1, ..., dN).
+            x: The model input. An array shaped (batch, in_c, d1, ..., dN) or
+                a pytree of batched inputs.
             pred: Model prediction array shaped (batch, t, c, d1, ..., dN).
-                If None, the metric computes `vmap(model)(x)`.
+                If None, the metric evaluates the model on the batch `x`.
             bc_masks: Boundary mask array shaped (batch, c_bc, d1, ..., dN).
             bc_values: Boundary values array shaped (batch, t, c_bc, d1, ..., dN).
             **kwargs: Additional arguments.
@@ -92,7 +93,7 @@ class BoundaryConsistencyMetric(BaseMetric):
                 raise ValueError(
                     "BoundaryConsistencyMetric requires either 'pred' or both 'model' and 'x'."
                 )
-            pred = jax.vmap(model)(x)
+            pred = self.vmap_model(model, x)
 
         if bc_masks is None or bc_values is None:
             # If no boundary conditions are defined, consistency is 0
@@ -190,7 +191,7 @@ class ConservationMetric(BaseMetric):
         model: eqx.Module | None = None,
         *,
         target: Float[Array, "b c ..."] | None = None,
-        x: Float[Array, "b in_c ..."] | None = None,
+        x: PyTree[Any] | None = None,
         pred: Float[Array, "b c ..."] | None = None,
         coords: Float[Array, "d ..."] | None = None,
         **kwargs: Any,
@@ -200,9 +201,10 @@ class ConservationMetric(BaseMetric):
         Args:
             model: The model being trained. Optional if `pred` is given.
             target: Unused in conservation metric.
-            x: Model input array shaped (batch, in_c, d1, ..., dN).
+            x: The model input. An array shaped (batch, in_c, d1, ..., dN) or
+                a pytree of batched inputs.
             pred: Model prediction array shaped (batch, t, c, d1, ..., dN).
-                If None, the metric computes `vmap(model)(x)`.
+                If None, the metric evaluates the model on the batch `x`.
             coords: Physical coordinates shaped (d, d1, ..., dN).
             **kwargs: Additional arguments.
 
@@ -221,7 +223,7 @@ class ConservationMetric(BaseMetric):
                 raise ValueError(
                     "ConservationMetric requires either 'pred' or both 'model' and 'x'."
                 )
-            pred = jax.vmap(model)(x)
+            pred = self.vmap_model(model, x)
 
         def single_metric(p_i, coords_val):
             # q shape: [t]
@@ -299,7 +301,7 @@ class ResidualMetric(BaseMetric):
         model: eqx.Module | None = None,
         *,
         target: Float[Array, "b c ..."] | None = None,
-        x: Float[Array, "b in_c ..."] | None = None,
+        x: PyTree[Any] | None = None,
         pred: Float[Array, "b c ..."] | None = None,
         coords: Float[Array, "d ..."] | None = None,
         **kwargs: Any,
@@ -309,9 +311,10 @@ class ResidualMetric(BaseMetric):
         Args:
             model: The model being trained. Optional if `pred` is given.
             target: Unused in residual metric.
-            x: Model input array shaped (batch, in_c, d1, ..., dN).
+            x: The model input. An array shaped (batch, in_c, d1, ..., dN) or
+                a pytree of batched inputs.
             pred: Model prediction array shaped (batch, t, c, d1, ..., dN).
-                If None, the metric computes `vmap(model)(x)`.
+                If None, the metric evaluates the model on the batch `x`.
             coords: Physical coordinates shaped (d, d1, ..., dN).
             **kwargs: Additional arguments.
 
@@ -330,7 +333,7 @@ class ResidualMetric(BaseMetric):
                 raise ValueError(
                     "ResidualMetric requires either 'pred' or both 'model' and 'x'."
                 )
-            pred = jax.vmap(model)(x)
+            pred = self.vmap_model(model, x)
 
         def single_metric(p_i, coords_val):
             residual = self.residual_fn(p_i, coords_val)

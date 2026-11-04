@@ -2,6 +2,21 @@
 
 All notable changes to **neojax** will be documented in this file.
 
+## [Unreleased] -2026-11-04
+
+### Added
+- Local patch for outstanding jet primitive rules: `neojax.utils._jet_rules` now defines the needed jet rules for higher order derivative Sobolev metrics and neojax models. Rules are registered automatically upon import of `neojax.metrics.sobolev_metrics`.
+- All metrics now support PyTree inputs for models (needed in e.g. GiNO, GAOT and GeoFNO):
+  - `BaseMetric` now defines `vmap_model` and `batch_axes` static helper methods. They vmap the model over different PyTree inputs (all metrics use them except `SobolevMetric`).
+
+
+### Changes
+- As part of the jet rules patch, `RNO` is the only model that still raises a `KeyError`.
+- Sobolev metric changes:
+  - Tests now include verification that the jet patch works and `RNO` still raises.
+  - Now takes an optional `wrt` argument specifying the pytree leaf w.r.t. which to differentiate.
+  - The respective sobolev method takes any `Callable` as model now: `_bind_wrt` method returns a callable with the closed over additional kwargs of model (`_select_wrt` finds `wrt` in PyTree).
+
 ## [Released]
 
 ## [0.5.0] -2026-11-03

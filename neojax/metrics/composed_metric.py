@@ -5,10 +5,12 @@ from collections.abc import Callable
 from typing import Any, final
 
 import equinox as eqx
-from jaxtyping import Array, Float
+from jaxtyping import Array, Float, PyTree
 from typing_extensions import override
 
 from neojax.metrics.base_metric import BaseMetric
+
+CompositionCallable = Callable[[*tuple[BaseMetric, ...]], Float[Array, ""]]
 
 
 @final
@@ -46,7 +48,11 @@ class ComposedMetric(BaseMetric):
         metric_1 = LpMetric(p=2)
         metric_2 = RelativeLpMetric(p=2)
 
-        composed_metric = ComposedMetric(metric_1, metric_2, composition_fn=lambda ms: jnp.sum(*ms))
+        composed_metric = ComposedMetric(
+            metric_1,
+            metric_2,
+            composition_fn=lambda ms: jnp.sum(*ms)
+        )
 
         x = jnp.ones((1, 10))
         y = jnp.zeros((1, 10))
@@ -57,11 +63,13 @@ class ComposedMetric(BaseMetric):
     ??? info "Internal Attributes"
         These fields store the internal state of the metric.
 
-        * **weight** (`Float[Array, ""]`): Learnable scalar metric weight. Filter during training to prevent updates.
+        * **weight** (`Float[Array, ""]`): Learnable scalar metric weight.
+            Filter during training to prevent updates.
         * **learnable_weight** (`bool`): Flag indicating whether `weight` is learnable.
-        * **metrics** (`tuple[BaseMetric, ...]`): Composed metric functions. The composition is the sum.
-        * **composition_fn** (`Callable[[BaseMetric, ...], Float[Array, ""]]`): Callable combining the given metrics
-            into a scalar metric.
+        * **metrics** (`tuple[BaseMetric, ...]`): Composed metric functions.
+            The composition is the sum.
+        * **composition_fn** (`Callable[[BaseMetric, ...], Float[Array, ""]]`): Callable
+            combining the given metrics into a scalar metric.
 
     !!! info
         This metric may be called without a `model` by using keywords:
@@ -105,12 +113,12 @@ class ComposedMetric(BaseMetric):
     """
 
     metrics: tuple[BaseMetric, ...]
-    composition_fn: Callable[[BaseMetric, ...], Float[Array, ""]]
+    composition_fn: CompositionCallable
 
     def __init__(
         self,
         *metrics: BaseMetric,
-        composition_fn: Callable[[BaseMetric, ...], Float[Array, ""]],
+        composition_fn: CompositionCallable,
         weight: float = 1.0,
         learnable_weight: bool = False,
     ) -> None:
@@ -135,7 +143,7 @@ class ComposedMetric(BaseMetric):
         model: eqx.Module | None = None,
         *,
         target: Float[Array, "b c ..."],
-        x: Float[Array, "b in_c ..."] | None = None,
+        x: PyTree[Any] | None = None,
         pred: Float[Array, "b c ..."] | None = None,
         return_components: bool = False,
         **kwargs: Any,
@@ -145,7 +153,7 @@ class ComposedMetric(BaseMetric):
         Args:
             model: The model being trained.
             target: Ground truth array.
-            x: Model input array.
+            x: The model input. An array or pytree of batched inputs.
             pred: Model prediction array.
             return_components: If `True`, also returns each metric's
                 own raw (unweighted) value alongside the composed

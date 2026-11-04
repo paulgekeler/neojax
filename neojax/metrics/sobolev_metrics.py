@@ -1,6 +1,7 @@
 """Implementations of various Sobolev metrics."""
 
 import math
+from collections.abc import Callable
 from typing import Any, Literal, final
 
 import equinox as eqx
@@ -8,14 +9,13 @@ import jax
 import jax.numpy as jnp
 import jax.random as jr
 from jax.experimental import jet
-from jaxtyping import Array, Float, PRNGKeyArray
+from jaxtyping import Array, Float, PRNGKeyArray, PyTree
 from typing_extensions import override
 
+# patch jet_rules
+import neojax.utils._jet_rules  # noqa: F401
 from neojax.metrics.base_metric import BaseMetric
-from neojax.models.fno import FNO
-from neojax.models.geo_fno import GeoFNO
-from neojax.models.tfno import TFNO
-from neojax.models.uno import UNO
+from neojax.models.rno import RNO
 
 
 @final
@@ -63,6 +63,12 @@ class SobolevMetric(BaseMetric):
         direction_threshold: Maximum number of basis tensors for derivative seeding
             until "stochastic" method is used. Default is 32.
             Only change if needed.
+        wrt: Entry of the model input `x` to differentiate with respect to if `x`
+            is a pytree. The key if `x` is a `dict` or the index if `x` is a `tuple`
+            or `list`. Required for models with several inputs (e.g. `GiNO` or
+            `GAOT`, where only the function values `u` are differentiated and
+            coordinates are held fixed). Must be `None` if `x` is a single
+            array. Default is `None`.
 
     Raises:
         ValueError: If the order of derivatives is negative or zero.
@@ -83,8 +89,9 @@ class SobolevMetric(BaseMetric):
         * **n_random_samples** (`int`): Number of random vectors to sample.
         * **direction_threshold** (`int`): Maximum number of basis tensors for derivative seeding
             until "stochastic" method is used. Default is 1024.
+        * **wrt** (`str | int | None`): Entry of a pytree input that is differentiated.
 
-    !!! warning
+    !!! warning "Computing higher-order derivatives"
         Computing higher-order derivatives is expensive. Given a function
         $f: \mathbb{R}^n \rightarrow \mathbb{R}^m$ the k-th derivative has
         $m \cdot n^k$ components, so the size of the derivative representation can
@@ -96,11 +103,23 @@ class SobolevMetric(BaseMetric):
     !!! warning "Unsupported primitive rules for jet"
         `jax.experimental.jet` doesn't yet implement rules for all jax primitives.
         If a model uses a primitive without corresponding jet rule
-        (e.g. `neojax.models.GeoFNO` uses `jax.lax.scatter`), the methods
+        (e.g. `neojax.models.RNO` uses `jax.lax.scan`), the methods
         for computing higher order partial derivatives with `jax.experimental.jet`
         (`interpolated_sobolev` and `stochastic_sobolev_stde`) are not available for that model.
-        This condition raises a `KeyError` containing the name of the primitive if encountered.
+        This condition raises a `KeyError` if encountered.
         This is a limitation of `jax.experimental.jet`'s current implementation.
+
+    !!! info "Models with several inputs"
+        `x` can be a pytree of batched inputs. If so, only the entry selected
+        by `wrt` is differentiated, all other entries (e.g. coordinates) are
+        held fixed. Array leaves need a leading batch dimension. `None` and
+        non-array leaves as well as zero-dimensional arrays (e.g. a PRNG key) are
+        passed unchanged to every sample.
+
+        ```python
+        metric = SobolevMetric(k=1, wrt="u")
+        metric(gino, target=target, x={"u": u, "x_in": x_in, "x_latent": x_latent})
+        ```
     """
 
     k: int = eqx.field(static=True)
@@ -111,6 +130,7 @@ class SobolevMetric(BaseMetric):
     diff_mode: Literal["fwd", "bwd", "auto"] = eqx.field(static=True)
     n_random_samples: int = eqx.field(static=True)
     direction_threshold: int = eqx.field(static=True)
+    wrt: str | int | None = eqx.field(static=True)
 
     def __init__(
         self,
@@ -122,6 +142,7 @@ class SobolevMetric(BaseMetric):
         learnable_weight: bool = False,
         n_random_samples: int = 10,
         direction_threshold: int = 1024,
+        wrt: str | int | None = None,
     ) -> None:
         if k <= 0:
             raise ValueError("Order of derivatives cannot be negative or zero.")
@@ -147,10 +168,73 @@ class SobolevMetric(BaseMetric):
         if direction_threshold <= 0:
             raise ValueError("'direction_threshold' must be larger than zero.")
         self.direction_threshold = direction_threshold
+        self.wrt = wrt
+
+    @staticmethod
+    def _select_wrt(x: PyTree[Any], wrt: str | int | None) -> Array:
+        """Returns the entry of the model input `x` that is differentiated.
+
+        Args:
+            x: Model input, either a single array or a `dict`, `tuple` or `list`.
+            wrt: Key (`dict`) or index (`tuple`/`list`) of the differentiated entry.
+                Must be `None` if `x` is a single array.
+
+        Returns:
+            The entry `x[wrt]`, or `x` itself if it is a single array.
+
+        Raises:
+            ValueError: If `wrt` does not match the structure of `x`.
+        """
+        if isinstance(x, dict):
+            if wrt not in x:
+                raise ValueError(
+                    f"`wrt={wrt!r}` is not a key of the model input {list(x)}. "
+                    "Set `wrt` to the entry of `x` to differentiate."
+                )
+            return x[wrt]
+        if isinstance(x, tuple | list):
+            if not isinstance(wrt, int) or not -len(x) <= wrt < len(x):
+                raise ValueError(
+                    f"`wrt={wrt!r}` is not a valid index of the {len(x)} model inputs. "
+                    "Set `wrt` to the index of the entry of `x` to differentiate."
+                )
+            return x[wrt]
+        if wrt is not None:
+            raise ValueError(
+                "`wrt` was given but `x` is a single array. "
+                "`wrt` is only used if `x` is a dict, tuple or list."
+            )
+        return x
+
+    @staticmethod
+    def _bind_wrt(
+        model: Callable[..., Any], x: PyTree[Any], wrt: str | int | None
+    ) -> Callable[[Array], Any]:
+        """Turns `model` into a function of the differentiated entry of `x` only.
+
+        Follows the calling convention of neojax's evaluators: a `dict` is passed to
+        the model as keyword arguments, a `tuple` or `list` as positional arguments and
+        anything else as the single positional argument. All entries of `x` other
+        than `x[wrt]` (e.g. coordinates) are held fixed.
+
+        Args:
+            model: The model.
+            x: Model input of a single sample. `wrt` has to be valid for `x`, see `_select_wrt`.
+            wrt: Key or index of the differentiated entry.
+
+        Returns:
+            A function of the differentiated entry.
+        """
+        if isinstance(x, dict):
+            return lambda u: model(**{**x, wrt: u})
+        if isinstance(x, tuple | list):
+            idx = wrt % len(x)
+            return lambda u: model(*(u if i == idx else v for i, v in enumerate(x)))
+        return model
 
     def exact_sobolev(
         self,
-        model: eqx.Module,
+        model: Callable[..., Any],
         *,
         x: Float[Array, "in_c ..."],
         target: Float[Array, "c ..."],
@@ -191,7 +275,7 @@ class SobolevMetric(BaseMetric):
 
     def _sobolev_jet_from_directions(
         self,
-        model: eqx.Module,
+        model: Callable[..., Any],
         *,
         x: Float[Array, "in_c ..."],
         target: Float[Array, "c ..."],
@@ -248,7 +332,7 @@ class SobolevMetric(BaseMetric):
 
     def interpolated_sobolev(
         self,
-        model: eqx.Module,
+        model: Callable[..., Any],
         *,
         x: Float[Array, "in_c ..."],
         target: Float[Array, "c ..."],
@@ -278,7 +362,7 @@ class SobolevMetric(BaseMetric):
 
     def stochastic_sobolev_first_order(
         self,
-        model: eqx.Module,
+        model: Callable[..., Any],
         *,
         x: Float[Array, "in_c ..."],
         target: Float[Array, "c ..."],
@@ -351,7 +435,7 @@ class SobolevMetric(BaseMetric):
 
     def stochastic_sobolev_stde(
         self,
-        model: eqx.Module,
+        model: Callable[..., Any],
         *,
         x: Float[Array, "in_c ..."],
         target: Float[Array, "c ..."],
@@ -415,7 +499,7 @@ class SobolevMetric(BaseMetric):
         model: eqx.Module | None = None,
         *,
         target: Float[Array, "b c ..."],
-        x: Float[Array, "b in_c ..."] | None = None,
+        x: PyTree[Any] | None = None,
         pred: Float[Array, "b c ..."] | None = None,
         key: PRNGKeyArray | None = None,
         **kwargs: Any,
@@ -425,7 +509,9 @@ class SobolevMetric(BaseMetric):
         Args:
             model: The model being trained.
             target: Ground truth array shaped (b, c, d1, ..., dN).
-            x: Model input array shaped (b, in_c, d1, ..., dN)
+            x: Model input array shaped (b, in_c, d1, ..., dN) or a pytree of
+                batched inputs (`dict`, `tuple` or `list`) if the model has several
+                inputs. In that case `wrt` selects the entry that is differentiated.
             pred: Unused in Sobolev metric.
             key: Optional random key needed for stochastic Sobolev.
                 Default is `None`.
@@ -437,6 +523,7 @@ class SobolevMetric(BaseMetric):
         Raises:
             ValueError: If method is `"stochastic"` but no random key
                 was passed. Or if `model` or `x` are not provided.
+                Or if `wrt` does not match the structure of `x`.
             KeyError: If an outstanding jet primitive rule is encountered
                 for higher order derivatives for some models.
         """
@@ -446,16 +533,11 @@ class SobolevMetric(BaseMetric):
                 "to compute derivatives."
             )
         # Raise KeyError directly if k > 1 for neojax models with known outstanding primitives
-        if (self.k > 1 or self.method == "interpolate") and type(model) in (
-            GeoFNO,
-            FNO,
-            TFNO,
-            UNO,
-        ):
+        if (self.k > 1 or self.method == "interpolate") and type(model) is RNO:
             raise KeyError(
                 f"Known unsupported jet primitive rule encountered for neojax model {type(model)}."
             )
-
+        x_diff = self._select_wrt(x, self.wrt)
         strategy = self.method
         # Determine method based on number of basis tensors used for seeding and
         # max derivative order
@@ -463,7 +545,7 @@ class SobolevMetric(BaseMetric):
         if strategy == "auto":
             # Strip batch dim in directions check
             num_directions = (
-                min(x[0].size, target[0].size) if self.k == 1 else x[0].size
+                min(x_diff[0].size, target[0].size) if self.k == 1 else x_diff[0].size
             )
             if num_directions > self.direction_threshold:
                 strategy = "stochastic"
@@ -476,29 +558,39 @@ class SobolevMetric(BaseMetric):
             raise ValueError("Stochastic Sobolev metric requires a random key.")
 
         def single_metric(x_i, target_i, key_i):
+            # Only the entry `wrt` of the input is differentiated
+            u_i = self._select_wrt(x_i, self.wrt)
+            model_i = self._bind_wrt(model, x_i, self.wrt)
             if strategy == "exact":
-                return self.exact_sobolev(model, x=x_i, target=target_i)
+                return self.exact_sobolev(model_i, x=u_i, target=target_i)
             elif strategy == "interpolate":
-                return self.interpolated_sobolev(model, x=x_i, target=target_i)
+                return self.interpolated_sobolev(model_i, x=u_i, target=target_i)
             else:
                 if self.k == 1:
                     return self.stochastic_sobolev_first_order(
-                        model, x=x_i, target=target_i, key=key_i
+                        model_i, x=u_i, target=target_i, key=key_i
                     )
                 else:
                     return self.stochastic_sobolev_stde(
-                        model, x=x_i, target=target_i, key=key_i
+                        model_i, x=u_i, target=target_i, key=key_i
                     )
 
-        batch_size = x.shape[0]
+        # Batch over array leaves
+        # None, python scalars and 0-d arrays (e.g. PRNG keys) are shared by all samples
+        x_axes = self.batch_axes(x)
+        batch_size = x_diff.shape[0]
         if strategy == "stochastic":
             keys = jr.split(key, batch_size)
-            batch_metrics = jax.vmap(single_metric)(x, target, keys)
+            batch_metrics = jax.vmap(single_metric, in_axes=(x_axes, 0, 0))(
+                x, target, keys
+            )
         else:
 
             def single_metric_no_key(x_i, target_i):
                 return single_metric(x_i, target_i, None)
 
-            batch_metrics = jax.vmap(single_metric_no_key)(x, target)
+            batch_metrics = jax.vmap(single_metric_no_key, in_axes=(x_axes, 0))(
+                x, target
+            )
 
         return self.weight * jnp.mean(batch_metrics)

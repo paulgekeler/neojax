@@ -14,7 +14,7 @@ where $n$ is the input dimension (e.g., number of input channels times spatial g
 
 `neojax` supports three primary methods for computing the derivatives, chosen via the `method` argument:
 
-#### 1. Exact Mode (`method="exact"`, `k==1`)
+**Exact Mode (`method="exact"`, `k==1`)**
 This method computes the exact Jacobian of the model $f(x)$ with respect to $x$ using standard first-order AD.
 
 - **Inner AD Mode (`diff_mode`)**:
@@ -24,21 +24,21 @@ This method computes the exact Jacobian of the model $f(x)$ with respect to $x$ 
 
 *Even when $n \approx m$, `diff_mode="fwd"` is typically superior due to its memory efficiency.*
 
-#### 2. Interpolated Mode (`method="interpolate"`, `k > 1`)
+**Interpolated Mode (`method="interpolate"`, `k > 1`)**
 For higher-order derivatives ($k \ge 2$), `neojax` uses JAX's Taylor-mode AD (`jax.experimental.jet`), which propagates truncated Taylor polynomials.
 
 - The interpolated method evaluates the Taylor expansion of $f(x)$ in all $n$ canonical basis directions.
 - This computes the exact higher-order derivatives, but requires a `jax.vmap` loop over $n$ directions.
 - It is efficient for moderate input dimensions ($n$), but becomes expensive as the spatial resolution or input channel count increases.
 
-#### 3. Stochastic Mode (`method="stochastic"`)
+**Stochastic Mode (`method="stochastic"`)**
 When the input dimension $n$ or output dimension $m$ (in case of `diff_mode="bwd"`) is very large (e.g., high-resolution grids),
 computing the exact or interpolated derivatives is intractable. 
 
 - The stochastic method uses an unbiased estimator of the norm instead of the exact norm.
 - Instead of computing derivatives along every basis direction, it samples a small number of random basis vectors/tensors and evaluates the derivatives only in those random directions.
 
-#### Auto Routing (`method="auto"`)
+**Auto Routing (`method="auto"`)**
 If you set `method="auto"`, `neojax` automatically routes to the most suitable strategy:
 
 - **$k = 1$**: Uses `"exact"` if the input or output dimensions are small (configurable) or `"stochastic"` for large grids (random subsampling of basis vectors).

@@ -1,13 +1,63 @@
+import equinox as eqx
 import jax
 import jax.numpy as jnp
 import jax.random as jr
 import pytest
 from jaxtyping import TypeCheckError
 
-from neojax.metrics.sobolev_metrics import SobolevMetric
+from neojax.metrics import SobolevMetric
 from neojax.models.fno import FNO
+from neojax.models.gino import GiNO
+from neojax.models.rno import RNO
 from neojax.nn.pointwise_mlp import PointwiseMLP
 from neojax.tests.conftest import assert_filter_jittable
+
+
+class KwargsModel(eqx.Module):
+    """Model with a second (non-differentiated) input passed as keyword."""
+
+    mlp: PointwiseMLP
+
+    def __call__(self, u, offset):
+        return self.mlp(u) + offset
+
+
+class ArgsModel(eqx.Module):
+    """Model with a second (non-differentiated) input passed positionally first."""
+
+    mlp: PointwiseMLP
+
+    def __call__(self, offset, u):
+        return self.mlp(u) + offset
+
+
+class SharedInputsModel(eqx.Module):
+    mlp: PointwiseMLP
+
+    def __call__(self, u, scale, shift, unused):
+        assert unused is None
+        return scale * self.mlp(u) + shift
+
+
+class AffineModel(eqx.Module):
+    """Single-input counterpart of `SharedInputsModel` with fixed scale and shift."""
+
+    mlp: PointwiseMLP
+    scale: float
+    shift: float
+
+    def __call__(self, u):
+        return self.scale * self.mlp(u) + self.shift
+
+
+class ShiftedModel(eqx.Module):
+    """Single-input model with the offset fixed."""
+
+    mlp: PointwiseMLP
+    offset: jax.Array
+
+    def __call__(self, u):
+        return self.mlp(u) + self.offset
 
 
 @pytest.fixture(scope="class")
@@ -145,22 +195,148 @@ class TestSobolevMetric:
         metric_bwd = metric_fn_auto(mlp_bwd, x=inputs_bwd, target=targets_bwd)
         assert not jnp.isnan(metric_bwd)
 
-    def test_unsupported_primitive_in_model_raises_key_error(self):
+    def test_jet_rule_primitives_patch(self):
+        # ony test GiNO (uses lax.scatter, lax.iota and lax.top_k)
+        # GeoFNO uses scatter and iota, GAOT uses iota and top_k, so GiNO tests them already
+        # FNO, TFNO and UNO only use lax.scatter so they are also tested
+        k1, k2, k3, k4 = jr.split(jr.key(0), 4)
+        axes = [jnp.linspace(0.0, 1.0, 6)] * 2
+        x_latent = jnp.stack(jnp.meshgrid(*axes, indexing="ij"), axis=-1)
+        inputs = {
+            "u": jr.normal(k1, (2, 2, 40)),
+            "x_in": jr.uniform(k2, (2, 40, 2)),
+            "x_out": jr.uniform(k3, (2, 25, 2)),
+            "x_latent": jnp.broadcast_to(x_latent, (2, *x_latent.shape)),
+            "latent_features": None,
+        }
+        gino_kwargs = dict(
+            key=jr.key(0),
+            in_channels=2,
+            out_channels=3,
+            modes=(3,) * 2,
+            hidden_channels=8,
+            n_layers=2,
+            coord_dim=2,
+            in_gno_radius=0.4,
+            out_gno_radius=0.4,
+            in_gno_max_neighbors=8,
+            out_gno_max_neighbors=8,
+            gno_embed_channels=4,
+            in_gno_channel_mlp_hidden_layers=(8,),
+            out_gno_channel_mlp_hidden_layers=(8,),
+        )
+        target = jr.normal(k4, (2, 3, 25))
+        gino = GiNO(**gino_kwargs)
+        metric = SobolevMetric(k=2, method="interpolate", wrt="u")
+        # triggers KeyError if primitives are missing
+        h2_loss = metric(gino, x=inputs, target=target)
+        assert float(h2_loss) != 0.0
+
+    def test_rno_jet_raises_key_error(self):
         key = jr.key(0)
         fno = FNO(
             key,
-            in_channels=2,
+            in_channels=1,
             out_channels=1,
-            hidden_channels=32,
-            modes=(8,),
-            n_layers=2,
+            hidden_channels=8,
+            modes=(4,),
+            n_layers=1,
         )
-        no_ins = jr.normal(key, (1, 10))
-        coords = jnp.linspace(jnp.array([0.0]), jnp.array([1.0]), 10, axis=1)
-        ins = jnp.stack([no_ins, coords], axis=1)
-        metric = SobolevMetric(k=1, method="interpolate")
+        rno = RNO(fno, time_interval=(0.0, 1.0), n_timesteps=2)
+        key = jr.key(1)
+        x = jr.normal(key, (1, 32))
+        target = jr.normal(key, (1, 32))
+        rno_inputs = {"key": key, "inference": False, "x": x}
+        metric = SobolevMetric(k=2, method="interpolate", wrt="x")
         with pytest.raises(KeyError):
-            metric(fno, x=ins, target=no_ins)
+            _ = metric(rno, x=rno_inputs, target=target)
+
+    @pytest.mark.parametrize(
+        "method,kwargs",
+        [
+            ("exact", {"k": 1}),
+            ("interpolate", {"k": 2}),
+            ("stochastic", {"k": 1, "n_random_samples": 4}),
+            ("stochastic", {"k": 2, "n_random_samples": 4}),
+        ],
+    )
+    @pytest.mark.parametrize("container", ["dict", "tuple"])
+    def test_pytree_input_matches_per_sample_closure(
+        self, mlp, method, kwargs, container
+    ):
+        # Only the entry `wrt` is differentiated, the other entries are held fixed.
+        b = 3
+        k1, k2, k3, k4 = jr.split(jr.key(0), 4)
+        u = jr.normal(k1, (b, 2, 4))
+        target = jr.normal(k3, (b, 2, 4))
+        stochastic = method == "stochastic"
+        # Stochastic: same offset in every sample so that a single batched reference
+        # call draws the same random directions. Otherwise: one offset per sample.
+        offset = jr.normal(k2, (b, 2, 4))
+        if stochastic:
+            offset = jnp.broadcast_to(offset[0], offset.shape)
+
+        if container == "dict":
+            x, wrt, model = {"offset": offset, "u": u}, "u", KwargsModel(mlp)
+        else:
+            x, wrt, model = (offset, u), -1, ArgsModel(mlp)
+
+        value = SobolevMetric(method=method, wrt=wrt, **kwargs)(
+            model, x=x, target=target, key=k4
+        )
+
+        ref_metric = SobolevMetric(method=method, **kwargs)
+        if stochastic:
+            ref = ref_metric(ShiftedModel(mlp, offset[0]), x=u, target=target, key=k4)
+        else:
+            ref = jnp.mean(
+                jnp.stack(
+                    [
+                        ref_metric(
+                            ShiftedModel(mlp, offset[i]),
+                            x=u[i][None],
+                            target=target[i][None],
+                        )
+                        for i in range(b)
+                    ]
+                )
+            )
+        assert jnp.allclose(value, ref, rtol=1e-5, atol=1e-6)
+
+    def test_pytree_input_unbatched_leaves_are_shared(self, mlp):
+        # None, python scalars and 0-d arrays are passed to every sample
+        b = 3
+        u = jr.normal(jr.key(0), (b, 2, 4))
+        target = jr.normal(jr.key(1), (b, 2, 4))
+
+        metric = SobolevMetric(k=1, method="exact", wrt="u")
+        value = metric(
+            SharedInputsModel(mlp),
+            x={"u": u, "scale": 2.0, "shift": jnp.array(0.5), "unused": None},
+            target=target,
+        )
+        ref = SobolevMetric(k=1, method="exact")(
+            AffineModel(mlp, 2.0, 0.5),
+            x=u,
+            target=target,
+        )
+        assert jnp.allclose(value, ref, rtol=1e-5)
+
+    def test_wrt_validation(self, mlp):
+        u = jr.normal(jr.key(0), (2, 2, 4))
+        target = jr.normal(jr.key(1), (2, 2, 4))
+        model = KwargsModel(mlp)
+        x = {"u": u, "offset": u}
+        # pytree input needs wrt
+        with pytest.raises(ValueError, match="wrt"):
+            SobolevMetric()(model, x=x, target=target)
+        with pytest.raises(ValueError, match="wrt"):
+            SobolevMetric(wrt="v")(model, x=x, target=target)
+        with pytest.raises(ValueError, match="wrt"):
+            SobolevMetric(wrt=2)(model, x=(u, u), target=target)
+        # wrt makes no sense for a single array
+        with pytest.raises(ValueError, match="wrt"):
+            SobolevMetric(wrt="u")(mlp, x=u, target=target)
 
     def test_stochastic_sobolev_converges_to_exact_k1(self, mlp):
         key = jr.key(0)

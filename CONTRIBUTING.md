@@ -76,7 +76,7 @@ Install `nox` via `uv tool install nox` or `pipx install nox` and then run
 ```bash
 nox
 ```
-from the project root (or run `nox -j 3` to run the three supported Python versions in parallel). It will automatically find `noxfile.py` and execute the test suite against all supported Python versions.
+from the project root (or run `nox --parallel auto` to run the supported Python versions in parallel). It will automatically find `noxfile.py` and execute the test suite against all supported Python versions.
 
 Make sure all tests pass before submitting your changes. It is highly recommended to write new tests for any new features or bug fixes.
 

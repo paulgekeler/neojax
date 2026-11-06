@@ -22,7 +22,7 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 import jax.random as jr
-from jaxtyping import Array, Complex, PRNGKeyArray
+from jaxtyping import Array, Complex, Float, PRNGKeyArray
 
 from neojax.tensor.base_tensor import BaseTensor
 
@@ -68,16 +68,18 @@ class TuckerTensor(BaseTensor):
             Default is False.
 
     ??? info "Internal Attributes"
-        * **core_tensors** (`tuple[Complex[Array, ...], ...]`): Learnable complex core weight tensors.
-        * **factor_matrices** (`tuple[Complex[Array, ...], ...]`): Learnable factor matrices for each dimension.
+        * **core_tensors** (`tuple[Float[Array, ... 2], ...]`): Learnable complex core weight tensors,
+            stored as `(real, imag)` pairs along the last axis.
+        * **factor_matrices** (`tuple[Float[Array, ... 2], ...]`): Learnable factor matrices for each dimension,
+            stored as `(real, imag)` pairs along the last axis.
         * **einsum_str** (`str`): Contraction string passed directly to `jnp.einsum`.
         * **to_dense_einsum_str** (`str`): Contraction string passed to `jnp.einsum` in `to_dense`.
         * **ndim** (`int`): Total dimensions of the tensor structure (channels + spatial).
         * **separable** (bool): Whether to use separable implementation of contraction.
     """
 
-    core_tensors: tuple[Complex[Array, "..."], ...]
-    factor_matrices: tuple[Complex[Array, "..."], ...]
+    core_tensors: tuple[Float[Array, "... 2"], ...]
+    factor_matrices: tuple[Float[Array, "... 2"], ...]
     einsum_str: str = eqx.field(static=True)
     to_dense_einsum_str: str = eqx.field(static=True)
     ndim: int = eqx.field(static=True)
@@ -137,7 +139,7 @@ class TuckerTensor(BaseTensor):
             rkey, ikey, key = jr.split(key, 3)
             ct_real = jr.normal(rkey, ranks)
             ct_imag = jr.normal(ikey, ranks)
-            core_tensors.append(scale * (ct_real + 1j * ct_imag))
+            core_tensors.append(scale * jnp.stack([ct_real, ct_imag], axis=-1))
         self.core_tensors = tuple(core_tensors)
 
         factor_matrices = []
@@ -146,7 +148,7 @@ class TuckerTensor(BaseTensor):
                 rkey, ikey, key = jr.split(key, 3)
                 u_real = jr.normal(rkey, (d, r))
                 u_imag = jr.normal(ikey, (d, r))
-                factor_matrices.append(scale * (u_real + 1j * u_imag))
+                factor_matrices.append(scale * jnp.stack([u_real, u_imag], axis=-1))
 
         self.factor_matrices = tuple(factor_matrices)
         # determine einsum indices here
@@ -277,9 +279,12 @@ class TuckerTensor(BaseTensor):
         Returns:
             Reconstructed dense tensors stacked along first axis.
         """
-        stacked_core_tensors = jnp.stack(self.core_tensors, axis=0)
+        stacked_core_tensors = self.to_complex(jnp.stack(self.core_tensors, axis=0))
         sorted_factors = [
-            jnp.stack([t for t in self.factor_matrices[i :: self.ndim]], axis=0)
+            jnp.stack(
+                [self.to_complex(t) for t in self.factor_matrices[i :: self.ndim]],
+                axis=0,
+            )
             for i in range(self.ndim)
         ]
         return jax.vmap(jnp.einsum, in_axes=(None,) + (0,) * (self.ndim + 1))(
@@ -300,9 +305,12 @@ class TuckerTensor(BaseTensor):
         """
         return jnp.einsum(
             self.einsum_str,
-            *self.factor_matrices[
-                corner_idx * self.ndim : corner_idx * self.ndim + self.ndim
-            ],
-            self.core_tensors[corner_idx],
+            *map(
+                self.to_complex,
+                self.factor_matrices[
+                    corner_idx * self.ndim : corner_idx * self.ndim + self.ndim
+                ],
+            ),
+            self.to_complex(self.core_tensors[corner_idx]),
             x_ft_slice,
         )

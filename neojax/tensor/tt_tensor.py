@@ -22,7 +22,7 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 import jax.random as jr
-from jaxtyping import Array, Complex, PRNGKeyArray
+from jaxtyping import Array, Complex, Float, PRNGKeyArray
 
 from neojax.tensor.base_tensor import BaseTensor
 
@@ -69,14 +69,15 @@ class TTTensor(BaseTensor):
             Default is False.
 
     ??? info "Internal Attributes"
-        * **lr_tensors** (`tuple[Complex[Array, "..."], ...]`): Learnable complex low-rank tensors.
+        * **lr_tensors** (`tuple[Float[Array, "... 2"], ...]`): Learnable complex low-rank tensors,
+            stored as `(real, imag)` pairs along the last axis.
         * **einsum_str** (`str`): Contraction string passed directly to `jnp.einsum`.
         * **to_dense_einsum_str** (`str`): Contraction string passed to `jnp.einsum` in `to_dense`.
         * **ndim** (`int`): Total dimensions of the tensor structure (channels + spatial).
         * **separable** (bool): Whether to use separable implementation of contraction.
     """
 
-    lr_tensors: tuple[Complex[Array, "..."], ...]
+    lr_tensors: tuple[Float[Array, "... 2"], ...]
     einsum_str: str = eqx.field(static=True)
     to_dense_einsum_str: str = eqx.field(static=True)
     ndim: int = eqx.field(static=True)
@@ -140,17 +141,17 @@ class TTTensor(BaseTensor):
                     # first tensor
                     lr_real = jr.normal(rkey, (d, ranks[0]))
                     lr_imag = jr.normal(ikey, (d, ranks[0]))
-                    lr_tensors.append(scale * (lr_real + 1j * lr_imag))
+                    lr_tensors.append(scale * jnp.stack([lr_real, lr_imag], axis=-1))
                 elif j == len(tensor_dims) - 1:
                     # last tensor
                     lr_real = jr.normal(rkey, (ranks[-1], d))
                     lr_imag = jr.normal(ikey, (ranks[-1], d))
-                    lr_tensors.append(scale * (lr_real + 1j * lr_imag))
+                    lr_tensors.append(scale * jnp.stack([lr_real, lr_imag], axis=-1))
                 else:
                     # intermediate tensors
                     lr_real = jr.normal(rkey, (ranks[j - 1], d, ranks[j]))
                     lr_imag = jr.normal(ikey, (ranks[j - 1], d, ranks[j]))
-                    lr_tensors.append(scale * (lr_real + 1j * lr_imag))
+                    lr_tensors.append(scale * jnp.stack([lr_real, lr_imag], axis=-1))
 
         self.lr_tensors = tuple(lr_tensors)
 
@@ -301,7 +302,9 @@ class TTTensor(BaseTensor):
             Reconstructed dense tensor stacked along first axis.
         """
         sorted = [
-            jnp.stack([t for t in self.lr_tensors[i :: self.ndim]], axis=0)
+            jnp.stack(
+                [self.to_complex(t) for t in self.lr_tensors[i :: self.ndim]], axis=0
+            )
             for i in range(self.ndim)
         ]
         return jax.vmap(jnp.einsum, in_axes=(None,) + (0,) * self.ndim)(
@@ -322,8 +325,11 @@ class TTTensor(BaseTensor):
         """
         return jnp.einsum(
             self.einsum_str,
-            *self.lr_tensors[
-                corner_idx * self.ndim : corner_idx * self.ndim + self.ndim
-            ],
+            *map(
+                self.to_complex,
+                self.lr_tensors[
+                    corner_idx * self.ndim : corner_idx * self.ndim + self.ndim
+                ],
+            ),
             x_ft_slice,
         )

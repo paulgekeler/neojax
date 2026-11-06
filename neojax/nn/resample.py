@@ -229,9 +229,15 @@ class Resampler(eqx.Module):
         Returns:
             Resampled outputs.
         """
+        # interpolation and FFT requires at least single precision
+        in_dtype = x.dtype
+        x = x.astype(jnp.promote_types(in_dtype, jnp.float32))
+
         if len(self.axes) == 1:
-            return self._resample_1d(x)
+            out = self._resample_1d(x)
         elif len(self.axes) == 2:
-            return self._resample_2d(x)
+            out = self._resample_2d(x)
         else:
-            return self._resample_nd(x)
+            out = self._resample_nd(x)
+        # cast back
+        return out.astype(in_dtype)

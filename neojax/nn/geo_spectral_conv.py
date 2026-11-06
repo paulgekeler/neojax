@@ -161,7 +161,8 @@ class GeoSpectralConvNd(eqx.Module):
 
             u_out += u_out_corner
 
-        return u_out
+        # basis functions are computed in full precision, match dtype here
+        return u_out.astype(u.dtype)
 
     def get_corner_wavenumbers(self, corner_idx: int) -> Int[Array, "modes_prod ndim"]:
         """Generates coordinate-aligned wavenumbers for a given corner slice of the Fourier space.

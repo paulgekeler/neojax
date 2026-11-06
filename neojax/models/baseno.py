@@ -144,11 +144,15 @@ class BaseNO(eqx.Module):
         Raises:
             ValueError: If an inadequate `dtype` is passed (e.g. any `int`).
 
-        !!! warning "Half float casting for complex arrays"
-            Some Neural Operators (FNO, ...) have complex spectral weights.
-            JAX doesn't support `complex32`, meaning casting a model with complex weights
-            to half precision floats (`jnp.float16`, `jnp.bfloat16`) leaves
-            the complex weights as `jnp.complex64`.
+        !!! warning "Half float casting for spectral weights"
+            Some Neural Operators (FNO, ...) have spectral weights, which are stored as real
+            `(real, imag)` pairs. Casting to half precision floats (`jnp.float16`,
+            `jnp.bfloat16`) halves their storage, but JAX has neither `complex32` nor
+            half precision FFTs, so spectral operations still run in `jnp.complex64`.
+            Pass inputs in the same dtype. Spectral layers promote them internally and
+            cast their outputs back. Half precision also rounds away small optimizer
+            updates, so it is mainly useful for inference. Complex leaves of custom
+            tensors stay `jnp.complex64`.
         """
         if not jnp.issubdtype(dtype, jnp.inexact):
             raise ValueError(

@@ -12,6 +12,11 @@ All notable changes to **neojax** will be documented in this file.
 
 
 ### Changes
+- All `Tensor`s now store complex weights as stacked (`real, imaginary`) pairs to avoid the need of conjugating gradients when training spectral-based models.
+  - `BaseTensor` now has `to_complex/real` static methods for conversion of weights in computations
+- `SpectralConvNd` now correctly projects real inputs when `enforce_hermitian_symmetry=True` using static method `_hermitian_part`. For 2D and higher, the previous logic removed real signal.
+- Minor fixes to example notebooks 1 and 5.
+- All layers using FFTs or interpolation now upcast inputs to single precision and downcast the outputs again.
 - Future versions of neojax now have lower bounds on the versions of its core dependencies. Also `jaxlib` is no longer required (`jax` already mandates it).
 - All future versions of neojax are published under Apache-2.0 license instead of MIT.
   - This makes copying code blocks from other libraries with the same license easier (e.g. segment-ops from `jraph`).

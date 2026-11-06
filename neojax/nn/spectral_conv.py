@@ -19,7 +19,7 @@ from typing import Literal
 
 import equinox as eqx
 import jax.numpy as jnp
-from jaxtyping import Array, Inexact, PRNGKeyArray
+from jaxtyping import Array, Complex, Inexact, PRNGKeyArray
 
 from neojax.tensor import BaseTensor, CPTensor, DenseTensor, TTTensor, TuckerTensor
 
@@ -51,7 +51,7 @@ class SpectralConvNd(eqx.Module):
         enforce_hermitian_symmetry: Whether to enforce
             hermitian symmetry on the outputs before calling `irfftn`.
             Default is True.  If set to False, cuFFT on GPU may cause line artifacts
-            when calling irfftn.
+            when calling `irfftn`.
         fft_norm: FFT normalization. Can be `None`, `"backward"`,
             `"ortho"` or `"forward"`. Default is `"forward"`.
         is_complex_data: Whether input data is complex valued.
@@ -120,7 +120,8 @@ class SpectralConvNd(eqx.Module):
         Unlike PyTorch, JAX does not natively support complex half-precision types
         (like `complex32`). Therefore, setting `fno_block_precision` to `"half"` or
         `"mixed"` is not supported, and all spectral operations run in full
-        precision (`complex64`).
+        precision (`complex64`). Half precision weights and inputs are promoted
+        when they are used, and the output is cast back to the input dtype.
 
     """
 
@@ -280,6 +281,26 @@ class SpectralConvNd(eqx.Module):
 
         self.num_corners = 2 ** (len(self.modes) - 1)
 
+    @staticmethod
+    def _hermitian_part(plane: Complex[Array, "c ..."]) -> Complex[Array, "c ..."]:
+        r"""Projects a plane of an `rfftn` spectrum onto its hermitian part.
+
+        The spectrum of a real signal satisfies $F(-k) = \overline{F(k)}$. Within the
+        planes of the zero and Nyquist frequency of the last axis, this relates entries
+        of the same plane. The entries are only real where $k' = -k'$ for the
+        remaining frequencies $k'$. In 1D, a plane is such a single entry.
+
+        Args:
+            plane: Plane of shape `(channels, k_1, ..., k_{d-1})`.
+
+        Returns:
+            The part of the plane satisfying $F(-k') = \overline{F(k')}$.
+        """
+        axes = tuple(range(1, plane.ndim))
+        # flip and roll maps the index i to (-i mod n), the index of the negated frequency
+        mirrored = jnp.roll(jnp.flip(plane, axis=axes), 1, axis=axes) if axes else plane
+        return 0.5 * (plane + jnp.conj(mirrored))
+
     def __call__(self, x: Inexact[Array, "in_c ..."]) -> Inexact[Array, "out_c ..."]:
         """Perform n-dimensional spectral convolution.
 
@@ -314,11 +335,14 @@ class SpectralConvNd(eqx.Module):
         if self.is_complex_data:
             x_ft = jnp.fft.fftn(x, axes=tuple(range(1, ndim + 1)), norm=self.fft_norm)
         else:
+            # FFT requires at least single precision
+            in_dtype = x.dtype
+            x = x.astype(jnp.promote_types(in_dtype, jnp.float32))
             # Truncate last dim to spatial_shape[-1] // 2 + 1
             x_ft = jnp.fft.rfftn(x, axes=tuple(range(1, ndim + 1)), norm=self.fft_norm)
 
         out_ft_shape = (self.out_channels,) + x_ft.shape[1:]
-        out_ft = jnp.zeros(out_ft_shape, dtype=jnp.complex64)
+        out_ft = jnp.zeros(out_ft_shape, dtype=x_ft.dtype)
 
         if self.implementation == "reconstructed":
             dense_weights = self.weights.to_dense()
@@ -362,12 +386,15 @@ class SpectralConvNd(eqx.Module):
         else:
             if self.enforce_hermitian_symmetry:
                 # Enforce that 0-th frequency and Nyquist frequency of final dim are real valued
-                out_ft = out_ft.at[..., 0].set(jnp.real(out_ft[..., 0]))
+                out_ft = out_ft.at[..., 0].set(self._hermitian_part(out_ft[..., 0]))
                 if spatial_shape[-1] % 2 == 0:
-                    out_ft = out_ft.at[..., -1].set(jnp.real(out_ft[..., -1]))
+                    out_ft = out_ft.at[..., -1].set(
+                        self._hermitian_part(out_ft[..., -1])
+                    )
+            # cast back to input dtype
             return jnp.fft.irfftn(
                 out_ft,
                 s=spatial_shape,
                 axes=tuple(range(1, ndim + 1)),
                 norm=self.fft_norm,
-            )
+            ).astype(in_dtype)

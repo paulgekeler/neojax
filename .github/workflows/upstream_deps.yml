@@ -1,0 +1,31 @@
+name: Upstream dep compatibility
+
+# Weekly check that neojax still works with the newest dependency releases.
+# Ignores uv.lock on purpose. A failure here means an upstream release broke
+# us: fix the code or add an upper bound in pyproject.toml.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  latest:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: >
+          uv sync --upgrade --all-extras --dev
+          --python ${{ matrix.python-version }}
+
+      - name: Run tests
+        run: uv run --no-sync pytest neojax/tests/

@@ -2,15 +2,17 @@
 
 All notable changes to **neojax** will be documented in this file.
 
-## [Unreleased] -2026-11-04
+## [Unreleased] -2026-11-06
 
 ### Added
+- Support for Python 3.14 and a weekly github workflow `upstream_deps.yml` that checks compatibility with new dependency versions
 - Local patch for outstanding jet primitive rules: `neojax.utils._jet_rules` now defines the needed jet rules for higher order derivative Sobolev metrics and neojax models. Rules are registered automatically upon import of `neojax.metrics.sobolev_metrics`.
 - All metrics now support PyTree inputs for models (needed in e.g. GiNO, GAOT and GeoFNO):
   - `BaseMetric` now defines `vmap_model` and `batch_axes` static helper methods. They vmap the model over different PyTree inputs (all metrics use them except `SobolevMetric`).
 
 
 ### Changes
+- Future versions of neojax now have lower bounds on the versions of its core dependencies. Also `jaxlib` is no longer required (`jax` already mandates it).
 - All future versions of neojax are published under Apache-2.0 license instead of MIT.
   - This makes copying code blocks from other libraries with the same license easier (e.g. segment-ops from `jraph`).
   - All python files now include the required license header and a `pre-commit` hook checks and adds it.

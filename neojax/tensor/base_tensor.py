@@ -17,7 +17,9 @@
 from abc import abstractmethod
 
 import equinox as eqx
-from jaxtyping import Array, Complex
+import jax
+import jax.numpy as jnp
+from jaxtyping import Array, Complex, Float
 
 
 class BaseTensor(eqx.Module):
@@ -25,7 +27,48 @@ class BaseTensor(eqx.Module):
 
     All neojax tensors subclass `BaseTensor`.
     Custom tensor classes should inherit from `BaseTensor`.
+
+    !!! warning "Store learnable weights as real arrays"
+        For complex parameters, `jax.grad` returns the conjugate of the descent
+        direction, so passing such gradients to an optax optimizer moves the imaginary
+        parts in the wrong direction. All neojax tensors therefore store
+        real `(real, imag)` pairs along a last axis of size 2 (see `to_real`)
+        and assemble the complex weights when they are used (see `to_complex`).
+        Custom tensors should do the same.
     """
+
+    @staticmethod
+    def to_real(z: Complex[Array, "..."]) -> Float[Array, "... 2"]:
+        """Decomposes a complex tensor into real array of stacked `(real, imag)` pairs.
+
+        Stacks real parts along the last axis.
+
+        Args:
+            z: Complex weight tensor.
+
+        Returns:
+            The stacked real and imaginary parts.
+        """
+        return jnp.stack([z.real, z.imag], axis=-1)
+
+    @staticmethod
+    def to_complex(
+        w: Float[Array, "... 2"],
+    ) -> Complex[Array, "..."]:
+        """Creates a complex tensor out of its real components.
+
+        JAX has no half-precision complex type, so half-precision pairs
+        (`float16`, `bfloat16`) are promoted and result in `complex64` array.
+
+        Args:
+            w: Real weight tensor with real and imaginary parts
+                stacked along last axis.
+
+        Returns:
+            The complex tensor without last axis.
+        """
+        w = w.astype(jnp.promote_types(w.dtype, jnp.float32))
+        return jax.lax.complex(w[..., 0], w[..., 1])
 
     @abstractmethod
     def to_dense(self) -> Complex[Array, "n_corners ..."]:

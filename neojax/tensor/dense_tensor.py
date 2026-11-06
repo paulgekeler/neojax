@@ -20,7 +20,7 @@ from typing import Literal, final
 import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
-from jaxtyping import Array, Complex, PRNGKeyArray
+from jaxtyping import Array, Complex, Float, PRNGKeyArray
 
 from neojax.tensor.base_tensor import BaseTensor
 
@@ -43,11 +43,12 @@ class DenseTensor(BaseTensor):
             Default is False.
 
     ??? info "Internal Attributes"
-        * **weights** (`tuple[Complex[Array, ...], ...]`): Learnable complex weights for the retained Fourier modes.
+        * **weights** (`tuple[Float[Array, ...], ...]`): Learnable complex weights for the retained Fourier modes,
+            stored as `(real, imag)` pairs along the last axis.
         * **separable** (bool): Whether to use separable implementation of contraction.
     """
 
-    weights: tuple[Complex[Array, "..."], ...]
+    weights: tuple[Float[Array, "... 2"], ...]
     separable: bool = eqx.field(static=True)
 
     def __init__(
@@ -84,7 +85,7 @@ class DenseTensor(BaseTensor):
         for k in keys:
             w_real = jr.normal(k, weight_shape)
             w_imag = jr.normal(jr.split(k)[0], weight_shape)
-            weights_list.append(init_std * (w_real + 1j * w_imag))
+            weights_list.append(init_std * jnp.stack([w_real, w_imag], axis=-1))
 
         self.weights = tuple(weights_list)
 
@@ -94,7 +95,7 @@ class DenseTensor(BaseTensor):
         Returns:
             Dense tensors stacked along first axis.
         """
-        return jnp.stack(self.weights, axis=0)
+        return self.to_complex(jnp.stack(self.weights, axis=0))
 
     @classmethod
     def from_weights(
@@ -113,7 +114,7 @@ class DenseTensor(BaseTensor):
             A new instance of `DenseTensor`.
         """
         # unstack first dim
-        weights = tuple(weights)
+        weights = tuple(cls.to_real(weights))
         self = object.__new__(cls)
         object.__setattr__(self, "weights", weights)
         object.__setattr__(self, "separable", separable)
@@ -131,7 +132,8 @@ class DenseTensor(BaseTensor):
         Returns:
             Tensor contraction of respective weight and input.
         """
+        weights = self.to_complex(self.weights[corner_idx])
         if self.separable:
-            return self.weights[corner_idx] * x_ft_slice
+            return weights * x_ft_slice
         else:
-            return jnp.einsum("oi...,i...->o...", self.weights[corner_idx], x_ft_slice)
+            return jnp.einsum("oi...,i...->o...", weights, x_ft_slice)

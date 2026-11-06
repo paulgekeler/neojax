@@ -103,7 +103,8 @@ class GridEmbeddingNd(eqx.Module):
                 f"but got shape {x.shape}."
             )
         grid = self._create_grid_nd(x.shape[1:])
-        return jnp.concat([x, grid], axis=0)
+        # cast grid to input dtype if low precision
+        return jnp.concat([x, grid.astype(x.dtype)], axis=0)
 
 
 class SinusoidalEmbedding(eqx.Module):

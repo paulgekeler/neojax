@@ -27,7 +27,7 @@ class TestDenseTensor:
         tensor = DenseTensor(key, in_c, out_c, modes, separable=False)
 
         assert len(tensor.weights) == 2  # 2 ** (2 - 1)
-        assert tensor.weights[0].shape == (out_c, in_c, 4, 4)
+        assert tensor.weights[0].shape == (out_c, in_c, 4, 4, 2)
         assert not tensor.separable
 
         x_slice = jnp.ones((in_c, 4, 4), dtype=jnp.complex64)
@@ -41,14 +41,14 @@ class TestDenseTensor:
         tensor = DenseTensor(key, in_c, in_c, modes, separable=True)
 
         assert len(tensor.weights) == 2
-        assert tensor.weights[0].shape == (in_c, 4, 4)
+        assert tensor.weights[0].shape == (in_c, 4, 4, 2)
         assert tensor.separable
 
         x_slice = jnp.ones((in_c, 4, 4), dtype=jnp.complex64)
         out = tensor(0, x_slice)
         assert out.shape == (in_c, 4, 4)
         # Elementwise check
-        expected = tensor.weights[0] * x_slice
+        expected = tensor.to_complex(tensor.weights[0]) * x_slice
         assert jnp.allclose(out, expected)
 
     def test_dense_tensor_separable_invalid_channels(self):
@@ -61,7 +61,7 @@ class TestDenseTensor:
         in_c = 3
         modes = (4, 4)
         tensor = DenseTensor(key, in_c, in_c, modes, separable=True)
-        dense_weights = jnp.stack(tensor.weights, axis=0)
+        dense_weights = tensor.to_dense()
 
         new_tensor = DenseTensor.from_weights(dense_weights, separable=True)
         assert new_tensor.separable

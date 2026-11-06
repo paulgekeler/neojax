@@ -307,7 +307,8 @@ schedule = optax.warmup_cosine_decay_schedule(
 )
 
 optimizer = optax.adam(learning_rate=schedule)
-trainer = Trainer(optimizer=optimizer, loss_fn=loss_fn)
+# set has_aux=True because we return the individual loss components later
+trainer = Trainer(optimizer=optimizer, loss_fn=loss_fn, has_aux=True)
 ```
 
 #### Execute Training Loop & Checkpoint State

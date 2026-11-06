@@ -168,7 +168,7 @@ Each **neojax** model provides a few handy utilities for inspection:
     ```
     **Output:**
     ```bash
-    Model size: 4.247428 MB; Num params: 537569
+    Model size: 4.247428 MB; Num params: 1061857
     ```
 2. Cast a model to a different datatype. May be useful to speedup training and decrease memory footprint
     ```python

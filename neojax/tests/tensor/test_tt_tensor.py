@@ -28,7 +28,7 @@ class TestTTTensor:
         tensor = TTTensor(key, in_c, out_c, modes, ranks, separable=False)
 
         assert len(tensor.lr_tensors) == 8  # 2 * 4
-        assert tensor.lr_tensors[0].shape == (out_c, ranks[0])
+        assert tensor.lr_tensors[0].shape == (out_c, ranks[0], 2)
         assert not tensor.separable
 
         x_slice = jnp.ones((in_c, 4, 4), dtype=jnp.complex64)
@@ -46,7 +46,7 @@ class TestTTTensor:
         assert 0.05 * (target_var / 2.0) < actual_var < 20.0 * (target_var / 2.0)
 
         # Verify that contraction matches manually reconstructed weight
-        lr = tensor.lr_tensors[0:4]
+        lr = [tensor.to_complex(t) for t in tensor.lr_tensors[0:4]]
         reconstructed_weight = jnp.einsum(tensor.to_dense_einsum_str, *lr)
         assert reconstructed_weight.shape == (out_c, in_c, 4, 4)
         expected_out = jnp.einsum(
@@ -65,7 +65,7 @@ class TestTTTensor:
         tensor = TTTensor(key, in_c, in_c, modes, ranks, separable=True)
 
         assert len(tensor.lr_tensors) == 6  # 2 * 3
-        assert tensor.lr_tensors[0].shape == (in_c, ranks[0])
+        assert tensor.lr_tensors[0].shape == (in_c, ranks[0], 2)
         assert tensor.separable
 
         x_slice = jnp.ones((in_c, 4, 4), dtype=jnp.complex64)
@@ -83,7 +83,7 @@ class TestTTTensor:
         assert 0.05 * (target_var / 2.0) < actual_var < 20.0 * (target_var / 2.0)
 
         # Verify that contraction matches manually reconstructed weight
-        lr = tensor.lr_tensors[0:3]
+        lr = [tensor.to_complex(t) for t in tensor.lr_tensors[0:3]]
         reconstructed_weight = jnp.einsum(tensor.to_dense_einsum_str, *lr)
         assert reconstructed_weight.shape == (in_c, 4, 4)
         expected_out = reconstructed_weight * x_slice

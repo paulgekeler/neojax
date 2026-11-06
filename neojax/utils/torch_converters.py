@@ -21,6 +21,7 @@ import jax.numpy as jnp
 
 from neojax.models.fno import FNO
 from neojax.models.geo_fno import GeoFNO
+from neojax.tensor.base_tensor import BaseTensor
 
 
 def _to_jax(tensor: Any) -> jnp.ndarray:
@@ -80,6 +81,9 @@ class WeightUpdater:
                 val = jnp.transpose(val, transpose_axes)
             if squeeze_axes is not None:
                 val = jnp.squeeze(val, axis=squeeze_axes)
+            if jnp.iscomplexobj(val):
+                # neojax stores complex weights as real (real, imag) pairs
+                val = BaseTensor.to_real(val)
             self.updates.append((where_fn, val))
 
     def apply(self) -> eqx.Module:

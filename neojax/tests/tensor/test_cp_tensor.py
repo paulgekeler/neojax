@@ -28,7 +28,7 @@ class TestCPTensor:
         tensor = CPTensor(key, in_c, out_c, modes, ranks, separable=False)
 
         assert len(tensor.core_tensors) == 2  # 2 ** (2 - 1)
-        assert tensor.core_tensors[0].shape == (ranks,)
+        assert tensor.core_tensors[0].shape == (ranks, 2)
         assert not tensor.separable
 
         x_slice = jnp.ones((in_c, 4, 4), dtype=jnp.complex64)
@@ -53,7 +53,7 @@ class TestCPTensor:
         tensor = CPTensor(key, in_c, in_c, modes, ranks, separable=True)
 
         assert len(tensor.core_tensors) == 2
-        assert tensor.core_tensors[0].shape == (ranks,)
+        assert tensor.core_tensors[0].shape == (ranks, 2)
         assert tensor.separable
 
         x_slice = jnp.ones((in_c, 4, 4), dtype=jnp.complex64)

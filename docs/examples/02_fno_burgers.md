@@ -222,30 +222,24 @@ for epoch in range(num_epochs):
 
 **Output:**
 ```bash
-Epoch 010 | loss=1.128e-01 | test rel L2=2.856e-01
-Epoch 020 | loss=3.150e-01 | test rel L2=4.586e-01
-Epoch 030 | loss=2.793e-01 | test rel L2=2.048e-01
-Epoch 040 | loss=3.851e-02 | test rel L2=1.060e-01
-Epoch 050 | loss=1.579e-01 | test rel L2=2.221e-01
-Epoch 060 | loss=1.277e-01 | test rel L2=1.172e-01
-Epoch 070 | loss=1.162e-01 | test rel L2=8.537e-02
-Epoch 080 | loss=7.651e-02 | test rel L2=1.291e-01
-Epoch 090 | loss=6.666e-02 | test rel L2=1.626e-01
-Epoch 100 | loss=1.888e-01 | test rel L2=9.952e-02
+Epoch 010 | loss=6.213e-02 | test rel L2=1.463e-01
+Epoch 020 | loss=4.651e-01 | test rel L2=2.615e-01
+Epoch 030 | loss=1.239e-01 | test rel L2=1.757e-01
+Epoch 040 | loss=2.210e-02 | test rel L2=4.644e-02
+Epoch 050 | loss=4.457e-02 | test rel L2=1.503e-01
+Epoch 060 | loss=1.005e-01 | test rel L2=9.208e-02
+Epoch 070 | loss=3.417e-02 | test rel L2=1.216e-01
 ...
-Epoch 710 | loss=1.385e-02 | test rel L2=2.693e-02
-Epoch 720 | loss=1.055e-02 | test rel L2=2.645e-02
-Epoch 730 | loss=1.144e-02 | test rel L2=2.663e-02
-Epoch 740 | loss=1.453e-02 | test rel L2=2.636e-02
-Epoch 750 | loss=1.130e-02 | test rel L2=2.634e-02
-Epoch 760 | loss=1.232e-02 | test rel L2=2.632e-02
-Epoch 770 | loss=1.546e-02 | test rel L2=2.630e-02
-Epoch 780 | loss=4.107e-02 | test rel L2=2.630e-02
-Epoch 790 | loss=1.325e-02 | test rel L2=2.630e-02
-Epoch 800 | loss=9.695e-03 | test rel L2=2.630e-02
+Epoch 740 | loss=1.155e-03 | test rel L2=2.496e-03
+Epoch 750 | loss=6.017e-04 | test rel L2=2.449e-03
+Epoch 760 | loss=1.093e-03 | test rel L2=2.435e-03
+Epoch 770 | loss=8.244e-04 | test rel L2=2.444e-03
+Epoch 780 | loss=1.055e-03 | test rel L2=2.443e-03
+Epoch 790 | loss=7.747e-04 | test rel L2=2.443e-03
+Epoch 800 | loss=6.265e-04 | test rel L2=2.443e-03
 ```
 
-Although the final test loss is far off the SOTA on this problem, the model appears to have started to learn the underlying operator.
+Although the final test loss could be improved further, the model appears to have learned the underlying operator.
 
 Lets visualize some predictions and see where we could still improve.
 

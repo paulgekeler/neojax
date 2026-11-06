@@ -16,14 +16,21 @@
 # noxfile.py
 import nox
 
+nox.options.default_venv_backend = "uv"
 
-@nox.session(python=["3.11", "3.12", "3.13"], allow_parallel=True)
+
+@nox.session(
+    python=["3.11", "3.12", "3.13", "3.14"],
+    allow_parallel=True,
+)
 def tests(session):
     session.run_install(
         "uv",
         "sync",
+        "--locked",
         "--all-extras",
         "--dev",
         env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
     )
+
     session.run("pytest", "neojax/tests/")

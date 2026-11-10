@@ -4,7 +4,7 @@
 
 ### Setup
 
-Generating data requires the installation of the optional `diffrax` dependency.
+Generating data requires the installation of the optional [exponax](https://github.com/Ceyron/exponax) dependency, a fast pseudo-spectral PDE solver library in JAX.
 
 ```bash
 pip3 install "neojax-operators[gen]"
@@ -18,8 +18,8 @@ Burgers equation is a classical example of a 1D non-linear PDE used in Neural Op
 
 $$
 \begin{aligned}
-\frac{\partial}{\partial t}u(x, t) + \frac{1}{2}\frac{\partial}{\partial x}(u(x,t))^2 &= \nu \frac{\partial^2}{\partial x^2}u(x,t), \; \quad x \in (0,2\pi), t \in (0, \infty) \\
-u(x, 0) &= u_0(x), \quad \quad \quad \quad x \in (0, 2\pi)
+\frac{\partial}{\partial t}u(x, t) + \frac{1}{2}\frac{\partial}{\partial x}(u(x,t))^2 &= \nu \frac{\partial^2}{\partial x^2}u(x,t), \; \quad x \in (0,1), t \in (0, \infty) \\
+u(x, 0) &= u_0(x), \quad \quad \quad \quad x \in (0, 1)
 \end{aligned}
 $$
 

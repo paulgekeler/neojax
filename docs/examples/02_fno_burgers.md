@@ -28,8 +28,8 @@ Burgers equation is a classical example of a 1d non-linear PDE used in Neural Op
 
 $$
 \begin{aligned}
-\frac{\partial}{\partial t}u(x, t) + \frac{1}{2}\frac{\partial}{\partial x}(u(x,t))^2 &= \nu \frac{\partial^2}{\partial x^2}u(x,t), \; \quad x \in (0,2\pi), t \in (0, \infty) \\
-u(x, 0) &= u_0(x), \quad \quad \quad \quad x \in (0, 2\pi)
+\frac{\partial}{\partial t}u(x, t) + \frac{1}{2}\frac{\partial}{\partial x}(u(x,t))^2 &= \nu \frac{\partial^2}{\partial x^2}u(x,t), \; \quad x \in (0,1), t \in (0, \infty) \\
+u(x, 0) &= u_0(x), \quad \quad \quad \quad x \in (0, 1)
 \end{aligned}
 $$
 
@@ -40,9 +40,9 @@ C = 625(-\frac{d^2}{dx^2} + 25I)^{-2}.
 $$
 
 #### Generating data
-We import the `generate_burgers_1d` function from **neojax** data generation module which solves the 1D Burgers equation using a pseudo-spectral split step method (see [^1]).
+We import the `generate_burgers_1d` function from **neojax** data generation module which solves the 1D Burgers equation with the exponential time differencing Runge-Kutta (ETDRK) pseudo-spectral solver from [exponax](https://github.com/Ceyron/exponax) (see [^1] for the problem setup).
 
-We generate a total of 1000 training and 200 test samples. Generation takes around 6 minutes on a CPU but is considerably faster on a GPU.
+We generate a total of 1000 training and 200 test samples. Thanks to exponax, generation takes less than a second, even on a CPU.
 
 [^1]: Kovachki, N. et al. "Neural Operator: Learning Maps Between Function Spaces With Applications to PDEs". JMLR 2023, https://www.jmlr.org/papers/volume24/21-1524/21-1524.pdf.
 
@@ -51,7 +51,7 @@ from neojax.data.generation import generate_burgers_1d
 
 # generate 1000 training pairs and 200 testing pairs
 # returns dataset containing dict(inputs=Array, labels=Array)
-dataset = generate_burgers_1d(n_samples=1200, n_grid_points=1024, nu=0.1, t1=1.0, batch_size=100, use_bundle=False)
+dataset = generate_burgers_1d(n_samples=1200, n_grid_points=1024, nu=0.1, t1=1.0, use_bundle=False)
 ```
 
 **Output:**

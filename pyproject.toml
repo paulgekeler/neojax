@@ -65,12 +65,12 @@ docs = [
 
 ex = [
   "optax",
-  "diffrax",
+  "exponax",
   "matplotlib",
 ]
 
 gen = [
-  "diffrax",
+  "exponax",
 ]
 
 data = [

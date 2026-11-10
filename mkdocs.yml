@@ -207,7 +207,8 @@ nav:
         - Evaluators: api/evaluators.md
   - Examples:
     - Basic Usage: examples/01_basics.md
-    - Training FNO: examples/02_fno_burgers.md
-    - Data Pipeline: examples/03_data_pipeline.md
+    - Training FNO on 1D Burgers: examples/02_fno_burgers.md
+    - Data Pipelines: examples/03_data_pipeline.md
     - Benchmarking: examples/04_benchmarking_pipeline.md
-    - Advanced Training: examples/05_advanced_training.md
+    - Advanced Training (GeoFNO): examples/05_advanced_training.md
+    - Active Learning with exponax: examples/06_active_learning_exponax.md

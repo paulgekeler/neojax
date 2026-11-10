@@ -5,6 +5,7 @@ All notable changes to **neojax** will be documented in this file.
 ## [Unreleased] -2026-11-06
 
 ### Added
+- Example 6: solver-in-the-loop active learning on 2D decaying Navier–Stokes turbulence with exponax data generation, stochastic acquisition and a `vmap`ped `CNO` ensemble.
 - Support for Python 3.14 and a weekly github workflow `upstream_deps.yml` that checks compatibility with new dependency versions
 - Local patch for outstanding jet primitive rules: `neojax.utils._jet_rules` now defines the needed jet rules for higher order derivative Sobolev metrics and neojax models. Rules are registered automatically upon import of `neojax.metrics.sobolev_metrics`.
 - All metrics now support PyTree inputs for models (needed in e.g. GiNO, GAOT and GeoFNO):
@@ -12,6 +13,11 @@ All notable changes to **neojax** will be documented in this file.
 
 
 ### Changes
+- Data generation now uses [exponax](https://github.com/Ceyron/exponax) instead of `diffrax` (the `gen` and `ex` extras install `exponax`):
+  - `generate_burgers_1d` solves with exponax's ETDRK Burgers stepper (~175x faster on CPU) and takes a new `n_steps` argument; the default `batch_size` is now 1000.
+  - `generate_fno_initial_conditions` returns the initial conditions in the spatial domain with a channel axis.
+  - `use_bundle=True` now returns spatial fields of shape `(n_samples, 2, 1, n_grid_points)` and correct grid coordinates.
+- Example 2 uses the exponax-based generator and states the correct domain `(0, 1)`.
 - All `Tensor`s now store complex weights as stacked (`real, imaginary`) pairs to avoid the need of conjugating gradients when training spectral-based models.
   - `BaseTensor` now has `to_complex/real` static methods for conversion of weights in computations
 - `SpectralConvNd` now correctly projects real inputs when `enforce_hermitian_symmetry=True` using static method `_hermitian_part`. For 2D and higher, the previous logic removed real signal.

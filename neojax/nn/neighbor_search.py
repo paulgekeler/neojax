@@ -14,7 +14,6 @@
 
 """Jit-compatible fixed-radius neighbor search that returns sparse edge lists."""
 
-import dataclasses
 import itertools
 from collections.abc import Callable
 from typing import Literal
@@ -304,12 +303,17 @@ def _coordinates(*points: Array) -> tuple[Array, ...]:
     return tuple(jax.lax.stop_gradient(p).astype(dtype) for p in points)
 
 
-def _empty(num_queries: int, max_edges: int) -> Neighbors:
+def _empty(
+    num_queries: int,
+    max_edges: int,
+    searchsorted_method: SearchsortedMethod = "scan_unrolled",
+) -> Neighbors:
     """Creates empty Neighbor edge lists.
 
     Args:
         num_queries: The number of queries.
         max_edges: Capacity of the result, at least the number of edges.
+        searchsorted_method: Method of `Neighbors.row_splits` of the result.
 
     Returns:
         An instance of `Neighbors` with no edges.
@@ -319,15 +323,17 @@ def _empty(num_queries: int, max_edges: int) -> Neighbors:
         data_index=jnp.zeros(max_edges, jnp.int32),
         overflowed=jnp.array(False),
         num_queries=num_queries,
+        searchsorted_method=searchsorted_method,
     )
 
 
 def _finalize(
-    query_index: Int[Array, "capacity"],
-    data_index: Int[Array, "capacity"],
+    query_index: Int[Array, " capacity"],
+    data_index: Int[Array, " capacity"],
     overflowed: Bool[Array, ""],
     num_queries: int,
     raise_on_overflow: bool,
+    searchsorted_method: SearchsortedMethod = "scan_unrolled",
     overflow_message: str = (
         "The neighbor search ran out of capacity and dropped edges. Increase "
         "`max_edges` or `max_candidates`, or pass `raise_on_overflow=False` to read "
@@ -342,7 +348,9 @@ def _finalize(
     if raise_on_overflow:
         # on an integer array, as `error_if` on floats has no jet rule
         query_index = eqx.error_if(query_index, overflowed, overflow_message)
-    return Neighbors(query_index, data_index, overflowed, num_queries)
+    return Neighbors(
+        query_index, data_index, overflowed, num_queries, searchsorted_method
+    )
 
 
 def _checked_total(counts: Int[Array, "r"]) -> tuple[Array, Array, Array]:
@@ -372,6 +380,7 @@ def _expand_and_filter(
     max_candidates: int,
     raise_on_overflow: bool,
     order: Int[Array, "n"] | None = None,
+    searchsorted_method: SearchsortedMethod = "scan_unrolled",
 ) -> Neighbors:
     """Expands ranges of candidates, filters them by distance and compacts to COO.
 
@@ -389,6 +398,7 @@ def _expand_and_filter(
         max_candidates: Capacity of the candidates.
         raise_on_overflow: Whether to raise if a capacity is exceeded.
         order: Maps positions in the ranges to data indices, if they differ.
+        searchsorted_method: Method of `Neighbors.row_splits` of the result.
 
     Returns:
         The edges.
@@ -420,6 +430,7 @@ def _expand_and_filter(
         overflowed,
         m,
         raise_on_overflow,
+        searchsorted_method,
     )
 
 
@@ -551,23 +562,23 @@ def radius_neighbor_search(
             candidate_factors, 3**d, d, max_edges, max(m * n, 1)
         )
     if n == 0 or m == 0:
-        neighbors = _empty(m, max_edges)
-    else:
-        data, queries = _coordinates(data, queries)
-        order, start, count = _cell_ranges(data, queries, radius, searchsorted_method)
-        neighbors = _expand_and_filter(
-            lambda index: data[index],
-            n,
-            queries,
-            radius,
-            start,
-            count,
-            max_edges,
-            max_candidates,
-            raise_on_overflow,
-            order,
-        )
-    return dataclasses.replace(neighbors, searchsorted_method=searchsorted_method)
+        return _empty(m, max_edges, searchsorted_method)
+
+    data, queries = _coordinates(data, queries)
+    order, start, count = _cell_ranges(data, queries, radius, searchsorted_method)
+    return _expand_and_filter(
+        lambda index: data[index],
+        n,
+        queries,
+        radius,
+        start,
+        count,
+        max_edges,
+        max_candidates,
+        raise_on_overflow,
+        order,
+        searchsorted_method,
+    )
 
 
 def _grid_ranges(

@@ -2,15 +2,31 @@
 
 All notable changes to **neojax** will be documented in this file.
 
-## [Unreleased] -2026-11-06
+## [Unreleased] -2026-11-12
 
 ### Added
+- Sparse neighbor search with all pairs within a radius as an edge list, replacing the padded fixed-width lists (see Breaking changes).
+  - `Neighbors` is a capacity-padded COO edge list sorted by query: `query_index`, `data_index`, an `overflowed` flag and the static `num_queries`, with the properties `mask`, `num_edges`, `row_splits` and `neighbor_counts`.
+  - `radius_neighbor_search` sorts the points into cells at least as wide as the radius and searches the neighboring cells (no dense cell buffer). Faster than the former padded search on all benchmarked meshes.
+  - `radius_neighbor_search_grid` finds the neighbors on a `RegularGrid` from index arithmetic alone, 1.75-4x faster than the cell search. `RegularGrid` describes a static uniform grid and builds its points, `RegularGrid.from_points` recovers and validates one from coordinates outside of `jit`.
+  - `radius_neighbor_search_brute` computes all pairwise distances, as a reference.
+  - The searches raise an error, also under `jit` and `vmap`, if a capacity is too small, instead of dropping edges silently (`raise_on_overflow=False` returns the `overflowed` flag instead). They treat coordinates as constants for differentiation, also in Taylor mode, and compute distances in at least float32.
+- `neojax.utils.segment_ops`: `segment_mean`, `segment_max` (with Taylor mode support) and `segment_softmax` over the edges of each query, ignoring padding. `segment_softmax` follows `jraph`.
 - Example 6: solver-in-the-loop active learning on 2D decaying Navier–Stokes turbulence with exponax data generation, stochastic acquisition and a `vmap`ped `CNO` ensemble.
 - Support for Python 3.14 and a weekly github workflow `upstream_deps.yml` that checks compatibility with new dependency versions
 - Local patch for outstanding jet primitive rules: `neojax.utils._jet_rules` now defines the needed jet rules for higher order derivative Sobolev metrics and neojax models. Rules are registered automatically upon import of `neojax.metrics.sobolev_metrics`.
 - All metrics now support PyTree inputs for models (needed in e.g. GiNO, GAOT and GeoFNO):
   - `BaseMetric` now defines `vmap_model` and `batch_axes` static helper methods. They vmap the model over different PyTree inputs (all metrics use them except `SobolevMetric`).
 
+### Breaking Changes
+- The padded `Neighbors` (`index`, `mask`, `sq_dist`) and `neighbor_truncation` are removed. Edges are no longer cut off at the nearest `k`, so neighborhoods are complete.
+- `max_neighbors` is replaced by `mean_neighbors`, the expected mean number of neighbors per query, which sets the capacity of the edge list to `mean_neighbors` times the number of queries (`GNOBlock`, `MAGNOBlock`, `GAOT`; `in_gno_mean_neighbors` and `out_gno_mean_neighbors` in `GiNO`). `MAGNOBlock` scales the capacity of scale $s$ by $s^d$. The default of 32 gives as many edge slots as the former default lists.
+- Outputs change where neighborhoods were truncated before: the `"sum"` reduction of a `GNOBlock` (e.g. the output GNO of `GiNO`) now sums over all neighbors within the radius, which can change the scale of its output.
+- `query_chunk_size` is replaced by `edge_chunk_size` (`gno_edge_chunk_size` in `GiNO` and `GAOT`), which bounds the number of edges the kernel network sees at a time. The searches no longer need chunking.
+- `IntegralTransform` evaluates the kernel per edge and sums with `segment_sum`. Its `weighting_fn` takes the squared distances from the new `sq_dist` argument.
+- `NeighborAttention` takes per-edge coordinates shaped (channels, edges) and the `Neighbors`, and returns one weight per edge.
+- `GeometricEmbedding` and `edge_drop` work on edge lists. `edge_drop` moves dropped edges to the padding, so its result stays sorted by query.
+- `GNOBlock` and `MAGNOBlock` have a `build_neighbors` method and accept a `RegularGrid` as input points. `GiNO` accepts a `RegularGrid` as `x_latent`, and the decoder of `GAOT` searches on its latent grid with `radius_neighbor_search_grid`.
 
 ### Changes
 - Data generation now uses [exponax](https://github.com/Ceyron/exponax) instead of `diffrax` (the `gen` and `ex` extras install `exponax`):

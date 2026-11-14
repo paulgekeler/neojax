@@ -26,7 +26,12 @@ from neojax.nn.neighbor_search import radius_neighbor_search
 from neojax.nn.pointwise_mlp import PointwiseMLP
 from neojax.tests.conftest import assert_filter_jittable
 
-D, N, M, F_C, RADIUS, K = 2, 40, 15, 3, 0.4, 12
+D, N, M, F_C, RADIUS, CAPACITY = 2, 40, 15, 3, 0.4, 600
+
+
+def edge_sq_dist(y, x, neighbors):
+    query = jnp.minimum(neighbors.query_index, x.shape[0] - 1)
+    return jnp.sum((x[query] - y[neighbors.data_index]) ** 2, axis=-1)
 
 
 @pytest.fixture
@@ -35,8 +40,15 @@ def setup():
     y = jr.uniform(k1, (N, D))
     x = jr.uniform(k2, (M, D))
     f_y = jr.normal(k3, (F_C, N))
-    neighbors = radius_neighbor_search(y, x, RADIUS, K)
-    return {"y": y, "x": x, "f_y": f_y, "neighbors": neighbors, "key": k4}
+    neighbors = radius_neighbor_search(y, x, RADIUS, CAPACITY)
+    return {
+        "y": y,
+        "x": x,
+        "f_y": f_y,
+        "neighbors": neighbors,
+        "sq_dist": edge_sq_dist(y, x, neighbors),
+        "key": k4,
+    }
 
 
 @pytest.fixture
@@ -57,17 +69,17 @@ def manual_transform():
         y, x, f_y = map(
             np.asarray, (y, x, f_y if f_y is not None else np.zeros((0, N)))
         )
-        index, mask = np.asarray(neighbors.index), np.asarray(neighbors.mask)
-        sq_dist = np.asarray(neighbors.sq_dist)
+        query, data = (
+            np.asarray(neighbors.query_index),
+            np.asarray(neighbors.data_index),
+        )
         nonlinear = it.transform_type.startswith("nonlinear")
         out = None
         for i in range(x.shape[0]):
             acc = 0.0
             count = 0
-            for j in range(index.shape[1]):
-                if not mask[i, j]:
-                    continue
-                yj = index[i, j]
+            for edge in np.nonzero(query == i)[0]:
+                yj = data[edge]
                 feats = [y[yj], x[i]] + ([f_y[:, yj]] if nonlinear else [])
                 k = np.asarray(
                     it.channel_mlp(jnp.array(np.concatenate(feats))[:, None])
@@ -77,7 +89,8 @@ def manual_transform():
                 if quadrature_weights is not None:
                     k = k * float(quadrature_weights[yj])
                 if weighting_fn is not None:
-                    k = k * np.asarray(weighting_fn(jnp.array(sq_dist[i, j])))
+                    sq_dist = np.sum((x[i] - y[yj]) ** 2)
+                    k = k * np.asarray(weighting_fn(jnp.array(sq_dist)))
                 acc = acc + k
                 count += 1
             acc = np.zeros(it.channel_mlp.weights[-1].shape[0]) if count == 0 else acc
@@ -136,7 +149,13 @@ class TestIntegralTransform:
             setup["key"], "linear", reduction="mean", weighting_fn=weighting_fn
         )
         assert it.reduction == "sum"
-        out = it(setup["y"], setup["x"], setup["neighbors"], setup["f_y"])
+        out = it(
+            setup["y"],
+            setup["x"],
+            setup["neighbors"],
+            setup["f_y"],
+            sq_dist=setup["sq_dist"],
+        )
         expected = manual_transform(
             it,
             setup["y"],
@@ -146,6 +165,12 @@ class TestIntegralTransform:
             weighting_fn=weighting_fn,
         )
         np.testing.assert_allclose(out, expected, rtol=1e-4, atol=1e-5)
+
+    def test_weighting_fn_requires_sq_dist(self, setup, make_transform):
+        weighting_fn = make_weighting_fn("half_cos", sq_radius=RADIUS**2)
+        it = make_transform(setup["key"], "linear", weighting_fn=weighting_fn)
+        with pytest.raises(ValueError, match="sq_dist"):
+            it(setup["y"], setup["x"], setup["neighbors"], setup["f_y"])
 
     @pytest.mark.parametrize("transform_type", ["linear", "nonlinear_kernelonly"])
     def test_quadrature_weights(
@@ -179,15 +204,15 @@ class TestIntegralTransform:
     def test_empty_neighborhood_is_zero(self, setup, reduction, make_transform):
         it = make_transform(setup["key"], "linear", reduction=reduction)
         x_far = jnp.array([[10.0, 10.0]])
-        neighbors = radius_neighbor_search(setup["y"], x_far, RADIUS, K)
+        neighbors = radius_neighbor_search(setup["y"], x_far, RADIUS, 8)
         out = it(setup["y"], x_far, neighbors, setup["f_y"])
         np.testing.assert_array_equal(out, jnp.zeros((F_C, 1)))
 
-    @pytest.mark.parametrize("chunk", [1, 4, 15, 100])
+    @pytest.mark.parametrize("chunk", [1, 7, 64, CAPACITY - 1, CAPACITY, 2 * CAPACITY])
     def test_chunked_equals_unchunked(self, setup, chunk, make_transform):
         full = make_transform(setup["key"], "nonlinear", reduction="mean")
         chunked = IntegralTransform(
-            full.channel_mlp, "nonlinear", "mean", query_chunk_size=chunk
+            full.channel_mlp, "nonlinear", "mean", edge_chunk_size=chunk
         )
         args = (setup["y"], setup["x"], setup["neighbors"], setup["f_y"])
         np.testing.assert_allclose(full(*args), chunked(*args), rtol=1e-5, atol=1e-6)
@@ -228,7 +253,15 @@ class TestIntegralTransform:
 
         def loss(args):
             model, f_y = args
-            return jnp.sum(model(setup["y"], setup["x"], setup["neighbors"], f_y))
+            return jnp.sum(
+                model(
+                    setup["y"],
+                    setup["x"],
+                    setup["neighbors"],
+                    f_y,
+                    sq_dist=setup["sq_dist"],
+                )
+            )
 
         g_model, g_f = eqx.filter_grad(loss)((it, setup["f_y"]))
         for leaf in jax.tree_util.tree_leaves(g_model):
@@ -239,7 +272,7 @@ class TestIntegralTransform:
     def test_invalid_arguments(self, setup):
         mlp = PointwiseMLP(key=setup["key"], layers=(2 * D, 4, F_C))
         with pytest.raises(ValueError):
-            IntegralTransform(mlp, query_chunk_size=0)
+            IntegralTransform(mlp, edge_chunk_size=0)
 
     def test_missing_f_for_nonlinear_raises(self, setup, make_transform):
         it = make_transform(setup["key"], "nonlinear")
@@ -261,11 +294,11 @@ class TestIntegralTransform:
         out = it(setup["y"], setup["x"], setup["neighbors"], setup["f_y"])
 
         y, x, f_y = (np.asarray(setup[n]) for n in ("y", "x", "f_y"))
-        index = np.asarray(setup["neighbors"].index)
-        mask = np.asarray(setup["neighbors"].mask)
+        query = np.asarray(setup["neighbors"].query_index)
+        data = np.asarray(setup["neighbors"].data_index)
         expected = np.zeros((F_C, M))
         for i in range(M):
-            js = index[i][mask[i]]
+            js = data[query == i]
             if js.size == 0:
                 continue
             if attention_type == "cosine":
@@ -307,20 +340,22 @@ class TestIntegralTransform:
         plain = make_transform(setup["key"], "linear", weighting_fn=weighting_fn)
         args = (setup["y"], setup["x"], setup["neighbors"], setup["f_y"])
         delta = jr.uniform(jr.key(11), (N,)) + 0.5
-        out = it(*args, quadrature_weights=delta)
+        kwargs = {"quadrature_weights": delta, "sq_dist": setup["sq_dist"]}
+        out = it(*args, **kwargs)
         assert out.shape == (F_C, M)
         assert bool(jnp.all(jnp.isfinite(out)))
         # attention weights sum to one, so attention changes the result
-        assert not np.allclose(out, plain(*args, quadrature_weights=delta))
+        assert not np.allclose(out, plain(*args, **kwargs))
 
-    @pytest.mark.parametrize("chunk", [1, 4, 100])
+    @pytest.mark.parametrize("chunk", [1, 7, 100])
     def test_attention_chunked_equals_unchunked(self, setup, chunk, make_transform):
+        # the softmax of a query spans several chunks
         attention = NeighborAttention(jr.key(21), D, "dot_product")
         full = make_transform(setup["key"], "nonlinear", attention=attention)
         chunked = IntegralTransform(
             full.channel_mlp,
             "nonlinear",
-            query_chunk_size=chunk,
+            edge_chunk_size=chunk,
             attention=attention,
         )
         args = (setup["y"], setup["x"], setup["neighbors"], setup["f_y"])
@@ -330,7 +365,7 @@ class TestIntegralTransform:
         attention = NeighborAttention(jr.key(21), D)
         it = make_transform(setup["key"], "linear", attention=attention)
         x_far = jnp.array([[10.0, 10.0]])
-        neighbors = radius_neighbor_search(setup["y"], x_far, RADIUS, K)
+        neighbors = radius_neighbor_search(setup["y"], x_far, RADIUS, 8)
         out = it(setup["y"], x_far, neighbors, setup["f_y"])
         np.testing.assert_array_equal(out, jnp.zeros((F_C, 1)))
 

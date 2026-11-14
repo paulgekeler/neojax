@@ -179,30 +179,35 @@ class GeometricEmbedding(eqx.Module):
         neighbors: Neighbors,
     ) -> Float[Array, "m f"]:
         """Standardized statistics of the neighborhoods, shaped (m, 3 + 2d)."""
-        geom = jax.lax.stop_gradient(input_geom)
-        q = jax.lax.stop_gradient(queries)
-
-        nbr = geom[neighbors.index]  # (m, k, d)
+        m = queries.shape[0]
         # promote to float32 to avoid cancellation
         # and NotImplementedError for (b)float16 (in linalg.eigvalsh)
         compute_dtype = jnp.promote_types(input_geom.dtype, jnp.float32)
         in_dtype = input_geom.dtype
-        nbr = jnp.astype(nbr, compute_dtype)
-        q = jnp.astype(q, compute_dtype)
-        w = neighbors.mask.astype(q.dtype)  # (m, k)
-        count = jnp.sum(w, axis=-1)
+        geom = jax.lax.stop_gradient(input_geom).astype(compute_dtype)
+        q = jax.lax.stop_gradient(queries).astype(compute_dtype)
+
+        query_index = neighbors.query_index
+        safe_query = jnp.minimum(query_index, m - 1)
+
+        def per_query(values: Array) -> Array:
+            return jax.ops.segment_sum(values, query_index, m, indices_are_sorted=True)
+
+        nbr = geom[neighbors.data_index]  # (e, d)
+        count = per_query(jnp.ones(nbr.shape[0], compute_dtype))
         safe_count = jnp.maximum(count, 1.0)
 
-        dist = jnp.sqrt(jnp.sum((nbr - q[:, None, :]) ** 2, axis=-1))
-        mean_dist = jnp.sum(w * dist, axis=-1) / safe_count
-        mean_sq_dist = jnp.sum(w * dist**2, axis=-1) / safe_count
+        dist = jnp.sqrt(jnp.sum((nbr - q[safe_query]) ** 2, axis=-1))
+        mean_dist = per_query(dist) / safe_count
+        mean_sq_dist = per_query(dist**2) / safe_count
         var_dist = jnp.maximum(mean_sq_dist - mean_dist**2, 0.0)
 
-        centroid = jnp.sum(w[..., None] * nbr, axis=1) / safe_count[:, None]
+        centroid = per_query(nbr) / safe_count[:, None]
         offset = centroid - q
 
-        centered = (nbr - centroid[:, None, :]) * w[..., None]
-        cov = jnp.einsum("mki,mkj->mij", centered, centered) / safe_count[:, None, None]
+        centered = nbr - centroid[safe_query]
+        cov = per_query(centered[:, :, None] * centered[:, None, :])
+        cov = cov / safe_count[:, None, None]
         eigenvalues = jnp.linalg.eigvalsh(cov)[:, ::-1]  # descending
 
         features = jnp.concatenate(
@@ -231,19 +236,22 @@ class GeometricEmbedding(eqx.Module):
         neighbors: Neighbors,
     ) -> Float[Array, "out_c m"]:
         """PointNet embedding of the neighborhoods."""
-        mask = neighbors.mask  # (m, k)
-        has_neighbors = jnp.any(mask, axis=-1)
-        centered = input_geom[neighbors.index] - queries[:, None, :]  # (m, k, d)
-        features = self.point_mlp(jnp.moveaxis(centered, -1, 0))  # (h, m, k) >= 0
+        m = queries.shape[0]
+        query_index = neighbors.query_index
+        safe_query = jnp.minimum(query_index, m - 1)
+        centered = input_geom[neighbors.data_index] - queries[safe_query]  # (e, d)
+        features = self.point_mlp(centered.T).T  # (e, h) >= 0
 
-        features = jnp.where(mask[None], features, 0.0)
+        # imported here: `neojax.utils` imports the models, which import this module
+        from neojax.utils.segment_ops import segment_max, segment_mean
+
         if self.pooling == "max":
-            # features are non-negative (ReLU), so zero is a neutral padding value
-            pooled = jnp.max(features, axis=-1)
+            pooled = segment_max(features, query_index, m, indices_are_sorted=True)
         else:
-            pooled = jnp.sum(features, axis=-1) / jnp.maximum(jnp.sum(mask, -1), 1)
+            pooled = segment_mean(features, query_index, m, indices_are_sorted=True)
 
-        return jnp.where(has_neighbors[None], self.mlp(pooled), 0.0)
+        has_neighbors = neighbors.neighbor_counts > 0
+        return jnp.where(has_neighbors[None], self.mlp(pooled.T), 0.0)
 
     def __call__(
         self,
@@ -256,7 +264,8 @@ class GeometricEmbedding(eqx.Module):
         Args:
             input_geom: The `n` points of the point cloud the neighbors index into.
             queries: The `m` query points.
-            neighbors: The neighbors in `input_geom` of each query, shaped (m, k).
+            neighbors: The edges between the queries and their neighbors in
+                `input_geom`.
 
         Returns:
             The geometric embedding of the queries.

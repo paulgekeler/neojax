@@ -210,8 +210,8 @@ class TestSobolevMetric:
         assert not jnp.isnan(metric_bwd)
 
     def test_jet_rule_primitives_patch(self):
-        # ony test GiNO (uses lax.scatter, lax.iota and lax.top_k)
-        # GeoFNO uses scatter and iota, GAOT uses iota and top_k, so GiNO tests them already
+        # ony test GiNO (uses lax.scatter, lax.iota, and lax.sort in the neighbor search)
+        # GeoFNO uses scatter and iota, GAOT the same neighbor search, so GiNO tests them already
         # FNO, TFNO and UNO only use lax.scatter so they are also tested
         k1, k2, k3, k4 = jr.split(jr.key(0), 4)
         axes = [jnp.linspace(0.0, 1.0, 6)] * 2
@@ -233,8 +233,8 @@ class TestSobolevMetric:
             coord_dim=2,
             in_gno_radius=0.4,
             out_gno_radius=0.4,
-            in_gno_max_neighbors=8,
-            out_gno_max_neighbors=8,
+            in_gno_mean_neighbors=40,
+            out_gno_mean_neighbors=36,
             gno_embed_channels=4,
             in_gno_channel_mlp_hidden_layers=(8,),
             out_gno_channel_mlp_hidden_layers=(8,),

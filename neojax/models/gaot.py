@@ -26,7 +26,7 @@ from typing_extensions import override
 
 from neojax.models.baseno import BaseNO
 from neojax.nn.magno import MAGNOBlock
-from neojax.nn.neighbor_search import Neighbors
+from neojax.nn.neighbor_search import Neighbors, RegularGrid
 from neojax.nn.patching import patchify, unpatchify
 from neojax.nn.pointwise_mlp import PointwiseMLP
 from neojax.nn.positional_embedding import SinusoidalEmbedding
@@ -95,8 +95,9 @@ class GAOT(BaseNO):
             sees input points. Default is 0.033.
         scales: Factors of the radius for the multiscale neighborhoods of the
             `MAGNOBlock`s. Default is `(1.0,)`.
-        max_neighbors: Width of the padded neighbor lists of each scale, i.e. the
-            maximum number of neighbors per query. Default is 32.
+        mean_neighbors: Expected mean number of neighbors per query at the base
+            radius, which sets the capacity of the edge lists of the `MAGNOBlock`s.
+            Larger scales get a proportionally larger capacity. Default is 32.
         gno_hidden_channels: Width of the hidden layers of the kernel networks of the
             `MAGNOBlock`s. Default is 64.
         gno_n_layers: Number of hidden layers of the kernel networks. Default is 3.
@@ -127,9 +128,9 @@ class GAOT(BaseNO):
             strategy.
         gno_activation: Activation function of the kernel networks of the `MAGNOBlock`s.
             Default is `jax.nn.gelu`.
-        gno_query_chunk_size: Number of query points the neighbor searches and
-            integral transforms of the `MAGNOBlock`s process at a time to limit peak
-            memory. Default is `None`, all points at once.
+        gno_edge_chunk_size: Number of edges the integral transforms of the
+            `MAGNOBlock`s process at a time to limit peak memory. Default is `None`,
+            all edges at once.
 
     Raises:
         ValueError: If `in_channels`, `out_channels`, `lifting_channels` or `patch_size`
@@ -169,16 +170,11 @@ class GAOT(BaseNO):
         coordinates. The rescaling is per axis, which does not preserve the aspect ratio
         of the domain (as in the reference implementation).
 
-    !!! warning "Neighbor truncation"
-        The `MAGNOBlock`s consider at most `max_neighbors` neighbors per query and
-        scale (the nearest ones), silently. Check with `neighbor_truncation` and choose
-        `max_neighbors` large enough for your point densities, radii and scales.
-
     !!! info "Differences to the reference implementation"
-        * The neighbors are padded fixed-width lists instead of ragged lists
-          (CSR), to be compatible with `jax.jit`.
-        * The random neighbor sampling is called `edge_drop_strategy`
-          and `max_neighbors` is the width of the neighbor lists.
+        * The neighbors are edge lists (COO) with a static capacity instead of
+          ragged lists (CSR), to be compatible with `jax.jit`. The decoder searches
+          its neighbors on the latent grid with `radius_neighbor_search_grid`.
+        * The random neighbor sampling is called `edge_drop_strategy`.
         * The learned scale weights of the `MAGNOBlock`s act on the rescaled coordinates,
           also with `node_embedding`.
         * The time-conditional normalization and the autoregressive rollout
@@ -265,7 +261,7 @@ class GAOT(BaseNO):
         positional_embedding: Literal["absolute", "rope"] = "absolute",
         radius: float = 0.033,
         scales: Sequence[float] = (1.0,),
-        max_neighbors: int = 32,
+        mean_neighbors: float | int = 32,
         gno_hidden_channels: int = 64,
         gno_n_layers: int = 3,
         gno_transform_type: Literal[
@@ -284,7 +280,7 @@ class GAOT(BaseNO):
         edge_drop_ratio: float | None = None,
         edge_drop_max_neighbors: int | None = None,
         gno_activation: Callable = jax.nn.gelu,
-        gno_query_chunk_size: int | None = None,
+        gno_edge_chunk_size: int | None = None,
     ) -> None:
         for name, value in [
             ("in_channels", in_channels),
@@ -359,7 +355,7 @@ class GAOT(BaseNO):
             coord_dim=ndim,
             radius=radius,
             scales=scales,
-            max_neighbors=max_neighbors,
+            mean_neighbors=mean_neighbors,
             hidden_channels=gno_hidden_channels,
             n_layers=gno_n_layers,
             transform_type=gno_transform_type,
@@ -376,7 +372,7 @@ class GAOT(BaseNO):
             edge_drop_ratio=edge_drop_ratio,
             edge_drop_max_neighbors=edge_drop_max_neighbors,
             activation=gno_activation,
-            query_chunk_size=gno_query_chunk_size,
+            edge_chunk_size=gno_edge_chunk_size,
         )
         self.encoder = MAGNOBlock(key=k_enc, **magno_kwargs)
         self.decoder = MAGNOBlock(key=k_dec, **magno_kwargs)
@@ -401,21 +397,25 @@ class GAOT(BaseNO):
         self.projection = PointwiseMLP(k_proj, (lifting_channels, out_channels))
 
     def _rescale(self, x: Float[Array, "n d"]) -> Float[Array, "n d"]:
-        """Maps coordinates from the domain bounds to [-1, 1]."""
+        """Maps coordinates from the domain bounds to [-1, 1], in at least float32.
+
+        The neighbor search must not depend on the precision of the model.
+        """
+        x = x.astype(jnp.promote_types(x.dtype, jnp.float32))
         if self.domain_bounds is None:
             return x
         low = jnp.asarray([b[0] for b in self.domain_bounds], dtype=jnp.float32)
         high = jnp.asarray([b[1] for b in self.domain_bounds], dtype=jnp.float32)
         return 2.0 * (x - low) / (high - low) - 1.0
 
+    def _latent_grid(self) -> RegularGrid:
+        """The regular latent grid on [-1, 1]."""
+        d = len(self.latent_resolution)
+        return RegularGrid((-1.0,) * d, (1.0,) * d, self.latent_resolution)
+
     def _latent_points(self) -> Float[Array, "g d"]:
         """Points of the regular latent grid on [-1, 1], flattened row-major."""
-        axes = [
-            jnp.linspace(-1.0, 1.0, r, dtype=jnp.float32)
-            for r in self.latent_resolution
-        ]
-        grid = jnp.stack(jnp.meshgrid(*axes, indexing="ij"), axis=-1)
-        return grid.reshape(-1, len(self.latent_resolution))
+        return self._latent_grid().points().astype(jnp.float32)
 
     def _check_coordinates(self, x: Float[Array, "n d"], name: str) -> None:
         if x.ndim != 2 or x.shape[1] != len(self.latent_resolution):
@@ -459,10 +459,9 @@ class GAOT(BaseNO):
             x_out = x_in
         self._check_coordinates(x_out, "x_out")
         x_in, x_out = self._rescale(x_in), self._rescale(x_out)
-        x_latent = self._latent_points()
         return (
-            self.encoder.build_neighbors(x_in, x_latent),
-            self.decoder.build_neighbors(x_latent, x_out),
+            self.encoder.build_neighbors(x_in, self._latent_points()),
+            self.decoder.build_neighbors(self._latent_grid(), x_out),
         )
 
     @override
@@ -523,7 +522,7 @@ class GAOT(BaseNO):
         if in_neighbors is None:
             in_neighbors = self.encoder.build_neighbors(x_in, x_latent)
         if out_neighbors is None:
-            out_neighbors = self.decoder.build_neighbors(x_latent, x_out)
+            out_neighbors = self.decoder.build_neighbors(self._latent_grid(), x_out)
 
         h = self.lifting(u)  # (c, n)
         h = self.encoder(

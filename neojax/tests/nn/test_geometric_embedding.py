@@ -24,7 +24,7 @@ from neojax.nn.geometric_embedding import GeometricEmbedding
 from neojax.nn.neighbor_search import Neighbors, radius_neighbor_search
 from neojax.tests.conftest import assert_filter_jittable
 
-N, M, K, OUT = 60, 20, 10, 6
+N, M, CAPACITY, OUT = 60, 20, 1200, 6
 
 
 @pytest.fixture
@@ -34,7 +34,7 @@ def make_data():
         data = jr.uniform(k1, (N, d))
         # the last query is far from all points: an empty neighborhood
         queries = jnp.concatenate([jr.uniform(k2, (M - 1, d)), jnp.full((1, d), 9.0)])
-        return data, queries, radius_neighbor_search(data, queries, radius, K)
+        return data, queries, radius_neighbor_search(data, queries, radius, CAPACITY)
 
     return f
 
@@ -42,11 +42,11 @@ def make_data():
 def reference_statistics(data, queries, neighbors):
     """Straightforward numpy version of the standardized statistical features."""
     data, queries = np.asarray(data), np.asarray(queries)
-    index, mask = np.asarray(neighbors.index), np.asarray(neighbors.mask)
+    query, index = np.asarray(neighbors.query_index), np.asarray(neighbors.data_index)
     d = data.shape[1]
     features = np.zeros((queries.shape[0], 3 + 2 * d))
     for i in range(queries.shape[0]):
-        nbr = data[index[i][mask[i]]]
+        nbr = data[index[query == i]]
         if len(nbr) == 0:
             continue
         dist = np.linalg.norm(nbr - queries[i], axis=1)
@@ -89,21 +89,24 @@ class TestGeometricEmbedding:
         emb = GeometricEmbedding(jr.key(1), 2, OUT, method=method)
         out = emb(data, queries, neighbors)
 
-        # arbitrary (valid) indices in the padding
-        garbage = jr.randint(jr.key(3), neighbors.index.shape, 0, N)
+        # arbitrary (valid) data indices in the padding
+        garbage = jr.randint(jr.key(3), neighbors.data_index.shape, 0, N)
         garbled = Neighbors(
-            index=jnp.where(neighbors.mask, neighbors.index, garbage),
-            mask=neighbors.mask,
-            sq_dist=neighbors.sq_dist,
+            query_index=neighbors.query_index,
+            data_index=jnp.where(neighbors.mask, neighbors.data_index, garbage),
+            overflowed=neighbors.overflowed,
+            num_queries=M,
         )
         np.testing.assert_allclose(out, emb(data, queries, garbled), atol=1e-5)
 
-        # permuted neighbor order
-        perm = jr.permutation(jr.key(4), K)
+        # permuted order of the neighbors of each query
+        scores = jr.uniform(jr.key(4), neighbors.query_index.shape)
+        perm = jnp.lexsort((scores, neighbors.query_index))
         permuted = Neighbors(
-            index=neighbors.index[:, perm],
-            mask=neighbors.mask[:, perm],
-            sq_dist=neighbors.sq_dist[:, perm],
+            query_index=neighbors.query_index[perm],
+            data_index=neighbors.data_index[perm],
+            overflowed=neighbors.overflowed,
+            num_queries=M,
         )
         np.testing.assert_allclose(out, emb(data, queries, permuted), atol=1e-4)
 
@@ -157,12 +160,8 @@ class TestGeometricEmbedding:
                 assert float(jnp.abs(g_queries).sum()) > 0
 
     def test_single_query_is_finite(self, make_data):
-        data, queries, neighbors = make_data(2, radius=0.5)
-        single = Neighbors(
-            index=neighbors.index[:1],
-            mask=neighbors.mask[:1],
-            sq_dist=neighbors.sq_dist[:1],
-        )
+        data, queries, _ = make_data(2, radius=0.5)
+        single = radius_neighbor_search(data, queries[:1], 0.5, CAPACITY)
         emb = GeometricEmbedding(jr.key(1), 2, OUT)
         out = emb(data, queries[:1], single)
         assert out.shape == (OUT, 1) and bool(jnp.all(jnp.isfinite(out)))
@@ -180,7 +179,9 @@ class TestGeometricEmbedding:
         ref_emb = emb(data, queries, neighbors)
         for dtype in [jnp.float16, jnp.bfloat16]:
             eps = float(jnp.finfo(dtype).eps)
-            rtol = 1.0 * eps
+            # rounding the coordinates moves the small covariance eigenvalues of
+            # full neighborhoods by a few eps, also with the former padded lists
+            rtol = 4.0 * eps
             atol = rtol * float(jnp.abs(ref_emb).max())
             cast_emb = emb(
                 jnp.astype(data, dtype), jnp.astype(queries, dtype), neighbors

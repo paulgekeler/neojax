@@ -20,8 +20,7 @@ from typing import Literal
 import equinox as eqx
 import jax
 import jax.numpy as jnp
-import jax.tree_util as jtu
-from jaxtyping import Array, Float
+from jaxtyping import Array, Float, Int
 
 from neojax.nn.neighbor_attention import NeighborAttention
 from neojax.nn.neighbor_search import Neighbors
@@ -45,8 +44,9 @@ class IntegralTransform(eqx.Module):
     concatenated features $(y, x [, f(y)])$ of each pair of points
     and that only mixes channels. The product with $f(y)$ is elementwise.
 
-    The neighborhoods are passed as padded `Neighbors`. Optional per-point
-    quadrature weights $\delta(y)$ turn the sum into a Riemann sum.
+    The neighborhoods are passed as an edge list, `Neighbors`. The kernel is
+    evaluated once per edge and the values are summed per output point. Optional
+    per-point quadrature weights $\delta(y)$ turn the sum into a Riemann sum.
 
     With a `weighting_fn` $w$ the hard ball $A(x) = B_r(x)$ is replaced by a
     smooth weight, i.e. the layer computes $\int w(x, y) \, k(x, y) \, f(y) \, dy$,
@@ -69,18 +69,18 @@ class IntegralTransform(eqx.Module):
             or averaging (`"mean"`). Default is `"sum"`. An empty neighborhood
             yields zero for both. Forced to `"sum"` if `weighting_fn`
             or `attention` is given.
-        weighting_fn: Optional function mapping the squared distances between
-            $x$ and its neighbors to weights by which the kernel values are
-            multiplied. This is the mollifier of the mollified GNO,
-            see `make_weighting_fn`. The squared distances are recomputed by
-            the `GNOBlock` from the coordinates, so the weights stay
+        weighting_fn: Optional function mapping the squared distances of the
+            edges to weights by which the kernel values are multiplied. This is
+            the mollifier of the mollified GNO, see `make_weighting_fn`. The
+            squared distances are passed to `__call__`, so that the `GNOBlock`
+            can compute them from the coordinates and keep the weights
             differentiable in $x$ even for precomputed neighbors.
             Default is `None`.
-        query_chunk_size: If given, the transform is computed for this many
-            output points at a time and rematerialized in the backward pass.
-            The kernel `channel_mlp` is evaluated on (num pairs) = `m * k` pairs,
-            which can be prohibitively large in memory for wide kernels,
-            so this trades speed for memory. Default is `None`.
+        edge_chunk_size: If given, the transform is computed for this many edges
+            at a time and rematerialized in the backward pass. The kernel
+            `channel_mlp` is evaluated on every edge, which can be prohibitively
+            large in memory for wide kernels, so this trades speed for memory.
+            Default is `None`.
         attention: Optional `NeighborAttention` computing the attention weights
             $\alpha(x, y)$ of the neighbors from the (embedded) coordinates
             passed to `__call__`. The weights sum to one over the valid neighbors,
@@ -89,14 +89,14 @@ class IntegralTransform(eqx.Module):
 
     Raises:
         ValueError: If `transform_type` or `reduction` is invalid.
-        ValueError: If `query_chunk_size` is not a positive integer.
+        ValueError: If `edge_chunk_size` is not a positive integer.
 
     ??? info "Internal Attributes"
         * **channel_mlp** (`PointwiseMLP`): The kernel network.
         * **transform_type** (`str`): Integral transform type.
         * **reduction** (`str`): Reduction over neighborhoods.
         * **weighting_fn** (`Callable | None`): Weighting function of the squared distances.
-        * **query_chunk_size** (`int | None`): Number of output points per chunk.
+        * **edge_chunk_size** (`int | None`): Number of edges per chunk.
         * **attention** (`NeighborAttention | None`): Attention weights of the neighbors.
 
     !!! warning "Sum or mean with a `weighting_fn`"
@@ -104,12 +104,6 @@ class IntegralTransform(eqx.Module):
         such neighbors still count in a `"mean"`. When the query moves, neighbors
         enter and leave the ball and the mean changes discontinuously. That is why
         a `weighting_fn` forces the `"sum"` reduction.
-
-    !!! warning "Neighbor truncation"
-        Neighbors beyond the `max_neighbors` nearest are dropped, even if
-        they have a nonzero weight. This reintroduces a discontinuity,
-        so choose `max_neighbors` large enough that truncation never occurs
-        when using a `weighting_fn` for derivatives.
     """
 
     channel_mlp: PointwiseMLP
@@ -120,7 +114,7 @@ class IntegralTransform(eqx.Module):
     weighting_fn: Callable[[Float[Array, "..."]], Float[Array, "..."]] | None = (
         eqx.field(static=True)
     )
-    query_chunk_size: int | None = eqx.field(static=True)
+    edge_chunk_size: int | None = eqx.field(static=True)
     attention: NeighborAttention | None
 
     def __init__(
@@ -132,7 +126,7 @@ class IntegralTransform(eqx.Module):
         reduction: Literal["sum", "mean"] = "sum",
         weighting_fn: Callable[[Float[Array, "..."]], Float[Array, "..."]]
         | None = None,
-        query_chunk_size: int | None = None,
+        edge_chunk_size: int | None = None,
         attention: NeighborAttention | None = None,
     ) -> None:
         if transform_type not in [
@@ -147,10 +141,10 @@ class IntegralTransform(eqx.Module):
             )
         if reduction not in ["sum", "mean"]:
             raise ValueError("reduction must be one of ['sum', 'mean'].")
-        if query_chunk_size is not None and (
-            not isinstance(query_chunk_size, int) or query_chunk_size <= 0
+        if edge_chunk_size is not None and (
+            not isinstance(edge_chunk_size, int) or edge_chunk_size <= 0
         ):
-            raise ValueError("query_chunk_size must be a positive integer or None.")
+            raise ValueError("edge_chunk_size must be a positive integer or None.")
 
         self.channel_mlp = channel_mlp
         self.transform_type = transform_type
@@ -158,7 +152,7 @@ class IntegralTransform(eqx.Module):
             "sum" if weighting_fn is not None or attention is not None else reduction
         )
         self.weighting_fn = weighting_fn
-        self.query_chunk_size = query_chunk_size
+        self.edge_chunk_size = edge_chunk_size
         self.attention = attention
 
     def __call__(
@@ -168,6 +162,7 @@ class IntegralTransform(eqx.Module):
         neighbors: Neighbors,
         f_y: Float[Array, "f_c n"] | None = None,
         quadrature_weights: Float[Array, "n"] | None = None,
+        sq_dist: Float[Array, "capacity"] | None = None,
     ) -> Float[Array, "out_c m"]:
         r"""Computes the kernel integral transform.
 
@@ -175,9 +170,9 @@ class IntegralTransform(eqx.Module):
             y: The (embedded) coordinates of the `n` input points
                 that are integrated over.
             x: The (embedded) coordinates of the `m` output points.
-            neighbors: The neighbors in `y` of each output point,
-                shaped (m, k). These must be found with the *unembedded*
-                coordinates, e.g. by `radius_neighbor_search`.
+            neighbors: The edges between the output points and their neighbors
+                in `y`. These must be found with the *unembedded* coordinates,
+                e.g. by `radius_neighbor_search`.
             f_y: Input function sampled at `y`. Optional for the `"linear"`
                 transform, ignored by `"linear_kernelonly"` and required
                 by the nonlinear transforms.
@@ -185,12 +180,14 @@ class IntegralTransform(eqx.Module):
                 `n` input points, that multiply the kernel values (Riemann sum).
                 With a `"sum"` reduction they make the output independent of the
                 discretization. Default is `None`, no quadrature weights.
+            sq_dist: Squared distances of the edges, required by a `weighting_fn`.
 
         Returns:
             The output function sampled at `x`.
 
         Raises:
             ValueError: If `f_y` is required but `None`.
+            ValueError: If a `weighting_fn` is set but `sq_dist` is `None`.
             ValueError: If the `"linear"` or `"nonlinear"` transforms
                 are used and the kernel output channels do not match the
                 channels of `f_y`.
@@ -222,50 +219,78 @@ class IntegralTransform(eqx.Module):
                 f"channels, but the coordinates have {x.shape[-1]}."
             )
 
-        def transform_chunk(
-            x_chunk: Float[Array, "c e_x"], nb: Neighbors
-        ) -> Float[Array, "out_c c"]:
-            y_nb = jnp.moveaxis(y[nb.index], -1, 0)  # (e_y, c, k)
-            x_rep = jnp.broadcast_to(
-                x_chunk.T[:, :, None], (x_chunk.shape[1], *nb.index.shape)
-            )  # (e_x, c, k)
-            features = [y_nb, x_rep]
+        if self.weighting_fn is not None and sq_dist is None:
+            raise ValueError("sq_dist is required by the weighting_fn.")
+
+        m = x.shape[0]
+        query_index = neighbors.query_index
+        data_index = neighbors.data_index
+        # padding holds the sentinel m, which segment_sum drops
+        safe_query = jnp.minimum(query_index, m - 1)
+
+        edge_weights = None
+        if self.attention is not None:
+            # normalized over all edges of a query before chunking
+            edge_weights = self.attention(
+                x[safe_query].T, y[data_index].T, neighbors
+            )  # (e,)
+        if self.weighting_fn is not None:
+            mollifier = self.weighting_fn(sq_dist)
+            edge_weights = (
+                mollifier if edge_weights is None else edge_weights * mollifier
+            )
+
+        def transform_edges(
+            query: Int[Array, "c"],
+            data: Int[Array, "c"],
+            weights: Float[Array, "c"] | None,
+        ) -> Float[Array, "out_c m"]:
+            features = [y[data].T, x[jnp.minimum(query, m - 1)].T]  # (e_y, c), (e_x, c)
             f_nb = None
             if f_y is not None:
-                f_nb = f_y[:, nb.index]  # (f_c, c, k)
+                f_nb = f_y[:, data]  # (f_c, c)
                 if nonlinear:
                     features.append(f_nb)
 
             kernel = self.channel_mlp(jnp.concatenate(features, axis=0))
             if multiply_f:
                 kernel = kernel * f_nb
-            if self.attention is not None:
-                kernel = kernel * self.attention(x_rep, y_nb, nb.mask)[None]
+            if weights is not None:
+                kernel = kernel * weights[None]
             if quadrature_weights is not None:
-                kernel = kernel * quadrature_weights[nb.index][None]
-            if self.weighting_fn is not None:
-                kernel = kernel * self.weighting_fn(nb.sq_dist)[None]
+                kernel = kernel * quadrature_weights[data][None]
+            out = jax.ops.segment_sum(kernel.T, query, m, indices_are_sorted=True)
+            return out.T
 
-            kernel = jnp.where(nb.mask[None], kernel, 0.0)
-            out = jnp.sum(kernel, axis=-1)
-            if self.reduction == "mean":
-                out = out / jnp.maximum(jnp.sum(nb.mask, axis=-1), 1)
-            return out
+        chunk = self.edge_chunk_size
+        capacity = query_index.shape[0]
+        if chunk is None or chunk >= capacity:
+            out = transform_edges(query_index, data_index, edge_weights)
+        else:
+            # round up, not down
+            n_chunks = -(-capacity // chunk)
+            pad = n_chunks * chunk - capacity
 
-        m = x.shape[0]
-        chunk = self.query_chunk_size
-        if chunk is None or chunk >= m:
-            return transform_chunk(x, neighbors)
+            def to_chunks(a: Array, fill: int | float) -> Array:
+                return jnp.pad(a, (0, pad), constant_values=fill).reshape(
+                    n_chunks, chunk
+                )
 
-        n_chunks = -(-m // chunk)
-        pad = n_chunks * chunk - m
+            chunks = (
+                to_chunks(query_index, m),
+                to_chunks(data_index, 0),
+                None if edge_weights is None else to_chunks(edge_weights, 0.0),
+            )
+            body = jax.checkpoint(transform_edges)
 
-        def to_chunks(a: Array) -> Array:
-            padded = jnp.pad(a, ((0, pad),) + ((0, 0),) * (a.ndim - 1))
-            return padded.reshape(n_chunks, chunk, *a.shape[1:])
+            def step(total: Array, args: tuple) -> tuple[Array, None]:
+                return total + body(*args), None
 
-        out = jax.lax.map(
-            jax.checkpoint(lambda args: transform_chunk(*args)),
-            (to_chunks(x), jtu.tree_map(to_chunks, neighbors)),
-        )  # (n_chunks, out_c, chunk)
-        return jnp.moveaxis(out, 0, 1).reshape(out.shape[1], -1)[:, :m]
+            first = jax.tree.map(lambda a: a[0], chunks)
+            shape = jax.eval_shape(body, *first)
+            init = jnp.zeros(shape.shape, shape.dtype)
+            out, _ = jax.lax.scan(step, init, chunks)
+
+        if self.reduction == "mean":
+            out = out / jnp.maximum(neighbors.neighbor_counts, 1)
+        return out

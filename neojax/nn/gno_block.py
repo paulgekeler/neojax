@@ -14,6 +14,7 @@
 
 """Implementation of the Graph Neural Operator block."""
 
+import math
 from collections.abc import Callable, Sequence
 from typing import Literal
 
@@ -25,7 +26,12 @@ from jaxtyping import Array, Float, PRNGKeyArray
 
 from neojax.nn.integral_transform import IntegralTransform
 from neojax.nn.neighbor_attention import NeighborAttention
-from neojax.nn.neighbor_search import Neighbors, radius_neighbor_search
+from neojax.nn.neighbor_search import (
+    Neighbors,
+    RegularGrid,
+    radius_neighbor_search,
+    radius_neighbor_search_grid,
+)
 from neojax.nn.pointwise_mlp import PointwiseMLP
 from neojax.nn.positional_embedding import SinusoidalEmbedding
 
@@ -41,7 +47,8 @@ class GNOBlock(eqx.Module):
 
     The points can be optionally embedded with a `SinusoidalEmbedding`
     before they enter the kernel network.
-    The neighbors are always searched with the raw coordinates.
+    The neighbors are always searched with the raw coordinates. If the input
+    points are a `RegularGrid`, the faster `radius_neighbor_search_grid` is used.
 
     With an `attention_type` the kernel values of the neighbors are reweighed by
     normalized attention weights, which makes the block an Attentional Graph
@@ -63,8 +70,10 @@ class GNOBlock(eqx.Module):
         out_channels: Number of channels of the output function.
         coord_dim: Dimension of the domain on which $x$ and $y$ are defined.
         radius: Radius of the neighborhoods.
-        max_neighbors: Maximum number of neighbors per output point. Neighbors
-            beyond the nearest `max_neighbors` are dropped. Default is 32.
+        mean_neighbors: Expected mean number of neighbors per output point, which
+            sets the capacity of the edge list to `mean_neighbors` times the number
+            of output points. A neighborhood can be larger than this, as long as the
+            total fits. The search raises an error if it doesn't. Default is 32.
         transform_type: Integral transform to compute. Default is `"linear"`.
         reduction: How to aggregate over a neighborhood, by summing (`"sum"`)
             or averaging (`"mean"`). Default is `"sum"`.
@@ -87,9 +96,8 @@ class GNOBlock(eqx.Module):
             to keep the integral discretization invariant and have matching
             input and output channels (see the `kernel_in_channels` attribute).
             If passed, `channel_mlp_hidden_layers` and `activation` are ignored.
-        query_chunk_size: Number of output points to process at a time
-            in the neighbor search and the transform to limit peak memory.
-            Default is `None`, all points at once.
+        edge_chunk_size: Number of edges to process at a time in the integral
+            transform to limit peak memory. Default is `None`, all edges at once.
         attention_type: Type of the `NeighborAttention` of the neighbors,
             `"cosine"` or `"dot_product"`. `None` disables the attention.
             Default is `None`.
@@ -97,9 +105,9 @@ class GNOBlock(eqx.Module):
             `"dot_product"` attention. Default is 64.
 
     Raises:
-        ValueError: If `in_channels`, `out_channels`, `coord_dim`,
-            `max_neighbors` or `pos_embedding_channels` are not positive integers.
-        ValueError: If `radius` is not positive.
+        ValueError: If `in_channels`, `out_channels`, `coord_dim` or
+            `pos_embedding_channels` are not positive integers.
+        ValueError: If `radius` or `mean_neighbors` is not positive.
         ValueError: If `transform_type` is `"linear"` or `"nonlinear"`
             and `in_channels` differs from `out_channels`.
         ValueError: If `channel_mlp` has the wrong number of input or output channels.
@@ -113,14 +121,12 @@ class GNOBlock(eqx.Module):
         * **out_channels** (`int`): Number of channels of the output function.
         * **coord_dim** (`int`): Dimension of the domain.
         * **radius** (`float`): Radius of the neighborhoods.
-        * **max_neighbors** (`int`): Maximum number of neighbors per output point.
-        * **query_chunk_size** (`int | None`): Number of output points per chunk.
+        * **mean_neighbors** (`float`): Expected mean number of neighbors per output point.
 
-    !!! warning "Neighbor truncation"
-        Neighbors beyond the `max_neighbors` nearest are dropped silently.
-        With a `weighting_fn` a dropped neighbor can have a nonzero weight, which
-        reintroduces a discontinuity in `x`. Choose `max_neighbors` large enough
-        that truncation does not occur if you rely on derivatives of the output.
+    !!! info "Choosing `mean_neighbors`"
+        A change of the capacity triggers a new compilation and the search raises
+        an error if the edges don't fit. Choose `mean_neighbors` with some slack
+        over the densest sample of a dataset.
     """
 
     pos_embedding: SinusoidalEmbedding | None
@@ -129,8 +135,7 @@ class GNOBlock(eqx.Module):
     out_channels: int = eqx.field(static=True)
     coord_dim: int = eqx.field(static=True)
     radius: float = eqx.field(static=True)
-    max_neighbors: int = eqx.field(static=True)
-    query_chunk_size: int | None = eqx.field(static=True)
+    mean_neighbors: float = eqx.field(static=True)
 
     def __init__(
         self,
@@ -139,7 +144,7 @@ class GNOBlock(eqx.Module):
         out_channels: int,
         coord_dim: int,
         radius: float,
-        max_neighbors: int = 32,
+        mean_neighbors: float | int = 32,
         transform_type: Literal[
             "linear_kernelonly", "linear", "nonlinear_kernelonly", "nonlinear"
         ] = "linear",
@@ -153,7 +158,7 @@ class GNOBlock(eqx.Module):
         channel_mlp_hidden_layers: Sequence[int] = (128, 256, 128),
         activation: Callable = jax.nn.gelu,
         channel_mlp: PointwiseMLP | None = None,
-        query_chunk_size: int | None = None,
+        edge_chunk_size: int | None = None,
         attention_type: Literal["cosine", "dot_product"] | None = None,
         attention_dim: int = 64,
     ) -> None:
@@ -161,12 +166,13 @@ class GNOBlock(eqx.Module):
             ("in_channels", in_channels),
             ("out_channels", out_channels),
             ("coord_dim", coord_dim),
-            ("max_neighbors", max_neighbors),
         ]:
             if not isinstance(value, int) or value <= 0:
                 raise ValueError(f"{name} must be a positive integer.")
         if not radius > 0:
             raise ValueError("radius must be positive.")
+        if not mean_neighbors > 0:
+            raise ValueError("mean_neighbors must be positive.")
         if transform_type in ["linear", "nonlinear"] and in_channels != out_channels:
             raise ValueError(
                 f"Transform '{transform_type}' multiplies the kernel with the input "
@@ -178,8 +184,7 @@ class GNOBlock(eqx.Module):
         self.out_channels = out_channels
         self.coord_dim = coord_dim
         self.radius = float(radius)
-        self.max_neighbors = max_neighbors
-        self.query_chunk_size = query_chunk_size
+        self.mean_neighbors = float(mean_neighbors)
 
         if pos_embedding_type is None:
             self.pos_embedding = None
@@ -233,7 +238,7 @@ class GNOBlock(eqx.Module):
             transform_type=transform_type,
             reduction=reduction,
             weighting_fn=weighting_fn,
-            query_chunk_size=query_chunk_size,
+            edge_chunk_size=edge_chunk_size,
             attention=attention,
         )
 
@@ -242,9 +247,29 @@ class GNOBlock(eqx.Module):
         """Number of input channels of the kernel network."""
         return int(self.integral_transform.channel_mlp.weights[0].shape[1])
 
+    def build_neighbors(
+        self, y: Float[Array, "n d"] | RegularGrid, x: Float[Array, "m d"]
+    ) -> Neighbors:
+        """Searches the neighbors in `y` of each point in `x`.
+
+        Useful to precompute the neighbors for a fixed geometry
+        and pass them to `__call__`.
+
+        Args:
+            y: Coordinates of the `n` input points, or a `RegularGrid`.
+            x: Coordinates of the `m` output points.
+
+        Returns:
+            The edges, with a capacity of `mean_neighbors` per output point.
+        """
+        max_edges = max(math.ceil(self.mean_neighbors * x.shape[0]), 1)
+        if isinstance(y, RegularGrid):
+            return radius_neighbor_search_grid(y, x, self.radius, max_edges)
+        return radius_neighbor_search(y, x, self.radius, max_edges)
+
     def __call__(
         self,
-        y: Float[Array, "n d"],
+        y: Float[Array, "n d"] | RegularGrid,
         x: Float[Array, "m d"],
         f_y: Float[Array, "in_c n"] | None = None,
         *,
@@ -254,39 +279,41 @@ class GNOBlock(eqx.Module):
         """Computes the neighbor search and kernel integral transform.
 
         Args:
-            y: Coordinates of the `n` input points to integrate over.
+            y: Coordinates of the `n` input points to integrate over, or a
+                `RegularGrid` whose nodes are the input points.
             x: Coordinates of the `m` output points. Must share the domain with `y`.
             f_y: Input function sampled at `y`. See `IntegralTransform`
                 for when it is required.
             quadrature_weights: Optional quadrature weights of the `n` input
                 points, see `IntegralTransform`. Default is `None`.
             neighbors: Optional precomputed neighbors in `y` of each point in `x`,
-                e.g. from `radius_neighbor_search`. Skips the neighbor search.
+                e.g. from `build_neighbors`. Skips the neighbor search.
                 Useful if the geometry is fixed. Default is `None`.
 
         Returns:
             The output function sampled at `x`.
         """
         if neighbors is None:
-            neighbors = radius_neighbor_search(
-                y, x, self.radius, self.max_neighbors, self.query_chunk_size
-            )
+            neighbors = self.build_neighbors(y, x)
+        if isinstance(y, RegularGrid):
+            y = y.points().astype(x.dtype)
 
+        sq_dist = None
         if self.integral_transform.weighting_fn is not None:
-            # Recompute from the coordinates (instead of using the stored distances)
-            # such that the weights are differentiable w.r.t. x, also for
-            # precomputed neighbors
-            sq_dist = jnp.sum((x[:, None, :] - y[neighbors.index]) ** 2, axis=-1)
-            neighbors = eqx.tree_at(
-                lambda nb: nb.sq_dist,
-                neighbors,
-                jnp.where(neighbors.mask, sq_dist, 0.0),
-            )
+            # Recompute from the coordinates, such that the weights are
+            # differentiable w.r.t. x, also for precomputed neighbors
+            query = jnp.minimum(neighbors.query_index, x.shape[0] - 1)
+            sq_dist = jnp.sum((x[query] - y[neighbors.data_index]) ** 2, axis=-1)
 
         if self.pos_embedding is not None:
             y = self.pos_embedding(y)
             x = self.pos_embedding(x)
 
         return self.integral_transform(
-            y, x, neighbors, f_y, quadrature_weights=quadrature_weights
+            y,
+            x,
+            neighbors,
+            f_y,
+            quadrature_weights=quadrature_weights,
+            sq_dist=sq_dist,
         )

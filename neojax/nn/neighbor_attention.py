@@ -20,16 +20,17 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 import jax.random as jr
-from jaxtyping import Array, Bool, Float, PRNGKeyArray
+from jaxtyping import Array, Float, PRNGKeyArray
 
+from neojax.nn.neighbor_search import Neighbors
 from neojax.nn.pointwise_mlp import PointwiseMLP
 
 
 class NeighborAttention(eqx.Module):
     r"""Attention weights over the neighbors of each query point.
 
-    Computes for a query point $x$ and its neighbors $y_j$ a normalized weight
-    $\alpha(x, y_j)$ that sums to one over the valid neighbors of $x$:
+    Computes a normalized weight $\alpha(x, y_j)$ for each edge between
+    a query point $x$ and a neighbor $y_j$ that sums to one over the neighbors of $x$:
 
     - `"cosine"`: $\alpha(x, y_j) = \operatorname{softmax}_j \, \left(\cos(x, y_j)\right)$,
         the cosine similarity of the (embedded) coordinates,
@@ -39,8 +40,7 @@ class NeighborAttention(eqx.Module):
 
     Used by `IntegralTransform` to reweigh the kernel values of the neighbors,
     which turns a GNO into an Attentional GNO (AGNO).
-    Padded neighbors do not take part in the softmax and get the weight zero.
-    A point without neighbors gets all zero weights.
+    Padding edges do not take part in the softmax and get the weight zero.
 
     Args:
         key: PRNG key for the initialization of the projections.
@@ -121,50 +121,24 @@ class NeighborAttention(eqx.Module):
             self.query_proj = None
             self.key_proj = None
 
-    def _masked_softmax(
-        self, logits: Float[Array, "c k"], mask: Bool[Array, "c k"]
-    ) -> Float[Array, "c k"]:
-        """Softmax over the last axis that ignores masked entries.
-
-        Rows without any valid entry are all zero.
-
-        Args:
-            logits: The pre-softmax logits shaped per `c` query points
-                and `k` neighbors.
-            mask: `True` for valid neighbors, `False` for padding.
-
-        Returns:
-            Softmax output probabilities.
-        """
-        in_dtype = logits.dtype
-        compute_dtype = jnp.promote_types(in_dtype, jnp.float32)
-        logits = jnp.astype(logits, compute_dtype)
-        logits = jnp.where(mask, logits, -jnp.inf)
-        row_max = jnp.max(logits, axis=-1, keepdims=True)
-        row_max = jax.lax.stop_gradient(jnp.where(jnp.isfinite(row_max), row_max, 0.0))
-        # shift masked entries to zero before exponentiating: finite gradients
-        exp = jnp.where(mask, jnp.exp(jnp.where(mask, logits, 0.0) - row_max), 0.0)
-        total = jnp.sum(exp, axis=-1, keepdims=True)
-        return (exp / jnp.where(total > 0, total, 1.0)).astype(in_dtype)
-
     def __call__(
         self,
-        x: Float[Array, "e c k"],
-        y: Float[Array, "e c k"],
-        mask: Bool[Array, "c k"],
-    ) -> Float[Array, "c k"]:
-        """Computes the attention weights.
+        x: Float[Array, "c e"],
+        y: Float[Array, "c e"],
+        neighbors: Neighbors,
+    ) -> Float[Array, "e"]:
+        """Computes the attention weights of the edges.
 
         Args:
-            x: The (embedded) coordinates of the `c` query points, repeated
-                along the `k` neighbors, shaped (in_channels, c, k).
-            y: The (embedded) coordinates of the `k` neighbors of each
-                query point, shaped (in_channels, c, k).
-            mask: `True` for the valid neighbors, `False` for the padding.
+            x: The (embedded) coordinates of the query point of each edge,
+                shaped (in_channels, e).
+            y: The (embedded) coordinates of the neighbor of each edge,
+                shaped (in_channels, e).
+            neighbors: The edges, which determine the neighborhoods.
 
         Returns:
-            The attention weights, shaped (c, k). They sum to one over the
-            neighbors of each query with at least one valid neighbor.
+            The attention weights per edge, shaped (e,). They sum to one over the
+            edges of each query with at least one neighbor, and padding is zero.
 
         Raises:
             ValueError: If the number of coordinate channels doesn't match `in_channels`.
@@ -178,7 +152,7 @@ class NeighborAttention(eqx.Module):
         if self.attention_type == "cosine":
             eps = 1e-6
 
-            def normalize(a: Float[Array, "e c k"]) -> Float[Array, "e c k"]:
+            def normalize(a: Float[Array, "c e"]) -> Float[Array, "c e"]:
                 # rsqrt(max(...)) instead of a division by the norm to have
                 # finite gradients for points at the origin
                 sq_norm = jnp.sum(a**2, axis=0, keepdims=True)
@@ -190,4 +164,12 @@ class NeighborAttention(eqx.Module):
             k = self.key_proj(y)
             logits = jnp.sum(q * k, axis=0) / jnp.sqrt(float(self.attention_dim))
 
-        return self._masked_softmax(logits, mask)
+        # imported here: `neojax.utils` imports the models, which import this module
+        from neojax.utils.segment_ops import segment_softmax
+
+        return segment_softmax(
+            logits,
+            neighbors.query_index,
+            neighbors.num_queries,
+            indices_are_sorted=True,
+        )

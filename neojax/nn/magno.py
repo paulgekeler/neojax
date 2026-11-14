@@ -14,6 +14,7 @@
 
 """Implementation of the Multiscale Attentional Graph Neural Operator block."""
 
+import math
 from collections.abc import Callable, Sequence
 from typing import Literal
 
@@ -26,7 +27,12 @@ from jaxtyping import Array, Float, PRNGKeyArray
 from neojax.nn.edge_drop import edge_drop
 from neojax.nn.geometric_embedding import GeometricEmbedding
 from neojax.nn.gno_block import GNOBlock
-from neojax.nn.neighbor_search import Neighbors, radius_neighbor_search
+from neojax.nn.neighbor_search import (
+    Neighbors,
+    RegularGrid,
+    radius_neighbor_search,
+    radius_neighbor_search_grid,
+)
 from neojax.nn.pointwise_mlp import PointwiseMLP
 
 
@@ -48,6 +54,9 @@ class MAGNOBlock(eqx.Module):
     During training, `edge_drop` randomly drops neighbors as a regularization,
     before they are used by the `GNOBlock` and the geometric embedding.
 
+    If the input points are a `RegularGrid`, as in the decoder of `GAOT`, the
+    faster `radius_neighbor_search_grid` is used.
+
     Args:
         key: PRNG key for parameter initialization.
         channels: Number of channels of the input and output function.
@@ -57,9 +66,11 @@ class MAGNOBlock(eqx.Module):
             as in `GAOT`. Default is 0.033.
         scales: Factors of the radius, one scale per entry. All scales share the
             parameters. Default is `(1.0,)`.
-        max_neighbors: Width of the padded neighbor lists of each scale: the
-            maximum number of neighbors per query. Neighbors beyond the nearest
-            `max_neighbors` are dropped. Default is 32.
+        mean_neighbors: Expected mean number of neighbors per query at the base
+            radius. The capacity of the edge list of scale $s$ is `mean_neighbors`
+            times $s^d$ times the number of queries, following the volume of the
+            balls. A neighborhood can be larger, as long as the total fits. The
+            search raises an error if it doesn't. Default is 32.
         hidden_channels: Width of the hidden layers of the kernel network of the
             `GNOBlock`. Default is 64.
         n_layers: Number of hidden layers of the kernel network. Default is 3.
@@ -92,13 +103,13 @@ class MAGNOBlock(eqx.Module):
             strategy.
         activation: Activation function of the kernel network.
             Default is `jax.nn.gelu`.
-        query_chunk_size: Number of points `x` to process at a time in the neighbor
-            search and the integral transform to limit peak memory.
-            Default is `None`, all points at once.
+        edge_chunk_size: Number of edges to process at a time in the integral
+            transform to limit peak memory. Default is `None`, all edges at once.
 
     Raises:
-        ValueError: If `channels`, `coord_dim` or `max_neighbors` is not a positive integer.
-        ValueError: If `radius` or an entry of `scales` is not positive or `scales` is empty.
+        ValueError: If `channels` or `coord_dim` is not a positive integer.
+        ValueError: If `radius`, `mean_neighbors` or an entry of `scales` is not
+            positive or `scales` is empty.
         ValueError: If `edge_drop_strategy` is invalid or its parameter is missing or invalid.
 
     ??? info "Internal Attributes"
@@ -110,16 +121,10 @@ class MAGNOBlock(eqx.Module):
         * **coord_dim** (`int`): Dimension of the domain.
         * **radius** (`float`): Base radius of the neighborhoods.
         * **scales** (`tuple[float, ...]`): Factors of the radius.
-        * **max_neighbors** (`int`): Width of the padded neighbor lists.
+        * **mean_neighbors** (`float`): Expected mean number of neighbors at the base radius.
         * **edge_drop_strategy** (`Literal["ratio", "max_neighbors"] | None`): Neighbor dropping strategy.
         * **edge_drop_ratio** (`float | None`): Keep probability of the `"ratio"` strategy.
         * **edge_drop_max_neighbors** (`int | None`): Kept neighbors of the `"max_neighbors"` strategy.
-        * **query_chunk_size** (`int | None`): Number of points per chunk.
-
-    !!! warning "Neighbor truncation"
-        Neighbors beyond the `max_neighbors` nearest of each scale are dropped
-        silently. Large scales need a larger `max_neighbors`.
-        Check it with `neighbor_truncation`.
 
     ??? cite
 
@@ -148,13 +153,12 @@ class MAGNOBlock(eqx.Module):
     coord_dim: int = eqx.field(static=True)
     radius: float = eqx.field(static=True)
     scales: tuple[float, ...] = eqx.field(static=True)
-    max_neighbors: int = eqx.field(static=True)
+    mean_neighbors: float = eqx.field(static=True)
     edge_drop_strategy: Literal["ratio", "max_neighbors"] | None = eqx.field(
         static=True
     )
     edge_drop_ratio: float | None = eqx.field(static=True)
     edge_drop_max_neighbors: int | None = eqx.field(static=True)
-    query_chunk_size: int | None = eqx.field(static=True)
 
     def __init__(
         self,
@@ -163,7 +167,7 @@ class MAGNOBlock(eqx.Module):
         coord_dim: int,
         radius: float = 0.033,
         scales: Sequence[float] = (1.0,),
-        max_neighbors: int = 32,
+        mean_neighbors: float | int = 32,
         hidden_channels: int = 64,
         n_layers: int = 3,
         transform_type: Literal[
@@ -182,17 +186,18 @@ class MAGNOBlock(eqx.Module):
         edge_drop_ratio: float | None = None,
         edge_drop_max_neighbors: int | None = None,
         activation: Callable = jax.nn.gelu,
-        query_chunk_size: int | None = None,
+        edge_chunk_size: int | None = None,
     ) -> None:
         for name, value in [
             ("channels", channels),
             ("coord_dim", coord_dim),
-            ("max_neighbors", max_neighbors),
         ]:
             if not isinstance(value, int) or value <= 0:
                 raise ValueError(f"{name} must be a positive integer.")
         if not radius > 0:
             raise ValueError("radius must be positive.")
+        if not mean_neighbors > 0:
+            raise ValueError("mean_neighbors must be positive.")
         scales = tuple(float(s) for s in scales)
         if len(scales) == 0 or not all(s > 0 for s in scales):
             raise ValueError(
@@ -224,11 +229,10 @@ class MAGNOBlock(eqx.Module):
         self.coord_dim = coord_dim
         self.radius = float(radius)
         self.scales = scales
-        self.max_neighbors = max_neighbors
+        self.mean_neighbors = float(mean_neighbors)
         self.edge_drop_strategy = edge_drop_strategy
         self.edge_drop_ratio = edge_drop_ratio
         self.edge_drop_max_neighbors = edge_drop_max_neighbors
-        self.query_chunk_size = query_chunk_size
 
         k_gno, k_geo, k_rec, k_scale = jr.split(key, 4)
         self.gno = GNOBlock(
@@ -237,14 +241,14 @@ class MAGNOBlock(eqx.Module):
             out_channels=channels,
             coord_dim=coord_dim,
             radius=radius,
-            max_neighbors=max_neighbors,
+            mean_neighbors=mean_neighbors,
             transform_type=transform_type,
             reduction="mean",
             pos_embedding_type="linear" if node_embedding else None,
             pos_embedding_channels=node_embedding_frequencies,
             channel_mlp_hidden_layers=(hidden_channels,) * n_layers,
             activation=activation,
-            query_chunk_size=query_chunk_size,
+            edge_chunk_size=edge_chunk_size,
             attention_type=attention_type if use_attention else None,
             attention_dim=attention_dim,
         )
@@ -272,7 +276,7 @@ class MAGNOBlock(eqx.Module):
             self.scale_weighting = None
 
     def build_neighbors(
-        self, y: Float[Array, "n d"], x: Float[Array, "m d"]
+        self, y: Float[Array, "n d"] | RegularGrid, x: Float[Array, "m d"]
     ) -> tuple[Neighbors, ...]:
         """Searches the neighbors in `y` of each point in `x` for every scale.
 
@@ -280,22 +284,26 @@ class MAGNOBlock(eqx.Module):
         and pass them to `__call__`.
 
         Args:
-            y: Coordinates of the `n` input points.
+            y: Coordinates of the `n` input points, or a `RegularGrid`.
             x: Coordinates of the `m` output points.
 
         Returns:
-            The padded neighbor lists, one `Neighbors` per scale.
+            The edges, one `Neighbors` per scale.
         """
-        return tuple(
-            radius_neighbor_search(
-                y, x, self.radius * scale, self.max_neighbors, self.query_chunk_size
-            )
-            for scale in self.scales
-        )
+        neighbors = []
+        for scale in self.scales:
+            mean = self.mean_neighbors * scale**self.coord_dim
+            max_edges = max(math.ceil(mean * x.shape[0]), 1)
+            radius = self.radius * scale
+            if isinstance(y, RegularGrid):
+                neighbors.append(radius_neighbor_search_grid(y, x, radius, max_edges))
+            else:
+                neighbors.append(radius_neighbor_search(y, x, radius, max_edges))
+        return tuple(neighbors)
 
     def __call__(
         self,
-        y: Float[Array, "n d"],
+        y: Float[Array, "n d"] | RegularGrid,
         x: Float[Array, "m d"],
         f_y: Float[Array, "c n"],
         *,
@@ -306,7 +314,7 @@ class MAGNOBlock(eqx.Module):
         """Applies the block.
 
         Args:
-            y: Coordinates of the `n` input points.
+            y: Coordinates of the `n` input points, or a `RegularGrid`.
             x: Coordinates of the `m` output points.
             f_y: Input function sampled at `y`.
             neighbors: Optional precomputed neighbors, one `Neighbors` per scale
@@ -329,6 +337,8 @@ class MAGNOBlock(eqx.Module):
                 f"Expected {len(self.scales)} neighbor lists (one per scale), "
                 f"but got {len(neighbors)}."
             )
+        if isinstance(y, RegularGrid):
+            y = y.points().astype(x.dtype)
 
         drop = self.edge_drop_strategy is not None and not inference
         if drop:

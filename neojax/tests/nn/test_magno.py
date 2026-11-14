@@ -21,7 +21,7 @@ import pytest
 from jaxtyping import TypeCheckError
 
 from neojax.nn.magno import MAGNOBlock
-from neojax.nn.neighbor_search import radius_neighbor_search
+from neojax.nn.neighbor_search import RegularGrid, radius_neighbor_search
 from neojax.tests.conftest import assert_filter_jittable
 
 C, N, M, RADIUS = 4, 70, 25, 0.3
@@ -46,7 +46,7 @@ def make_block():
             channels=C,
             coord_dim=d,
             radius=RADIUS,
-            max_neighbors=20,
+            mean_neighbors=20,
             hidden_channels=8,
             n_layers=2,
             attention_dim=8,
@@ -97,7 +97,7 @@ class TestMAGNOBlock:
     def test_single_scale_without_geoembed_is_the_gno(self, make_data, make_block):
         y, x, f_y = make_data()
         block = make_block(use_geoembed=False)
-        neighbors = radius_neighbor_search(y, x, RADIUS, 20)
+        neighbors = radius_neighbor_search(y, x, RADIUS, N * M)
         np.testing.assert_allclose(
             block(y, x, f_y),
             block.gno(y, x, f_y, neighbors=neighbors),
@@ -116,7 +116,7 @@ class TestMAGNOBlock:
                         y,
                         x,
                         f_y,
-                        neighbors=radius_neighbor_search(y, x, RADIUS * s, 20),
+                        neighbors=radius_neighbor_search(y, x, RADIUS * s, N * M),
                     )
                     for s in scales
                 ]
@@ -133,7 +133,7 @@ class TestMAGNOBlock:
         per_scale = jnp.stack(
             [
                 block.gno(
-                    y, x, f_y, neighbors=radius_neighbor_search(y, x, RADIUS * s, 20)
+                    y, x, f_y, neighbors=radius_neighbor_search(y, x, RADIUS * s, N * M)
                 )
                 for s in scales
             ]
@@ -146,7 +146,7 @@ class TestMAGNOBlock:
     def test_geometric_embedding_is_merged_by_recovery(self, make_data, make_block):
         y, x, f_y = make_data()
         block = make_block()
-        neighbors = radius_neighbor_search(y, x, RADIUS, 20)
+        neighbors = radius_neighbor_search(y, x, RADIUS, N * M)
         gno_out = block.gno(y, x, f_y, neighbors=neighbors)
         geometry = block.geoembed(y, x, neighbors)
         expected = block.recovery(jnp.concatenate([gno_out, geometry], axis=0))
@@ -163,10 +163,31 @@ class TestMAGNOBlock:
         with pytest.raises(ValueError, match="one per scale"):
             block(y, x, f_y, neighbors=neighbors[:1])
 
+    def test_capacity_grows_with_the_volume_of_the_scale(self, make_data, make_block):
+        _, x, _ = make_data()
+        block = make_block(scales=(1.0, 2.0), mean_neighbors=3)
+        far = jnp.full((N, 2), 10.0)
+        small, large = block.build_neighbors(far, x)
+        assert small.query_index.shape == (3 * M,)
+        assert large.query_index.shape == (3 * 4 * M,)
+
+    def test_regular_grid_input(self, make_data, make_block):
+        _, x, _ = make_data()
+        grid = RegularGrid((-1.0, -1.0), (1.0, 1.0), (9, 8))
+        f_y = jr.normal(jr.key(6), (C, grid.num_points))
+        block = make_block(scales=(1.0, 2.0))
+        np.testing.assert_allclose(
+            block(grid, x, f_y), block(grid.points(), x, f_y), rtol=1e-5, atol=1e-6
+        )
+        on_grid = block.build_neighbors(grid, x)
+        on_points = block.build_neighbors(grid.points(), x)
+        for a, b in zip(on_grid, on_points, strict=True):
+            assert int(a.num_edges) == int(b.num_edges)
+
     def test_chunked_equals_unchunked(self, make_data, make_block):
         y, x, f_y = make_data()
         full = make_block(scales=(1.0, 2.0))
-        chunked = make_block(scales=(1.0, 2.0), query_chunk_size=7)
+        chunked = make_block(scales=(1.0, 2.0), edge_chunk_size=7)
         np.testing.assert_allclose(
             full(y, x, f_y), chunked(y, x, f_y), rtol=1e-4, atol=1e-5
         )
@@ -227,7 +248,7 @@ class TestMAGNOBlock:
         [
             {"channels": 0},
             {"coord_dim": 0},
-            {"max_neighbors": 0},
+            {"mean_neighbors": 0},
             {"radius": 0.0},
             {"scales": ()},
             {"scales": (1.0, -1.0)},

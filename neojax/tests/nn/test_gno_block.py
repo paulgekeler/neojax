@@ -21,7 +21,7 @@ from jaxtyping import TypeCheckError
 
 from neojax.nn.gno_block import GNOBlock
 from neojax.nn.mollifier_functions import make_weighting_fn
-from neojax.nn.neighbor_search import radius_neighbor_search
+from neojax.nn.neighbor_search import RegularGrid, radius_neighbor_search
 from neojax.nn.pointwise_mlp import PointwiseMLP
 from neojax.tests.conftest import assert_filter_jittable
 
@@ -47,7 +47,7 @@ def make_block():
             out_channels=C,
             coord_dim=2,
             radius=radius,
-            max_neighbors=N,  # no truncation
+            mean_neighbors=N,
             weighting_fn=make_weighting_fn("half_cos", radius**2),
             pos_embedding_channels=4,
             channel_mlp_hidden_layers=(8,),
@@ -75,7 +75,7 @@ class TestGNOBlock:
             out_channels=C,
             coord_dim=d,
             radius=0.4,
-            max_neighbors=16,
+            mean_neighbors=N,
             transform_type=transform_type,
             pos_embedding_type=pos_embedding_type,
             pos_embedding_channels=4,
@@ -106,12 +106,12 @@ class TestGNOBlock:
             out_channels=C,
             coord_dim=2,
             radius=0.3,
-            max_neighbors=8,
+            mean_neighbors=N,
             pos_embedding_channels=4,
             channel_mlp_hidden_layers=(8,),
-            query_chunk_size=7,
+            edge_chunk_size=7,
         )
-        neighbors = radius_neighbor_search(y, x, 0.3, 8)
+        neighbors = radius_neighbor_search(y, x, 0.3, N * M)
         np.testing.assert_allclose(
             block(y, x, f_y),
             block(y, x, f_y, neighbors=neighbors),
@@ -127,7 +127,7 @@ class TestGNOBlock:
             out_channels=C,
             coord_dim=2,
             radius=0.3,
-            max_neighbors=8,
+            mean_neighbors=N,
             pos_embedding_channels=4,
             channel_mlp_hidden_layers=(8,),
         )
@@ -153,7 +153,7 @@ class TestGNOBlock:
             out_channels=C,
             coord_dim=2,
             radius=0.3,
-            max_neighbors=8,
+            mean_neighbors=N,
             pos_embedding_channels=4,
             channel_mlp_hidden_layers=(8,),
         )
@@ -164,6 +164,50 @@ class TestGNOBlock:
         )
         assert block.integral_transform.reduction == "sum"
         assert block(y, x, f_y).shape == (C, M)
+
+    def test_capacity_follows_mean_neighbors(self, make_data):
+        y, x, f_y = make_data(2)
+        block = GNOBlock(
+            key=jr.key(1),
+            in_channels=C,
+            out_channels=C,
+            coord_dim=2,
+            radius=0.3,
+            mean_neighbors=2.5,
+        )
+        neighbors = block.build_neighbors(jnp.full((N, 2), 10.0), x[:4])
+        assert neighbors.query_index.shape == (10,)
+        # more edges than the capacity raise instead of being dropped
+        with pytest.raises(RuntimeError, match="ran out of capacity"):
+            block(y, x, f_y)
+
+    @pytest.mark.parametrize("weighted", [False, True])
+    def test_regular_grid_input(self, make_data, weighted):
+        _, x, _ = make_data(2)
+        grid = RegularGrid((0.0, 0.0), (1.0, 1.0), (8, 6))
+        f_y = jr.normal(jr.key(6), (C, grid.num_points))
+        block = GNOBlock(
+            key=jr.key(1),
+            in_channels=C,
+            out_channels=C,
+            coord_dim=2,
+            radius=0.3,
+            mean_neighbors=N,
+            pos_embedding_channels=4,
+            channel_mlp_hidden_layers=(8,),
+            weighting_fn=make_weighting_fn("bump", 0.3**2) if weighted else None,
+        )
+        np.testing.assert_allclose(
+            block(grid, x, f_y), block(grid.points(), x, f_y), rtol=1e-5, atol=1e-6
+        )
+        # the neighbors of the grid are found without hashing and sorting
+        on_grid = block.build_neighbors(grid, x)
+        on_points = block.build_neighbors(grid.points(), x)
+        assert int(on_grid.num_edges) == int(on_points.num_edges)
+        if weighted:
+            grad_grid = jax.grad(lambda x_: block(grid, x_, f_y).sum())(x)
+            grad_points = jax.grad(lambda x_: block(grid.points(), x_, f_y).sum())(x)
+            np.testing.assert_allclose(grad_grid, grad_points, rtol=1e-4, atol=1e-5)
 
     def test_custom_channel_mlp(self, make_data):
         y, x, f_y = make_data(2)
@@ -194,7 +238,7 @@ class TestGNOBlock:
         with pytest.raises(ValueError):
             GNOBlock(**kwargs, radius=0.0)
         with pytest.raises(ValueError):
-            GNOBlock(**kwargs, radius=0.1, max_neighbors=0)
+            GNOBlock(**kwargs, radius=0.1, mean_neighbors=0)
         with pytest.raises(ValueError):
             GNOBlock(**{**kwargs, "coord_dim": 0}, radius=0.1)
         with pytest.raises(ValueError):
@@ -231,7 +275,7 @@ class TestMollifiedGNOBlock:
         # stored squared distances of the neighbors are constants
         y, x, f_y = make_data(2)
         block = make_block()
-        neighbors = radius_neighbor_search(y, x, 0.3, N)
+        neighbors = block.build_neighbors(y, x)
 
         live = jax.grad(lambda x_: block(y, x_, f_y).sum())(x)
         cached = jax.grad(lambda x_: block(y, x_, f_y, neighbors=neighbors).sum())(x)
@@ -261,7 +305,7 @@ class TestMollifiedGNOBlock:
             out_channels=C,
             coord_dim=2,
             radius=0.4,
-            max_neighbors=16,
+            mean_neighbors=N,
             reduction="mean",
             pos_embedding_type=pos_embedding_type,
             pos_embedding_channels=3,

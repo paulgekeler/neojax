@@ -41,8 +41,10 @@ from neojax.nn.mollifier_functions import quadr_cutoff as quadr_cutoff
 from neojax.nn.mollifier_functions import quartic_cutoff as quartic_cutoff
 from neojax.nn.neighbor_attention import NeighborAttention as NeighborAttention
 from neojax.nn.neighbor_search import Neighbors as Neighbors
-from neojax.nn.neighbor_search import neighbor_truncation as neighbor_truncation
 from neojax.nn.neighbor_search import radius_neighbor_search as radius_neighbor_search
+from neojax.nn.neighbor_search import (
+    radius_neighbor_search_grid as radius_neighbor_search_grid,
+)
 from neojax.nn.normalization import ChannelLayerNorm as ChannelLayerNorm
 from neojax.nn.normalization import InstanceNorm as InstanceNorm
 from neojax.nn.normalization import RMSNorm as RMSNorm

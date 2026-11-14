@@ -28,7 +28,7 @@ from neojax.models.baseno import BaseNO
 from neojax.nn.fno_blocks import FNOBlocks
 from neojax.nn.gno_block import GNOBlock
 from neojax.nn.mollifier_functions import make_weighting_fn
-from neojax.nn.neighbor_search import Neighbors
+from neojax.nn.neighbor_search import Neighbors, RegularGrid
 from neojax.nn.pointwise_mlp import PointwiseMLP
 from neojax.tensor import BaseTensor
 
@@ -73,10 +73,10 @@ class GiNO(BaseNO):
             Default is 0.033.
         out_gno_radius: Radius of the neighborhoods of the output GNO.
             Default is 0.033.
-        in_gno_max_neighbors: Maximum number of neighbors per latent point
-            in the input GNO. If more points are inside the radius, only the
-            nearest are used. Default is 32.
-        out_gno_max_neighbors: Maximum number of neighbors per output query
+        in_gno_mean_neighbors: Expected mean number of neighbors per latent point
+            in the input GNO, which sets the capacity of its edge list, see
+            `GNOBlock`. Default is 32.
+        out_gno_mean_neighbors: Expected mean number of neighbors per output query
             in the output GNO. Default is 32.
         in_gno_transform_type: Integral transform of the input GNO,
             see `IntegralTransform`. Default is `"linear"`.
@@ -108,9 +108,9 @@ class GiNO(BaseNO):
             Default is `jax.nn.gelu`.
         out_gno_tanh: Whether to apply `tanh` to the latent function before
             the output GNO, to stabilize it. Default is `False`.
-        gno_query_chunk_size: Number of query points the GNO neighbor
-            searches and integral transforms process at a time to limit
-            peak memory. Default is `None`, all points at once.
+        gno_edge_chunk_size: Number of edges the GNO integral transforms
+            process at a time to limit peak memory. Default is `None`, all
+            edges at once.
         activation: Activation function of the lifting, FNO blocks
             and projection. Default is `jax.nn.gelu`.
         use_channel_mlp: Whether to apply a pointwise channel MLP
@@ -243,16 +243,13 @@ class GiNO(BaseNO):
 
         The geometries can also be batched, since the neighbor search
         is jit- and vmap-compatible. For a fixed geometry, precompute the neighbors
-        once (`radius_neighbor_search`) and pass them with `in_neighbors`
-        and `out_neighbors` to avoid searching in every call.
+        once (`build_neighbors` of `in_gno` and `out_gno`) and pass them with
+        `in_neighbors` and `out_neighbors` to avoid searching in every call.
 
-    !!! warning "Neighbor truncation"
-        The GNOs consider at most `in_gno_max_neighbors` and
-        `out_gno_max_neighbors` neighbors per point (the nearest ones).
-        Choose these large enough for your point densities and radii.
-        With a `gno_weighting_function`, truncated neighbors can have nonzero
-        weights, which breaks the smoothness of the output. Then choose the
-        values large enough that truncation does not occur.
+    !!! info "Regular latent grids"
+        Pass the latent grid as a `RegularGrid` instead of an array of
+        coordinates to find the neighbors of the output GNO with the faster
+        `radius_neighbor_search_grid`. Its dimension must match `coord_dim`.
 
     !!! info "Extent of the latent grid"
         The mollified GNO paper pads the latent domain, so that the latent function
@@ -283,8 +280,8 @@ class GiNO(BaseNO):
         latent_feature_channels: int | None = None,
         in_gno_radius: float = 0.033,
         out_gno_radius: float = 0.033,
-        in_gno_max_neighbors: int = 32,
-        out_gno_max_neighbors: int = 32,
+        in_gno_mean_neighbors: float | int = 32,
+        out_gno_mean_neighbors: float | int = 32,
         in_gno_transform_type: Literal[
             "linear_kernelonly", "linear", "nonlinear_kernelonly", "nonlinear"
         ] = "linear",
@@ -305,7 +302,7 @@ class GiNO(BaseNO):
         out_gno_channel_mlp_hidden_layers: Sequence[int] = (512, 256),
         gno_activation: Callable = jax.nn.gelu,
         out_gno_tanh: bool = False,
-        gno_query_chunk_size: int | None = None,
+        gno_edge_chunk_size: int | None = None,
         activation: Callable = jax.nn.gelu,
         use_channel_mlp: bool = True,
         local_operator: Literal["linear", "soft-gating", "identity"] | None = "linear",
@@ -374,7 +371,7 @@ class GiNO(BaseNO):
             out_channels=in_gno_out_channels,
             coord_dim=coord_dim,
             radius=in_gno_radius,
-            max_neighbors=in_gno_max_neighbors,
+            mean_neighbors=in_gno_mean_neighbors,
             transform_type=in_gno_transform_type,
             reduction="mean",
             pos_embedding_type=in_gno_pos_embedding_type,
@@ -382,7 +379,7 @@ class GiNO(BaseNO):
             pos_embedding_max_positions=gno_embed_max_positions,
             channel_mlp_hidden_layers=in_gno_channel_mlp_hidden_layers,
             activation=gno_activation,
-            query_chunk_size=gno_query_chunk_size,
+            edge_chunk_size=gno_edge_chunk_size,
         )
 
         lift_in_channels = in_gno_out_channels + self.latent_feature_channels
@@ -439,7 +436,7 @@ class GiNO(BaseNO):
             out_channels=hidden_channels,
             coord_dim=coord_dim,
             radius=out_gno_radius,
-            max_neighbors=out_gno_max_neighbors,
+            mean_neighbors=out_gno_mean_neighbors,
             transform_type=out_gno_transform_type,
             reduction="sum",
             weighting_fn=weighting_fn,
@@ -448,7 +445,7 @@ class GiNO(BaseNO):
             pos_embedding_max_positions=gno_embed_max_positions,
             channel_mlp_hidden_layers=out_gno_channel_mlp_hidden_layers,
             activation=gno_activation,
-            query_chunk_size=gno_query_chunk_size,
+            edge_chunk_size=gno_edge_chunk_size,
         )
 
         proj_hidden_channels = int(hidden_channels * proj_channel_ratio)
@@ -468,7 +465,7 @@ class GiNO(BaseNO):
         u: Float[Array, "in_c n"] | None,
         *,
         x_in: Float[Array, "n d"],
-        x_latent: Float[Array, "... d"],
+        x_latent: Float[Array, "... d"] | RegularGrid,
         x_out: Float[Array, "m d"] | dict[str, Float[Array, "_ d"]] | None = None,
         latent_features: Float[Array, "lat_c ..."] | None = None,
         in_quadrature_weights: Float[Array, "n"] | None = None,
@@ -490,7 +487,8 @@ class GiNO(BaseNO):
                 shaped (g1, ..., gk, coord_dim), where `k = len(modes)`.
                 The grid is typically a uniform grid on the unit cube or on
                 the bounding box of the geometry. The physical radii of the
-                GNOs are in the units of these coordinates.
+                GNOs are in the units of these coordinates. A `RegularGrid`
+                speeds up the neighbor search of the output GNO.
             x_out: Coordinates of the output queries, shaped (m, coord_dim).
                 Pass a dict of such arrays to query at several sets of points,
                 e.g. the volume and the surface of the domain, which returns
@@ -506,8 +504,9 @@ class GiNO(BaseNO):
                 grid points for the output GNO, shaped (g1, ..., gk) like the
                 latent grid, e.g. the cell volume. Default is `None`.
             in_neighbors: Optional precomputed neighbors in `x_in` of the
-                flattened latent points `x_latent`. Default is `None`, the
-                neighbors are searched in every call.
+                flattened latent points `x_latent`, from
+                `in_gno.build_neighbors`. Default is `None`, the neighbors are
+                searched in every call.
             out_neighbors: Optional precomputed neighbors in the flattened
                 `x_latent` of the output queries. A dict with the keys of
                 `x_out` if `x_out` is a dict. Default is `None`.
@@ -527,6 +526,11 @@ class GiNO(BaseNO):
             ValueError: If `latent_quadrature_weights` doesn't have the shape of
                 the latent grid.
         """
+        latent_grid = x_latent if isinstance(x_latent, RegularGrid) else None
+        if latent_grid is not None:
+            x_latent = latent_grid.points().reshape(
+                *latent_grid.resolution, len(latent_grid.resolution)
+            )
         grid_shape = x_latent.shape[:-1]
         if len(grid_shape) != self.latent_dim:
             raise ValueError(
@@ -592,7 +596,7 @@ class GiNO(BaseNO):
         ) -> Float[Array, "out_c _"]:
             return self.projection(
                 self.out_gno(
-                    x_latent_flat,
+                    x_latent_flat if latent_grid is None else latent_grid,
                     x_query,
                     h,
                     quadrature_weights=latent_weights_flat,

@@ -44,7 +44,7 @@ def make_model():
             n_layers=3,
             n_heads=4,
             radius=0.45,
-            max_neighbors=16,
+            mean_neighbors=16,
             gno_hidden_channels=8,
             gno_n_layers=2,
             attention_dim=8,
@@ -103,7 +103,7 @@ class TestGAOT:
             {"node_embedding": True, "node_embedding_frequencies": 2},
             {"n_kv_heads": 2, "n_layers": 4, "use_long_range_skip": False},
             {"gno_transform_type": "nonlinear"},
-            {"gno_query_chunk_size": 7},
+            {"gno_edge_chunk_size": 7},
         ],
     )
     def test_variants_run(self, kwargs, make_model, make_data):
@@ -144,7 +144,20 @@ class TestGAOT:
         )
         # default queries at x_in
         in_nb, out_nb = model.build_neighbors(x_in)
-        assert out_nb[0].index.shape[0] == N
+        assert out_nb[0].num_queries == N
+
+    def test_decoder_searches_on_the_latent_grid(self, make_model, make_data):
+        model = make_model()
+        _, x_in, x_out = make_data()
+        _, (out_nb,) = model.build_neighbors(x_in, x_out)
+        # the grid search lists the neighbors of a query in ascending order
+        query, data = np.asarray(out_nb.query_index), np.asarray(out_nb.data_index)
+        valid = query < M
+        keys = query[valid] * model._latent_points().shape[0] + data[valid]
+        assert np.all(np.diff(keys) > 0)
+        # and finds the same edges as the general search on the latent points
+        cell = model.decoder.build_neighbors(model._latent_points(), x_out)[0]
+        assert int(out_nb.num_edges) == int(cell.num_edges)
 
     def test_domain_bounds_rescale_coordinates(self, make_model, make_data):
         u, x_in, x_out = make_data()
@@ -163,7 +176,7 @@ class TestGAOT:
         )
 
     def test_invariant_to_input_point_order(self, make_model, make_data):
-        model = make_model(max_neighbors=N)  # no truncation
+        model = make_model(mean_neighbors=N)
         u, x_in, x_out = make_data()
         perm = jr.permutation(jr.key(5), N)
         np.testing.assert_allclose(

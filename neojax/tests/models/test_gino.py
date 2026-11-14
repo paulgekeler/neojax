@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 from neojax.models.gino import GiNO
-from neojax.nn.neighbor_search import radius_neighbor_search
+from neojax.nn.neighbor_search import RegularGrid
 from neojax.tests.conftest import assert_filter_jittable
 
 IN_C, OUT_C, N, M, GRID = 2, 3, 40, 25, 6
@@ -38,8 +38,8 @@ def make_model():
             coord_dim=coord_dim,
             in_gno_radius=0.4,
             out_gno_radius=0.4,
-            in_gno_max_neighbors=8,
-            out_gno_max_neighbors=8,
+            in_gno_mean_neighbors=N,
+            out_gno_mean_neighbors=GRID**coord_dim,
             gno_embed_channels=4,
             in_gno_channel_mlp_hidden_layers=(8,),
             out_gno_channel_mlp_hidden_layers=(8,),
@@ -143,8 +143,8 @@ class TestGiNO:
         model = make_model()
         inputs = make_inputs()
         flat = inputs["x_latent"].reshape(-1, 2)
-        in_nb = radius_neighbor_search(inputs["x_in"], flat, 0.4, 8)
-        out_nb = radius_neighbor_search(flat, inputs["x_out"], 0.4, 8)
+        in_nb = model.in_gno.build_neighbors(inputs["x_in"], flat)
+        out_nb = model.out_gno.build_neighbors(flat, inputs["x_out"])
         np.testing.assert_allclose(
             model(**inputs),
             model(**inputs, in_neighbors=in_nb, out_neighbors=out_nb),
@@ -238,12 +238,10 @@ class TestGiNO:
     def test_mollified_output_is_differentiable_in_queries(
         self, make_model, make_inputs
     ):
-        model = make_model(
-            gno_weighting_function="half_cos", out_gno_max_neighbors=GRID * GRID
-        )
+        model = make_model(gno_weighting_function="half_cos")
         inputs = make_inputs()
         flat = inputs["x_latent"].reshape(-1, 2)
-        out_nb = radius_neighbor_search(flat, inputs["x_out"], 0.4, GRID * GRID)
+        out_nb = model.out_gno.build_neighbors(flat, inputs["x_out"])
 
         live = jax.grad(lambda xo: model(**{**inputs, "x_out": xo}).sum())(
             inputs["x_out"]
@@ -304,6 +302,43 @@ class TestGiNO:
         # linear transforms multiply kernel and function elementwise
         with pytest.raises(ValueError):
             make_model(in_gno_out_channels=IN_C + 1)
+
+    @pytest.mark.parametrize("coord_dim", [2, 3])
+    @pytest.mark.parametrize("weighting", [None, "half_cos"])
+    def test_regular_grid_latent(self, make_model, make_inputs, coord_dim, weighting):
+        model = make_model(coord_dim=coord_dim, gno_weighting_function=weighting)
+        inputs = make_inputs(coord_dim=coord_dim)
+        grid = RegularGrid((0.0,) * coord_dim, (1.0,) * coord_dim, (GRID,) * coord_dim)
+        np.testing.assert_allclose(
+            model(**{**inputs, "x_latent": grid}),
+            model(**inputs),
+            rtol=1e-5,
+            atol=1e-6,
+        )
+        if weighting is not None:
+
+            def loss(x_out, x_latent):
+                return model(**{**inputs, "x_latent": x_latent, "x_out": x_out}).sum()
+
+            np.testing.assert_allclose(
+                jax.grad(loss)(inputs["x_out"], grid),
+                jax.grad(loss)(inputs["x_out"], inputs["x_latent"]),
+                rtol=1e-4,
+                atol=1e-5,
+            )
+
+    def test_regular_grid_latent_of_the_wrong_dimension_raises(
+        self, make_model, make_inputs
+    ):
+        model = make_model()
+        grid = RegularGrid((0.0,) * 3, (1.0,) * 3, (GRID,) * 3)
+        with pytest.raises(ValueError):
+            model(**{**make_inputs(), "x_latent": grid})
+
+    def test_more_neighbors_than_the_capacity_raise(self, make_model, make_inputs):
+        model = make_model(in_gno_mean_neighbors=1)
+        with pytest.raises(RuntimeError, match="ran out of capacity"):
+            model(**make_inputs())
 
     def test_latent_grid_dimension_mismatch_raises(self, make_model, make_inputs):
         model = make_model()

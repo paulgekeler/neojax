@@ -14,9 +14,14 @@
 
 # ruff: noqa: D100, D103
 # noxfile.py
+import os
+from pathlib import Path
+
 import nox
 
 nox.options.default_venv_backend = "uv"
+
+JAX_CACHE_DIR = Path(".nox/jax_cache").resolve()
 
 
 @nox.session(
@@ -33,4 +38,16 @@ def tests(session):
         env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
     )
 
-    session.run("pytest", "neojax/tests/")
+    cache_dir = Path(os.environ.get("JAX_COMPILATION_CACHE_DIR", JAX_CACHE_DIR))
+    cache_dir.mkdir(parents=True, exist_ok=True)
+
+    session.run(
+        "pytest",
+        "neojax/tests/",
+        *session.posargs,
+        env={
+            "JAX_COMPILATION_CACHE_DIR": str(cache_dir),
+            "JAX_PERSISTENT_CACHE_MIN_ENTRY_SIZE_BYTES": "-1",
+            "JAX_PERSISTENT_CACHE_MIN_COMPILE_TIME_SECS": "0",
+        },
+    )

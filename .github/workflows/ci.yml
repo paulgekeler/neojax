@@ -5,6 +5,9 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  release:
+    types: [ published ]
+  workflow_dispatch:
 
 jobs:
   test:
@@ -12,7 +15,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12", "3.13", "3.14"]
+        python-version: ${{ fromJSON(github.event_name == 'pull_request' && '["3.12"]' || '["3.11", "3.12", "3.13", "3.14"]') }}
+
+    env:
+      JAX_COMPILATION_CACHE_DIR: /tmp/jax_cache
+      JAX_PERSISTENT_CACHE_MIN_ENTRY_SIZE_BYTES: -1
+      JAX_PERSISTENT_CACHE_MIN_COMPILE_TIME_SECS: 0
+
     steps:
       - uses: actions/checkout@v4
 
@@ -26,6 +35,14 @@ jobs:
 
       - name: Install dependencies
         run: uv sync --locked --all-extras --dev --python ${{ matrix.python-version }}
+
+      - name: Cache JAX compilation artifacts
+        uses: actions/cache@v4
+        with:
+          path: /tmp/jax_cache
+          key: jax-cache-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('uv.lock') }}-${{ github.sha }}
+          restore-keys: |
+            jax-cache-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('uv.lock') }}-
 
       - name: Run tests
         run: uv run --locked --python ${{ matrix.python-version }} pytest neojax/tests/

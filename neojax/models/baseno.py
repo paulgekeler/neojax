@@ -24,7 +24,7 @@ from typing import Any, BinaryIO
 import equinox as eqx
 import jax.numpy as jnp
 import jax.tree_util as jtu
-from jaxtyping import Array, DTypeLike, Inexact, PRNGKeyArray
+from jaxtyping import DTypeLike, PRNGKeyArray
 
 
 class BaseNO(eqx.Module):
@@ -105,7 +105,7 @@ class BaseNO(eqx.Module):
         Returns:
             The loaded model instance.
         """
-        if hasattr(file, "write"):
+        if hasattr(file, "read"):
             hyperparams = json.loads(file.readline().decode())
             if key is not None:
                 skeleton = make_fn(key=key, **hyperparams)
@@ -185,9 +185,10 @@ class BaseNO(eqx.Module):
 
     def profile_compile(
         self,
-        dummy_inputs: Any,
+        *args: Any,
         return_lowering: bool = False,
         filter_jax_frames: bool = True,
+        **kwargs: Any,
     ) -> tuple[bool, dict[str, Any]]:
         """Profiles the XLA-compilation of the model.
 
@@ -195,13 +196,12 @@ class BaseNO(eqx.Module):
         See [JAX docs](https://docs.jax.dev/en/latest/jax.stages.html) for details.
 
         Args:
-            dummy_inputs: Dummy inputs representative of an input to model.__call__()
-                Typically, a dummy array representative of a training sample to pass
-                to the jitted model.
+            args: Any model inputs passed as arguments to the respective `__call__` method.
             return_lowering: Whether to return a human-readable representation of
                 the model lowering in the summary dict.
             filter_jax_frames: In case of exceptions, whether to filter the jax and equinox
                 frames to only focus on model code (jax internal traces are long).
+            kwargs: Any model `__call__` keyword arguments.
 
         Returns:
             `True` if the compilation succeeded else `False` and
@@ -232,7 +232,7 @@ class BaseNO(eqx.Module):
         try:
             # filter_jit is a wrapper -> ensure we get the underlying object
             # then get jax.stages.Lowered from equinox.Lowered
-            lowered = eqx.filter_jit(self).lower(dummy_inputs).lowered
+            lowered = eqx.filter_jit(self).lower(*args, **kwargs).lowered
             summary["lowering"] = lowered.as_text() if return_lowering else ""
             summary["lowering_cost_analysis"] = lowered.cost_analysis()
         except Exception as e:
@@ -293,13 +293,14 @@ class BaseNO(eqx.Module):
             return model_size
 
     @abstractmethod
-    def __call__(self, x: Inexact[Array, "in_c ..."]) -> Inexact[Array, "out_c ..."]:
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """Forward pass of the model.
 
         Args:
-            x: Input array shaped (in_c, d1, ..., dN).
+            args: Model `__call__` arguments.
+            kwargs: Model `__call__` keyword arguments.
 
         Returns:
-            Output array shaped (out_c, d1, ..., dN).
+            Model outputs.
         """
         ...

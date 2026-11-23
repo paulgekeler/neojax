@@ -2,7 +2,7 @@
 
 All notable changes to **neojax** will be documented in this file.
 
-## [Unreleased] -2026-11-12
+## [Unreleased] -2026-11-23
 
 ### Added
 - Sparse neighbor search with all pairs within a radius as an edge list, replacing the padded fixed-width lists (see Breaking changes).
@@ -19,6 +19,7 @@ All notable changes to **neojax** will be documented in this file.
   - `BaseMetric` now defines `vmap_model` and `batch_axes` static helper methods. They vmap the model over different PyTree inputs (all metrics use them except `SobolevMetric`).
 
 ### Breaking Changes
+- `BaseNO.profile_compile` and `__call__` now accept arbitrary `args` and `kwargs` to be compatible with all models.
 - The padded `Neighbors` (`index`, `mask`, `sq_dist`) and `neighbor_truncation` are removed. Edges are no longer cut off at the nearest `k`, so neighborhoods are complete.
 - `max_neighbors` is replaced by `mean_neighbors`, the expected mean number of neighbors per query, which sets the capacity of the edge list to `mean_neighbors` times the number of queries (`GNOBlock`, `MAGNOBlock`, `GAOT`; `in_gno_mean_neighbors` and `out_gno_mean_neighbors` in `GiNO`). `MAGNOBlock` scales the capacity of scale $s$ by $s^d$. The default of 32 gives as many edge slots as the former default lists.
 - Outputs change where neighborhoods were truncated before: the `"sum"` reduction of a `GNOBlock` (e.g. the output GNO of `GiNO`) now sums over all neighbors within the radius, which can change the scale of its output.
@@ -29,6 +30,10 @@ All notable changes to **neojax** will be documented in this file.
 - `GNOBlock` and `MAGNOBlock` have a `build_neighbors` method and accept a `RegularGrid` as input points. `GiNO` accepts a `RegularGrid` as `x_latent`, and the decoder of `GAOT` searches on its latent grid with `radius_neighbor_search_grid`.
 
 ### Changes
+- `optax`, `jaxtyping` and `typing-extensions` are now core dependencies.
+- `mypy` and `ruff` python versions target `3.11`.
+- Github `ci` workflow and `nox` now use a persistent JAX compilation cache for faster test times.
+- `BaseNO.load` now correctly checks for the `read` attribute of binary streams.
 - Data generation now uses [exponax](https://github.com/Ceyron/exponax) instead of `diffrax` (the `gen` and `ex` extras install `exponax`):
   - `generate_burgers_1d` solves with exponax's ETDRK Burgers stepper (~175x faster on CPU) and takes a new `n_steps` argument; the default `batch_size` is now 1000.
   - `generate_fno_initial_conditions` returns the initial conditions in the spatial domain with a channel axis.

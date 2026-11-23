@@ -2027,7 +2027,10 @@ source = { editable = "." }
 dependencies = [
     { name = "equinox" },
     { name = "jax" },
+    { name = "jaxtyping" },
     { name = "numpy" },
+    { name = "optax" },
+    { name = "typing-extensions" },
 ]
 
 [package.optional-dependencies]
@@ -2046,7 +2049,6 @@ dev = [
     { name = "beartype" },
     { name = "grain" },
     { name = "h5py" },
-    { name = "jaxtyping" },
     { name = "mypy" },
     { name = "netcdf4" },
     { name = "orbax-checkpoint" },
@@ -2069,7 +2071,6 @@ docs = [
 ex = [
     { name = "exponax" },
     { name = "matplotlib" },
-    { name = "optax" },
 ]
 gen = [
     { name = "exponax" },
@@ -2088,7 +2089,7 @@ requires-dist = [
     { name = "hippogriffe", marker = "extra == 'docs'" },
     { name = "huggingface-hub", marker = "extra == 'data'" },
     { name = "jax", specifier = ">=0.10" },
-    { name = "jaxtyping", marker = "extra == 'dev'" },
+    { name = "jaxtyping" },
     { name = "matplotlib", marker = "extra == 'ex'" },
     { name = "mkdocs", marker = "extra == 'docs'" },
     { name = "mkdocs-jupyter", marker = "extra == 'docs'" },
@@ -2098,7 +2099,7 @@ requires-dist = [
     { name = "netcdf4", marker = "extra == 'data'" },
     { name = "netcdf4", marker = "extra == 'dev'" },
     { name = "numpy", specifier = ">=2.0" },
-    { name = "optax", marker = "extra == 'ex'" },
+    { name = "optax" },
     { name = "orbax-checkpoint", marker = "extra == 'benchmark'" },
     { name = "orbax-checkpoint", marker = "extra == 'dev'" },
     { name = "pre-commit", marker = "extra == 'dev'" },
@@ -2111,6 +2112,7 @@ requires-dist = [
     { name = "requests", marker = "extra == 'data'" },
     { name = "ruff", marker = "extra == 'dev'" },
     { name = "scipy", marker = "extra == 'dev'" },
+    { name = "typing-extensions" },
 ]
 provides-extras = ["dev", "docs", "ex", "gen", "data", "benchmark"]
 
